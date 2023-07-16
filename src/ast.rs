@@ -1,19 +1,13 @@
 use crate::token::Token;
 
-pub trait Node {
-    fn token_literal(&self) -> Token;
-}
-
-pub trait Statement {
-    fn statement_node(&self);
-}
-
-pub trait Expression {
-    fn expression_node(&self);
+enum Node {
+    Statement,
+    Expression,
 }
 
 pub struct Program {
-    pub statements: Vec<Box<dyn Statement>>,
+    // will only contain statements
+    pub statements: Vec<Node>,
 }
 
 pub struct Identifier {

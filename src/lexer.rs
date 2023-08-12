@@ -1,6 +1,7 @@
 use crate::token::Token;
 use anyhow::Result;
 
+#[derive(Debug, Clone)]
 pub struct Lexer {
     position: usize,
     read_position: usize,

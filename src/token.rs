@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 #[allow(dead_code)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Illegal,
     Eof,
@@ -40,6 +40,39 @@ pub enum Token {
     Return,
 }
 
+impl Token {
+    pub fn to_str(&self) -> &str {
+        match self {
+            Token::Illegal => "Illegal",
+            Token::Eof => "EOF",
+            Token::Ident(s) => s.as_str(),
+            Token::Int(s) => s.as_str(),
+            Token::Assign => "=",
+            Token::Plus => "+",
+            Token::Dash => "-",
+            Token::Bang => "!",
+            Token::Asterisk => "*",
+            Token::Slash => "/",
+            Token::Lt => "<",
+            Token::Gt => ">",
+            Token::Eq => "==",
+            Token::NotEq => "!=",
+            Token::Comma => ",",
+            Token::Semicolon => ";",
+            Token::Lparen => "(",
+            Token::Rparen => ")",
+            Token::Lbrace => "{",
+            Token::Rbrace => "}",
+            Token::Function => "fn",
+            Token::Let => "let",
+            Token::True => "true",
+            Token::False => "false",
+            Token::If => "if",
+            Token::Else => "else",
+            Token::Return => "return",
+        }
+    }
+}
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         return match self {

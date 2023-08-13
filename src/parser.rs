@@ -34,8 +34,8 @@ impl Parser {
 
     pub fn next_token(&mut self) {
         self.cur_token = self.peek_token.take();
-        self.peek_token = Some(self.lexer.next_token().unwrap()); // fails if next token doesn't
-                                                                  // exist
+        self.peek_token = Some(self.lexer.next_token());
+        // exist
     }
 
     pub fn parse_program(&mut self) -> Option<Program> {
@@ -57,7 +57,7 @@ impl Parser {
     }
 
     pub fn parse_let_statement(&mut self) -> Option<Statement> {
-        if let Token::Ident(_) = self.peek_token.unwrap() {
+        if let Token::Ident(_) = self.peek_token().unwrap() {
             self.next_token();
             self.expect_peek(Token::Assign)?;
             self.next_token();

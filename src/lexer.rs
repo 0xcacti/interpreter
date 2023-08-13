@@ -1,5 +1,4 @@
 use crate::token::Token;
-use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
@@ -21,7 +20,7 @@ impl Lexer {
         return lex;
     }
 
-    pub fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
         let tok = match self.ch {
@@ -49,9 +48,11 @@ impl Lexer {
             b'-' => Token::Dash,
             b'{' => Token::Lbrace,
             b'}' => Token::Rbrace,
+            b'[' => Token::LBracket,
+            b']' => Token::RBracket,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
-                return Ok(match ident.as_str() {
+                return match ident.as_str() {
                     "fn" => Token::Function,
                     "let" => Token::Let,
                     "if" => Token::If,
@@ -60,9 +61,9 @@ impl Lexer {
                     "false" => Token::False,
                     "true" => Token::True,
                     _ => Token::Ident(ident),
-                });
+                };
             }
-            b'0'..=b'9' => return Ok(Token::Int(self.read_int())),
+            b'0'..=b'9' => Token::Int(self.read_int()),
             b'<' => Token::Lt,
             b'>' => Token::Gt,
             b'*' => Token::Asterisk,
@@ -73,7 +74,7 @@ impl Lexer {
         };
 
         self.read_char();
-        return Ok(tok);
+        return tok;
     }
 
     fn read_ident(&mut self) -> String {
@@ -142,7 +143,7 @@ mod test {
         ];
 
         for token in tokens {
-            let next_token = lexer.next_token()?;
+            let next_token = lexer.next_token();
             println!("expected: {:?}, got: {:?}", token, next_token);
             assert_eq!(token, next_token);
         }
@@ -249,7 +250,7 @@ mod test {
         ];
 
         for token in tokens {
-            let next_token = lexer.next_token()?;
+            let next_token = lexer.next_token();
             println!("expected: {:?}, got: {:?}", token, next_token);
             assert_eq!(token, next_token);
         }

@@ -1,7 +1,8 @@
-use crate::token::Token;
+pub type Program = Vec<Statement>;
 
 pub enum Expression {
     Identifier(String),
+    Literal(String),
 }
 
 pub enum Statement {
@@ -10,8 +11,8 @@ pub enum Statement {
     Expression(Expression),
 }
 
+// define node enum - our parser works on statement and expression nodes
 pub enum Node {
-    Program(Vec<Statement>),
     Statement(Statement),
     Expression(Expression),
 }

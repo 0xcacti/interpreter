@@ -1,90 +1,72 @@
 pub mod ast;
-
 use crate::lexer::Lexer;
 use crate::parser::ast::*;
 use crate::token::Token;
+use anyhow::Result;
 
 pub struct Parser {
     lexer: Lexer,
-    cur_token: Option<Token>,
-    peek_token: Option<Token>,
+    current_token: Token,
+    peek_token: Token,
 }
 
 impl Parser {
-    pub fn new(l: Lexer) -> Self {
-        let mut parser = Parser {
-            lexer: l,
-            cur_token: None,
-            peek_token: None,
+    pub fn new(mut lexer: Lexer) -> Self {
+        let current_token = lexer.next_token();
+        let peek_token = lexer.next_token();
+        Parser {
+            lexer,
+            current_token,
+            peek_token,
+        }
+    }
+
+    fn next_token(&mut self) {
+        self.current_token = self.peek_token.clone();
+        self.peek_token = self.lexer.next_token();
+    }
+
+    pub fn parse_program(&mut self) -> Result<Program> {
+        let mut program = Vec::new();
+
+        while self.current_token != Token::Eof {
+            match self.parse_statement() {
+                Ok(statement) => program.push(statement),
+                Err(e) => panic!("parse error: {}", e),
+            }
+            self.next_token();
+        }
+
+        Ok(program)
+    }
+
+    fn parse_statement(&mut self) -> Result<Statement> {
+        match self.current_token {
+            Token::Let => self.parse_let_statement(),
+            _ => Err(anyhow::anyhow!("parse error: expected let statement")),
+        }
+    }
+
+    fn parse_let_statement(&mut self) -> Result<Statement> {
+        let ident = match &self.peek_token {
+            Token::Ident(ref id) => id.clone(),
+            t => {
+                panic!("parse error: expected identifier, got {:?}", t);
+            }
         };
 
-        parser.next_token();
-        parser.next_token();
-        parser
-    }
+        self.next_token();
+        if self.peek_token != Token::Assign {
+            panic!("parse error: expected assign, got {:?}", self.peek_token);
+        }
 
-    pub fn cur_token(&self) -> Option<&Token> {
-        self.cur_token.as_ref()
-    }
+        self.next_token();
 
-    pub fn peek_token(&self) -> Option<&Token> {
-        self.peek_token.as_ref()
-    }
-
-    pub fn next_token(&mut self) {
-        self.cur_token = self.peek_token.take();
-        self.peek_token = Some(self.lexer.next_token());
-        // exist
-    }
-
-    pub fn parse_program(&mut self) -> Option<Program> {
-        let mut program = Program::new();
-        while self.cur_token != Some(Token::Eof) {
-            if let Some(stmt) = self.parse_statement() {
-                program.push(stmt);
-            }
+        while self.current_token != Token::Semicolon {
             self.next_token();
         }
-        Some(program)
-    }
 
-    pub fn parse_statement(&mut self) -> Option<Statement> {
-        match self.cur_token {
-            Some(Token::Let) => self.parse_let_statement(),
-            _ => None,
-        }
-    }
-
-    pub fn parse_let_statement(&mut self) -> Option<Statement> {
-        if let Token::Ident(_) = self.peek_token().unwrap() {
-            self.next_token();
-            self.expect_peek(Token::Assign)?;
-            self.next_token();
-
-            let statement = Statement::LetStatement(
-                Identifier::Identifier("=".to_string()),
-                self.parse_expression()?,
-            );
-            if self.peek_token == Some(Token::Semicolon) {
-                self.next_token();
-            }
-            Some(statement)
-        } else {
-            None
-        }
-    }
-
-    pub fn expect_peek(&mut self, t: Token) -> Option<()> {
-        if self.peek_token == Some(t) {
-            self.next_token();
-            Some(())
-        } else {
-            None
-        }
-    }
-
-    pub fn parse_expression(&mut self) -> Option<Expression> {
-        None
+        Ok(Statement::Let(ident, Expression::Literal("".to_string())))
     }
 }
 
@@ -112,9 +94,7 @@ mod test {
 
     fn check_let_statement(s: &Statement, name: &str) {
         match s {
-            Statement::LetStatement(ref ident, _) => match ident {
-                Identifier::Identifier(ref ident) => assert_eq!(ident, name),
-            },
+            Statement::Let(ref ident, _) => assert_eq!(ident, name),
             _ => panic!("expected let statement"),
         }
     }

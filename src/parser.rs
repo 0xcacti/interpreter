@@ -56,17 +56,36 @@ impl Parser {
         };
 
         self.next_token();
-        if self.peek_token != Token::Assign {
-            panic!("parse error: expected assign, got {:?}", self.peek_token);
-        }
-
+        self.expect_peek_token(&Token::Assign)?;
         self.next_token();
 
+        // skip expression for now
         while self.current_token != Token::Semicolon {
             self.next_token();
         }
 
         Ok(Statement::Let(ident, Expression::Literal("".to_string())))
+    }
+
+    fn peek_token_is(&self, token: &Token) -> bool {
+        self.peek_token == *token
+    }
+
+    fn current_token_is(&self, token: &Token) -> bool {
+        self.current_token == *token
+    }
+
+    fn expect_peek_token(&mut self, token: &Token) -> Result<()> {
+        if self.peek_token_is(&token) {
+            self.next_token();
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "parse error: expected {:?}, got {:?}",
+                token,
+                self.peek_token
+            ))
+        }
     }
 }
 

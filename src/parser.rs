@@ -4,7 +4,6 @@ use crate::lexer::Lexer;
 use crate::parser::ast::*;
 use crate::token::Token;
 
-#[derive(Debug, Clone)]
 pub struct Parser {
     lexer: Lexer,
     cur_token: Option<Token>,

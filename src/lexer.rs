@@ -1,6 +1,5 @@
 use crate::token::Token;
 
-#[derive(Debug, Clone)]
 pub struct Lexer {
     position: usize,
     read_position: usize,
@@ -48,8 +47,6 @@ impl Lexer {
             b'-' => Token::Dash,
             b'{' => Token::Lbrace,
             b'}' => Token::Rbrace,
-            b'[' => Token::LBracket,
-            b']' => Token::RBracket,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
                 return match ident.as_str() {
@@ -63,7 +60,7 @@ impl Lexer {
                     _ => Token::Ident(ident),
                 };
             }
-            b'0'..=b'9' => Token::Int(self.read_int()),
+            b'0'..=b'9' => return Token::Int(self.read_int()),
             b'<' => Token::Lt,
             b'>' => Token::Gt,
             b'*' => Token::Asterisk,
@@ -126,7 +123,7 @@ mod test {
     use anyhow::Result;
 
     #[test]
-    fn get_next_token() -> Result<()> {
+    fn it_gets_next_token_correctly() -> Result<()> {
         let input = "=+(){},;";
 
         let mut lexer = Lexer::new(input.into());
@@ -152,7 +149,7 @@ mod test {
     }
 
     #[test]
-    fn get_next_full_code_block() -> Result<()> {
+    fn it_lexes_whole_code_blocks() -> Result<()> {
         let input = r#"let five = 5;
             let ten = 10;
             let add = fn(x, y) {

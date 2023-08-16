@@ -1,6 +1,9 @@
 pub mod ast;
+pub mod errors;
+
 use crate::lexer::Lexer;
 use crate::parser::ast::*;
+use crate::parser::errors::*;
 use crate::token::Token;
 use anyhow::Result;
 
@@ -8,6 +11,7 @@ pub struct Parser {
     lexer: Lexer,
     current_token: Token,
     peek_token: Token,
+    errors: ParserErrors,
 }
 
 impl Parser {
@@ -18,6 +22,7 @@ impl Parser {
             lexer,
             current_token,
             peek_token,
+            errors: Vec::new(),
         }
     }
 

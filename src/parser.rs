@@ -34,10 +34,10 @@ impl Parser {
     pub fn parse_program(&mut self) -> Result<Program> {
         let mut program = Vec::new();
 
-        while self.current_token != Token::Eof {
+        while !self.current_token_is(&Token::Eof) {
             match self.parse_statement() {
                 Ok(statement) => program.push(statement),
-                Err(e) => panic!("parse error: {}", e),
+                Err(e) => self.errors.push(e),
             }
             self.next_token();
         }
@@ -45,18 +45,21 @@ impl Parser {
         Ok(program)
     }
 
-    fn parse_statement(&mut self) -> Result<Statement> {
+    fn parse_statement(&mut self) -> Result<Statement, ParserError> {
         match self.current_token {
             Token::Let => self.parse_let_statement(),
-            _ => Err(anyhow::anyhow!("parse error: expected let statement")),
+            _ => panic!("parse error: unexpected token {:?}", self.current_token),
         }
     }
 
-    fn parse_let_statement(&mut self) -> Result<Statement> {
+    fn parse_let_statement(&mut self) -> Result<Statement, ParserError> {
         let ident = match &self.peek_token {
             Token::Ident(ref id) => id.clone(),
             t => {
-                panic!("parse error: expected identifier, got {:?}", t);
+                return Err(ParserError::new(format!(
+                    "parse error: expected identifier, got {:?}",
+                    t
+                )));
             }
         };
 
@@ -80,16 +83,15 @@ impl Parser {
         self.current_token == *token
     }
 
-    fn expect_peek_token(&mut self, token: &Token) -> Result<()> {
+    fn expect_peek_token(&mut self, token: &Token) -> Result<(), ParserError> {
         if self.peek_token_is(&token) {
             self.next_token();
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
+            Err(ParserError::new(format!(
                 "parse error: expected {:?}, got {:?}",
-                token,
-                self.peek_token
-            ))
+                token, self.peek_token
+            )))
         }
     }
 }

@@ -48,6 +48,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
         match self.current_token {
             Token::Let => self.parse_let_statement(),
+            Token::Return => self.parse_return_statement(),
             _ => panic!("parse error: unexpected token {:?}", self.current_token),
         }
     }
@@ -74,7 +75,14 @@ impl Parser {
 
         Ok(Statement::Let(ident, Expression::Literal("".to_string())))
     }
-
+    fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+        // we want to kill the return token
+        self.next_token();
+        while self.current_token != Token::Semicolon {
+            self.next_token();
+        }
+        Ok(Statement::Return(Expression::Literal("".to_string())))
+    }
     fn peek_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
     }
@@ -118,10 +126,33 @@ mod test {
         check_let_statement(&program[2], "foobar");
     }
 
+    #[test]
+    fn it_parses_return_statements() {
+        let input = r#"
+        return 5;
+        return 10;
+        return 993322;
+        "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 3);
+        check_return_statement(&program[0]);
+        check_return_statement(&program[1]);
+        check_return_statement(&program[2]);
+    }
+
     fn check_let_statement(s: &Statement, name: &str) {
         match s {
             Statement::Let(ref ident, _) => assert_eq!(ident, name),
             _ => panic!("expected let statement"),
+        }
+    }
+
+    fn check_return_statement(s: &Statement) {
+        match s {
+            Statement::Return(_) => (),
+            _ => panic!("expected return statement"),
         }
     }
 }

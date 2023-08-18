@@ -1,9 +1,11 @@
 pub mod ast;
 pub mod errors;
+pub mod precedence;
 
 use crate::lexer::Lexer;
 use crate::parser::ast::*;
 use crate::parser::errors::*;
+use crate::parser::precedence::*;
 use crate::token::Token;
 use anyhow::Result;
 
@@ -31,7 +33,7 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
-    pub fn parse_program(&mut self) -> Result<Program> {
+    pub fn parse_program(&mut self) -> Result<Vec<Statement>> {
         let mut program = Vec::new();
 
         while !self.current_token_is(&Token::Eof) {
@@ -49,7 +51,7 @@ impl Parser {
         match self.current_token {
             Token::Let => self.parse_let_statement(),
             Token::Return => self.parse_return_statement(),
-            _ => panic!("parse error: unexpected token {:?}", self.current_token),
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -75,6 +77,7 @@ impl Parser {
 
         Ok(Statement::Let(ident, Expression::Literal("".to_string())))
     }
+
     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
         // we want to kill the return token
         self.next_token();
@@ -83,6 +86,16 @@ impl Parser {
         }
         Ok(Statement::Return(Expression::Literal("".to_string())))
     }
+
+    fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
+        let expression_statement = self.parse_expression(Precedence::Lowest)?;
+
+        if self.peek_token_is(&Token::Semicolon) {
+            self.next_token();
+        }
+        Ok(expression_statement)
+    }
+
     fn peek_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
     }
@@ -140,6 +153,21 @@ mod test {
         check_return_statement(&program[0]);
         check_return_statement(&program[1]);
         check_return_statement(&program[2]);
+    }
+
+    #[test]
+    fn it_parses_identifier_expressions() {
+        let input = r#"
+        foobar;
+        "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 1);
+        match &program[0] {
+            Statement::Expression(Expression::Identifier(ref ident)) => assert_eq!(ident, "foobar"),
+            _ => panic!("expected identifier expression"),
+        }
     }
 
     fn check_let_statement(s: &Statement, name: &str) {

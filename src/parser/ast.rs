@@ -1,8 +1,30 @@
 use std::fmt::{Display, Formatter, Result};
 
+use crate::token::Token;
+
+#[derive(Debug)]
+pub enum Literal {
+    Integer(String),
+    String(String),
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        match self {
+            Literal::Integer(i) => write!(f, "{}", i),
+            Literal::String(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+pub enum Prefix {
+    Exclam,
+}
+
 pub enum Expression {
     Identifier(String),
-    Literal(String),
+    Literal(Literal),
+    Prefix(Token, Box<Expression>),
 }
 
 impl Display for Expression {
@@ -10,6 +32,7 @@ impl Display for Expression {
         match self {
             Expression::Identifier(name) => write!(f, "{}", name),
             Expression::Literal(value) => write!(f, "{}", value),
+            Expression::Prefix(_, _) => write!(f, "todo"),
         }
     }
 }

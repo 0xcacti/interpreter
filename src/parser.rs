@@ -93,7 +93,19 @@ impl Parser {
         if self.peek_token_is(&Token::Semicolon) {
             self.next_token();
         }
-        Ok(expression_statement)
+        Ok(Statement::Expression(expression_statement))
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParserError> {
+        let mut exp = match self.current_token {
+            Token::Ident(ref ident) => Expression::Identifier(ident.clone()),
+            _ => panic!(
+                "parse error: expected identifier, got {:?}",
+                self.current_token
+            ),
+        };
+
+        Ok(exp)
     }
 
     fn peek_token_is(&self, token: &Token) -> bool {

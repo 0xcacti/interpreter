@@ -60,7 +60,7 @@ impl Lexer {
                     _ => Token::Ident(ident),
                 };
             }
-            b'0'..=b'9' => return Token::Int(self.read_int()),
+            b'0'..=b'9' => return Token::Int(self.read_number()),
             b'<' => Token::Lt,
             b'>' => Token::Gt,
             b'*' => Token::Asterisk,
@@ -73,6 +73,22 @@ impl Lexer {
         self.read_char();
         return tok;
     }
+
+    fn read_number(&mut self) -> i64 {
+        let start = self.position;
+        while self.ch.is_ascii_digit() {
+            self.read_char();
+        }
+        let end = self.position;
+        self.input[start..end]
+            .iter()
+            .map(|&x| x as char)
+            .collect::<String>()
+            .parse::<i64>()
+            .expect("failed to parse number")
+    }
+
+    fn single_or_double(&mut self, expected_next: Token) -> &mut Self {}
 
     fn read_ident(&mut self) -> String {
         let position = self.position;

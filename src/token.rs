@@ -6,11 +6,7 @@ pub enum Token {
     Eof,
 
     Ident(String),
-
-    // literals
-    Int(String),
-    String(String),
-    Bool(bool),
+    Int(i64),
 
     // operators
     Assign,
@@ -77,8 +73,6 @@ impl Display for Token {
             Token::If => write!(f, "If"),
             Token::Else => write!(f, "Else"),
             Token::Return => write!(f, "Return"),
-            Token::String(s) => write!(f, "String({})", s),
-            Token::Bool(b) => write!(f, "Bool({})", b),
         };
     }
 }

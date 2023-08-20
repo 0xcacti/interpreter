@@ -23,22 +23,8 @@ impl Lexer {
         self.skip_whitespace();
 
         let tok = match self.ch {
-            b'=' => {
-                if self.peek() == b'=' {
-                    self.read_char();
-                    Token::Eq
-                } else {
-                    Token::Assign
-                }
-            }
-            b'!' => {
-                if self.peek() == b'=' {
-                    self.read_char();
-                    Token::NotEq
-                } else {
-                    Token::Bang
-                }
-            }
+            b'=' => self.single_or_double(b'=', Token::Eq, Token::Assign),
+            b'!' => self.single_or_double(b'=', Token::NotEq, Token::Bang),
             b';' => Token::Semicolon,
             b'(' => Token::Lparen,
             b')' => Token::Rparen,
@@ -60,7 +46,7 @@ impl Lexer {
                     _ => Token::Ident(ident),
                 };
             }
-            b'0'..=b'9' => return Token::Int(self.read_number()),
+            b'0'..=b'9' => return Token::Int(self.read_int().parse::<i64>().unwrap()),
             b'<' => Token::Lt,
             b'>' => Token::Gt,
             b'*' => Token::Asterisk,
@@ -74,21 +60,18 @@ impl Lexer {
         return tok;
     }
 
-    fn read_number(&mut self) -> i64 {
-        let start = self.position;
-        while self.ch.is_ascii_digit() {
+    fn single_or_double(
+        &mut self,
+        expected_next: u8,
+        single_token: Token,
+        double_token: Token,
+    ) -> Token {
+        if self.peek() == expected_next {
             self.read_char();
+            return double_token;
         }
-        let end = self.position;
-        self.input[start..end]
-            .iter()
-            .map(|&x| x as char)
-            .collect::<String>()
-            .parse::<i64>()
-            .expect("failed to parse number")
+        single_token
     }
-
-    fn single_or_double(&mut self, expected_next: Token) -> &mut Self {}
 
     fn read_ident(&mut self) -> String {
         let position = self.position;
@@ -189,12 +172,12 @@ mod test {
             Token::Let,
             Token::Ident(String::from("five")),
             Token::Assign,
-            Token::Int(String::from("5")),
+            Token::Int(5),
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("ten")),
             Token::Assign,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::Semicolon,
             Token::Let,
             Token::Ident(String::from("add")),
@@ -226,19 +209,19 @@ mod test {
             Token::Dash,
             Token::Slash,
             Token::Asterisk,
-            Token::Int(String::from("5")),
+            Token::Int(5),
             Token::Semicolon,
-            Token::Int(String::from("5")),
+            Token::Int(5),
             Token::Lt,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::Gt,
-            Token::Int(String::from("5")),
+            Token::Int(5),
             Token::Semicolon,
             Token::If,
             Token::Lparen,
-            Token::Int(String::from("5")),
+            Token::Int(5),
             Token::Lt,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::Rparen,
             Token::Lbrace,
             Token::Return,
@@ -251,13 +234,13 @@ mod test {
             Token::False,
             Token::Semicolon,
             Token::Rbrace,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::Eq,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::Semicolon,
-            Token::Int(String::from("10")),
+            Token::Int(10),
             Token::NotEq,
-            Token::Int(String::from("9")),
+            Token::Int(9),
             Token::Semicolon,
             Token::Eof,
         ];

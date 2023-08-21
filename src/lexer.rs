@@ -23,8 +23,8 @@ impl Lexer {
         self.skip_whitespace();
 
         let tok = match self.ch {
-            b'=' => self.single_or_double(b'=', Token::Eq, Token::Assign),
-            b'!' => self.single_or_double(b'=', Token::NotEq, Token::Bang),
+            b'=' => self.single_or_double(b'=', Token::Assign, Token::Eq),
+            b'!' => self.single_or_double(b'=', Token::Bang, Token::NotEq),
             b';' => Token::Semicolon,
             b'(' => Token::Lparen,
             b')' => Token::Rparen,
@@ -67,6 +67,9 @@ impl Lexer {
         double_token: Token,
     ) -> Token {
         if self.peek() == expected_next {
+            println!("peek: {}", self.peek());
+            println!("for some reason we are in here");
+
             self.read_char();
             return double_token;
         }

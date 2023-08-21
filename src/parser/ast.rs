@@ -4,7 +4,8 @@ use crate::token::Token;
 
 #[derive(Debug)]
 pub enum Literal {
-    Integer(String),
+    Integer(i64),
+    Boolean(bool),
     String(String),
 }
 
@@ -13,14 +14,12 @@ impl Display for Literal {
         match self {
             Literal::Integer(i) => write!(f, "{}", i),
             Literal::String(s) => write!(f, "{}", s),
+            Literal::Boolean(s) => write!(f, "{}", s),
         }
     }
 }
 
-pub enum Prefix {
-    Exclam,
-}
-
+#[derive(Debug)]
 pub enum Expression {
     Identifier(String),
     Literal(Literal),
@@ -37,6 +36,7 @@ impl Display for Expression {
     }
 }
 
+#[derive(Debug)]
 pub enum Statement {
     Let(String, Expression),
     Return(Expression),

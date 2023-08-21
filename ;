@@ -155,7 +155,7 @@ mod test {
     use super::*;
     use crate::lexer::Lexer;
     // Defining an enum to represent literals
-    enum LocalLiteral {
+    enum Literal {
         Str(String),
         Int(i64),
         Bool(bool),
@@ -216,7 +216,13 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 1);
-        check_expression_statement(&program[0], &Expression::Literal(Literal::Integer(5)));
+        match &program[0] {
+            Statement::Expression(Expression::Literal(ref value)) => match value {
+                Literal::Integer(i) => assert_eq!(*i, 5),
+                _ => panic!("expected integer literal"),
+            },
+            _ => panic!("expected integer literal"),
+        }
     }
 
     #[test]
@@ -234,31 +240,16 @@ mod test {
         assert_eq!(program.len(), 4);
     }
 
-    fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
-        match statement {
-            Statement::Expression(expression) => match (expression, expected_value) {
-                (Expression::Literal(literal), Expression::Literal(expected_literal)) => {
-                    match (literal, expected_literal) {
-                        (Literal::String(s), Literal::String(expected_s)) => {
-                            assert_eq!(s, expected_s);
-                        }
-                        (Literal::Integer(i), Literal::Integer(expected_i)) => {
-                            assert_eq!(i, expected_i);
-                        }
-                        (Literal::Boolean(b), Literal::Boolean(expected_b)) => {
-                            assert_eq!(b, expected_b);
-                        }
-                        _ => panic!("Literal type mismatch"),
-                    }
-                }
-                (Expression::Identifier(ident), Expression::Identifier(expected_ident)) => {
-                    assert_eq!(ident, expected_ident); // Fixed here: added semicolon
-                }
-                _ => panic!("Expression type mismatch"),
+    fn check_expression_statement(s: &Statement) {
+        match s {
+            Statement::Expression(ref value) => match value {
+                Expression::Identifier(ref ident) => assert_eq!(ident, "foobar"),
+                _ => panic!("expected identifier expression"),
             },
-            _ => panic!("Expected expression statement"),
+            _ => panic!("expected expression statement"),
         }
     }
+
     fn check_let_statement(s: &Statement, name: &str) {
         match s {
             Statement::Let(ref ident, _) => assert_eq!(ident, name),

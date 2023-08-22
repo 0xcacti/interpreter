@@ -154,12 +154,6 @@ impl Parser {
 mod test {
     use super::*;
     use crate::lexer::Lexer;
-    // Defining an enum to represent literals
-    enum LocalLiteral {
-        Str(String),
-        Int(i64),
-        Bool(bool),
-    }
 
     #[test]
     fn it_pareses_let_statements() {
@@ -291,6 +285,14 @@ mod test {
             ) => {
                 assert_eq!(token, expected_token);
                 check_expression(&**inner_expr, &**expected_inner_expr);
+            }
+            (
+                Expression::Infix(left_expr, token, right_expr),
+                Expression::Infix(expected_left_expr, expected_token, expected_right_expr),
+            ) => {
+                assert_eq!(token, expected_token);
+                check_expression(&**left_expr, &**expected_left_expr);
+                check_expression(&**right_expr, &**expected_right_expr);
             }
             // ... other expression variants can be added as necessary ...
             _ => panic!("Expression type mismatch"),

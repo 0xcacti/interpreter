@@ -24,6 +24,7 @@ pub enum Expression {
     Identifier(String),
     Literal(Literal),
     Prefix(Token, Box<Expression>),
+    Infix(Box<Expression>, Token, Box<Expression>),
 }
 
 impl Display for Expression {
@@ -31,7 +32,8 @@ impl Display for Expression {
         match self {
             Expression::Identifier(name) => write!(f, "{}", name),
             Expression::Literal(value) => write!(f, "{}", value),
-            Expression::Prefix(_, _) => write!(f, "todo"),
+            Expression::Prefix(token, value) => write!(f, "({}{})", token, value),
+            Expression::Infix(left, token, right) => write!(f, "({} {} {})", left, token, right),
         }
     }
 }

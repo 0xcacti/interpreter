@@ -203,10 +203,7 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 1);
-        match &program[0] {
-            Statement::Expression(Expression::Identifier(ref ident)) => assert_eq!(ident, "foobar"),
-            _ => panic!("expected identifier expression"),
-        }
+        check_expression_statement(&program[0], &Expression::Identifier("foobar".to_string()));
     }
 
     #[test]
@@ -232,6 +229,34 @@ mod test {
         let program = parser.parse_program().unwrap();
         println!("{:?}", program);
         assert_eq!(program.len(), 4);
+        check_expression_statement(
+            &program[0],
+            &Expression::Prefix(
+                Token::Dash,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[1],
+            &Expression::Prefix(
+                Token::Bang,
+                Box::new(Expression::Identifier("foobar".to_string())),
+            ),
+        );
+        check_expression_statement(
+            &program[2],
+            &Expression::Prefix(
+                Token::Bang,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[3],
+            &Expression::Prefix(
+                Token::Dash,
+                Box::new(Expression::Identifier("foobar".to_string())),
+            ),
+        );
     }
 
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
@@ -253,6 +278,13 @@ mod test {
                 }
                 (Expression::Identifier(ident), Expression::Identifier(expected_ident)) => {
                     assert_eq!(ident, expected_ident); // Fixed here: added semicolon
+                }
+                (
+                    Expression::Prefix(token, exp),
+                    Expression::Prefix(expected_token, expected_exp),
+                ) => {
+                    assert_eq!(token, expected_token);
+                    check_expression_statement(exp, expected_exp);
                 }
                 _ => panic!("Expression type mismatch"),
             },

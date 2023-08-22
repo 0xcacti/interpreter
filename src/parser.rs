@@ -261,36 +261,42 @@ mod test {
 
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
         match statement {
-            Statement::Expression(expression) => match (expression, expected_value) {
-                (Expression::Literal(literal), Expression::Literal(expected_literal)) => {
-                    match (literal, expected_literal) {
-                        (Literal::String(s), Literal::String(expected_s)) => {
-                            assert_eq!(s, expected_s);
-                        }
-                        (Literal::Integer(i), Literal::Integer(expected_i)) => {
-                            assert_eq!(i, expected_i);
-                        }
-                        (Literal::Boolean(b), Literal::Boolean(expected_b)) => {
-                            assert_eq!(b, expected_b);
-                        }
-                        _ => panic!("Literal type mismatch"),
-                    }
-                }
-                (Expression::Identifier(ident), Expression::Identifier(expected_ident)) => {
-                    assert_eq!(ident, expected_ident); // Fixed here: added semicolon
-                }
-                (
-                    Expression::Prefix(token, exp),
-                    Expression::Prefix(expected_token, expected_exp),
-                ) => {
-                    assert_eq!(token, expected_token);
-                    check_expression_statement(exp, expected_exp);
-                }
-                _ => panic!("Expression type mismatch"),
-            },
+            Statement::Expression(expression) => check_expression(expression, expected_value),
             _ => panic!("Expected expression statement"),
         }
     }
+
+    fn check_expression(expr: &Expression, expected_expr: &Expression) {
+        match (expr, expected_expr) {
+            (Expression::Literal(literal), Expression::Literal(expected_literal)) => {
+                match (literal, expected_literal) {
+                    (Literal::String(s), Literal::String(expected_s)) => {
+                        assert_eq!(s, expected_s);
+                    }
+                    (Literal::Integer(i), Literal::Integer(expected_i)) => {
+                        assert_eq!(i, expected_i);
+                    }
+                    (Literal::Boolean(b), Literal::Boolean(expected_b)) => {
+                        assert_eq!(b, expected_b);
+                    }
+                    _ => panic!("Literal type mismatch"),
+                }
+            }
+            (Expression::Identifier(ident), Expression::Identifier(expected_ident)) => {
+                assert_eq!(ident, expected_ident);
+            }
+            (
+                Expression::Prefix(token, inner_expr),
+                Expression::Prefix(expected_token, expected_inner_expr),
+            ) => {
+                assert_eq!(token, expected_token);
+                check_expression(&**inner_expr, &**expected_inner_expr);
+            }
+            // ... other expression variants can be added as necessary ...
+            _ => panic!("Expression type mismatch"),
+        }
+    }
+
     fn check_let_statement(s: &Statement, name: &str) {
         match s {
             Statement::Let(ref ident, _) => assert_eq!(ident, name),

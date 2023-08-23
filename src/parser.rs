@@ -109,7 +109,12 @@ impl Parser {
                 Expression::Literal(Literal::Integer(i))
             }
             Token::Bang | Token::Dash => self.parse_prefix_expression()?, // is there a better way
-            // to handle this
+            Token::Lparen => {
+                self.next_token();
+                let exp = self.parse_expression(Precedence::Lowest)?;
+                self.expect_peek_token(&Token::Rparen)?;
+                exp
+            }
             _ => {
                 return Err(ParserError::new(format!(
                     "parse error: no prefix parse function for {} found",
@@ -117,6 +122,23 @@ impl Parser {
                 )))
             }
         };
+
+        while !self.peek_token_is(&Token::Semicolon) && precedence < self.peek_precedence() {
+            match self.peek_token {
+                Token::Plus
+                | Token::Dash
+                | Token::Slash
+                | Token::Asterisk
+                | Token::Eq
+                | Token::NotEq
+                | Token::Lt
+                | Token::Gt => {
+                    self.next_token();
+                    exp = self.parse_infix_expression(exp)?;
+                }
+                _ => break,
+            }
+        }
 
         Ok(exp)
     }
@@ -129,12 +151,28 @@ impl Parser {
         Ok(Expression::Prefix(prefix, Box::new(exp)))
     }
 
+    fn parse_infix_expression(&mut self, left_exp: Expression) -> Result<Expression, ParserError> {
+        let infix = self.current_token.clone();
+        let precedence = token_precedence(&infix);
+        self.next_token();
+        let right_exp = self.parse_expression(precedence)?;
+        Ok(Expression::Infix(
+            Box::new(left_exp),
+            infix,
+            Box::new(right_exp),
+        ))
+    }
+
     fn peek_token_is(&self, token: &Token) -> bool {
         self.peek_token == *token
     }
 
     fn current_token_is(&self, token: &Token) -> bool {
         self.current_token == *token
+    }
+
+    fn peek_precedence(&self) -> Precedence {
+        token_precedence(&self.peek_token)
     }
 
     fn expect_peek_token(&mut self, token: &Token) -> Result<(), ParserError> {
@@ -249,6 +287,88 @@ mod test {
             &Expression::Prefix(
                 Token::Dash,
                 Box::new(Expression::Identifier("foobar".to_string())),
+            ),
+        );
+    }
+
+    #[test]
+    fn it_parses_infix_expressions() {
+        let input = r#"
+            5 + 5;
+            5 - 5;
+            5 * 5;
+            5 / 5;
+            5 > 5;
+            5 < 5;
+            5 == 5;
+            5 != 5;
+            "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 8);
+        check_expression_statement(
+            &program[0],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Plus,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[1],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Dash,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[2],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Asterisk,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[3],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Slash,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[4],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Gt,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[5],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Lt,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[6],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::Eq,
+                Box::new(Expression::Literal(Literal::Integer(5))),
+            ),
+        );
+        check_expression_statement(
+            &program[7],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(5))),
+                Token::NotEq,
+                Box::new(Expression::Literal(Literal::Integer(5))),
             ),
         );
     }

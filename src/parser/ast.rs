@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter, Result};
 
 use crate::token::Token;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
     Integer(i64),
     Boolean(bool),
@@ -19,7 +19,7 @@ impl Display for Literal {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Identifier(String),
     Literal(Literal),
@@ -38,7 +38,7 @@ impl Display for Expression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Let(String, Expression),
     Return(Expression),

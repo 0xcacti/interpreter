@@ -373,6 +373,47 @@ mod test {
         );
     }
 
+    #[test]
+    fn it_parsese_operator_precedence() {
+        let without_parens = r#"
+            -a * b
+            !-a
+            a + b + c
+            a + b - c
+            a * b * c
+            a * b / c
+            a + b / c
+            a + b * c + d / e - f
+            3 + 4; -5 * 5
+            5 > 4 == 3 < 4
+            5 < 4 != 3 > 4
+            3 + 4 * 5 == 3 * 1 + 4 * 5
+            "#;
+        let with_parens = r#"
+            ((-a) * b)
+            (!(-a))
+            ((a + b) + c)
+            ((a + b) - c)
+            ((a * b) * c)
+            ((a * b) / c)   
+            (a + (b / c))
+            (((a + (b * c)) + (d / e)) - f)
+            (3 + 4)((-5) * 5)
+            ((5 > 4) == (3 < 4)))
+            ((5 < 4) != (3 > 4))
+            ((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))
+            "#;
+        let without_parens_lexer = Lexer::new(without_parens.into());
+        let mut without_parens_parser = Parser::new(without_parens_lexer);
+        let without_parens_program = without_parens_parser.parse_program().unwrap();
+        assert_eq!(without_parens_program.len(), 13);
+        let with_parens_lexer = Lexer::new(with_parens.into());
+        let mut with_parens_parser = Parser::new(with_parens_lexer);
+        let with_parens_program = with_parens_parser.parse_program().unwrap();
+        assert_eq!(with_parens_program.len(), 13);
+        assert_eq!(without_parens_program, with_parens_program);
+    }
+
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
         match statement {
             Statement::Expression(expression) => check_expression(expression, expected_value),

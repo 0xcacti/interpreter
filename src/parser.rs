@@ -108,6 +108,8 @@ impl Parser {
                 println!("parse_expression: {:?}", i);
                 Expression::Literal(Literal::Integer(i))
             }
+            Token::True => Expression::Literal(Literal::Boolean(true)),
+            Token::False => Expression::Literal(Literal::Boolean(false)),
             Token::Bang | Token::Dash => self.parse_prefix_expression()?, // is there a better way
             Token::Lparen => {
                 self.next_token();
@@ -196,10 +198,10 @@ mod test {
     #[test]
     fn it_pareses_let_statements() {
         let input = r#"
-    let x = 5;
-    let y = 10;
-    let foobar = 838383;
-    "#;
+        let x = 5;
+        let y = 10;
+        let foobar = 838383;
+        "#;
 
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
@@ -255,12 +257,13 @@ mod test {
             !foobar;
             !5;
             -foobar;
+            !true;
             "#;
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         println!("{:?}", program);
-        assert_eq!(program.len(), 4);
+        assert_eq!(program.len(), 5);
         check_expression_statement(
             &program[0],
             &Expression::Prefix(
@@ -289,6 +292,13 @@ mod test {
                 Box::new(Expression::Identifier("foobar".to_string())),
             ),
         );
+        check_expression_statement(
+            &program[4],
+            &Expression::Prefix(
+                Token::Bang,
+                Box::new(Expression::Literal(Literal::Boolean(true))),
+            ),
+        );
     }
 
     #[test]
@@ -302,11 +312,14 @@ mod test {
             5 < 5;
             5 == 5;
             5 != 5;
+            true == true;
+            true != false;
+            false == false;
             "#;
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        assert_eq!(program.len(), 8);
+        assert_eq!(program.len(), 11);
         check_expression_statement(
             &program[0],
             &Expression::Infix(
@@ -371,10 +384,34 @@ mod test {
                 Box::new(Expression::Literal(Literal::Integer(5))),
             ),
         );
+        check_expression_statement(
+            &program[8],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Boolean(true))),
+                Token::Eq,
+                Box::new(Expression::Literal(Literal::Boolean(true))),
+            ),
+        );
+        check_expression_statement(
+            &program[9],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Boolean(true))),
+                Token::NotEq,
+                Box::new(Expression::Literal(Literal::Boolean(false))),
+            ),
+        );
+        check_expression_statement(
+            &program[10],
+            &Expression::Infix(
+                Box::new(Expression::Literal(Literal::Boolean(false))),
+                Token::Eq,
+                Box::new(Expression::Literal(Literal::Boolean(false))),
+            ),
+        );
     }
 
     #[test]
-    fn it_parsese_operator_precedence() {
+    fn it_parses_operator_precedence() {
         let without_parens = r#"
             -a * b
             !-a
@@ -412,6 +449,20 @@ mod test {
         let with_parens_program = with_parens_parser.parse_program().unwrap();
         assert_eq!(with_parens_program.len(), 13);
         assert_eq!(without_parens_program, with_parens_program);
+    }
+
+    #[test]
+    fn it_parses_boolean_literal_expressions() {
+        let input = r#"
+                true;
+                false;
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 2);
+        check_expression_statement(&program[0], &Expression::Literal(Literal::Boolean(true)));
+        check_expression_statement(&program[1], &Expression::Literal(Literal::Boolean(false)));
     }
 
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {

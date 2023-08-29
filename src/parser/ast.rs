@@ -25,6 +25,10 @@ pub enum Expression {
     Literal(Literal),
     Prefix(Token, Box<Expression>),
     Infix(Box<Expression>, Token, Box<Expression>),
+    If(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
+    Function(Vec<String>, Vec<Statement>),
+    FunctionCall(Box<Expression>, Vec<Expression>),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 impl Display for Expression {
@@ -34,11 +38,26 @@ impl Display for Expression {
             Expression::Literal(value) => write!(f, "{}", value),
             Expression::Prefix(token, value) => write!(f, "({}{})", token, value),
             Expression::Infix(left, token, right) => write!(f, "({} {} {})", left, token, right),
+            Expression::If(condition, consequence, alternative) => {
+                write!(f, "if {} {{", condition)?;
+                for statement in consequence {
+                    write!(f, "{}", statement)?;
+                }
+                write!(f, "}}")?;
+                if let Some(alternative) = alternative {
+                    write!(f, " else {{")?;
+                    for statement in alternative {
+                        write!(f, "{}", statement)?;
+                    }
+                    write!(f, "}}")?;
+                }
+                Ok(())
+            }
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Let(String, Expression),
     Return(Expression),

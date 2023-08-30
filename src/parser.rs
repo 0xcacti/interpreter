@@ -70,26 +70,23 @@ impl Parser {
         self.expect_peek_token(&Token::Assign)?;
         self.next_token();
 
-        // skip expression for now
-        while self.current_token != Token::Semicolon {
-            self.next_token();
+        let exp = self.parse_expression(Precedence::Lowest)?;
+
+        if self.peek_token_is(&Token::Semicolon) {
+            self.next_token()
         }
 
-        Ok(Statement::Let(
-            ident,
-            Expression::Literal(Literal::String("".to_string())),
-        ))
+        Ok(Statement::Let(ident, exp))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
-        // we want to kill the return token
         self.next_token();
-        while self.current_token != Token::Semicolon {
-            self.next_token();
+        let exp = self.parse_expression(Precedence::Lowest)?;
+
+        if self.peek_token_is(&Token::Semicolon) {
+            self.next_token()
         }
-        Ok(Statement::Return(Expression::Literal(Literal::String(
-            "".to_string(),
-        ))))
+        Ok(Statement::Return(exp))
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
@@ -310,9 +307,13 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 3);
-        check_let_statement(&program[0], "x");
-        check_let_statement(&program[1], "y");
-        check_let_statement(&program[2], "foobar");
+        check_let_statement(&program[0], "x", &Expression::Literal(Literal::Integer(5)));
+        check_let_statement(&program[1], "y", &Expression::Literal(Literal::Integer(10)));
+        check_let_statement(
+            &program[2],
+            "foobar",
+            &Expression::Literal(Literal::Integer(838383)),
+        );
     }
 
     #[test]
@@ -326,9 +327,9 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 3);
-        check_return_statement(&program[0]);
-        check_return_statement(&program[1]);
-        check_return_statement(&program[2]);
+        check_return_statement(&program[0], &Expression::Literal(Literal::Integer(5)));
+        check_return_statement(&program[1], &Expression::Literal(Literal::Integer(10)));
+        check_return_statement(&program[2], &Expression::Literal(Literal::Integer(993322)));
     }
 
     #[test]
@@ -828,16 +829,19 @@ mod test {
         }
     }
 
-    fn check_let_statement(s: &Statement, name: &str) {
+    fn check_let_statement(s: &Statement, name: &str, expected_exp: &Expression) {
         match s {
-            Statement::Let(ref ident, _) => assert_eq!(ident, name),
+            Statement::Let(ref ident, ref exp) => {
+                assert_eq!(ident, name);
+                assert_eq!(exp, expected_exp);
+            }
             _ => panic!("expected let statement"),
         }
     }
 
-    fn check_return_statement(s: &Statement) {
+    fn check_return_statement(s: &Statement, expected_exp: &Expression) {
         match s {
-            Statement::Return(_) => (),
+            Statement::Return(exp) => assert_eq!(exp, expected_exp),
             _ => panic!("expected return statement"),
         }
     }

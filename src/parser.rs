@@ -138,6 +138,10 @@ impl Parser {
                     println!("parse_infix_expression: {:?}", exp);
                     exp = self.parse_infix_expression(exp)?;
                 }
+                Token::Lparen => {
+                    self.next_token();
+                    exp = self.parse_function_call_expression(exp)?;
+                }
                 _ => break,
             }
         }
@@ -234,6 +238,34 @@ impl Parser {
             self.next_token();
         }
         Ok(statements)
+    }
+
+    fn parse_function_call_expression(
+        &mut self,
+        exp: Expression,
+    ) -> Result<Expression, ParserError> {
+        let arguments = self.parse_expression_list(&Token::Rparen)?;
+        Ok(Expression::FunctionCall(Box::new(exp), arguments))
+    }
+
+    fn parse_expression_list(
+        &mut self,
+        ending_token: &Token,
+    ) -> Result<Vec<Expression>, ParserError> {
+        let mut arguments = Vec::new();
+        if self.peek_token_is(ending_token) {
+            self.next_token();
+            return Ok(arguments);
+        }
+        self.next_token();
+        arguments.push(self.parse_expression(Precedence::Lowest)?);
+        while self.peek_token_is(&Token::Comma) {
+            self.next_token();
+            self.next_token();
+            arguments.push(self.parse_expression(Precedence::Lowest)?);
+        }
+        self.expect_peek_token(ending_token)?;
+        Ok(arguments)
     }
 
     fn peek_token_is(&self, token: &Token) -> bool {
@@ -623,6 +655,91 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 1);
+        check_expression_statement(
+            &program[0],
+            &Expression::Function(
+                vec!["x".into(), "y".into()],
+                vec![Statement::Expression(Expression::Infix(
+                    Box::new(Expression::Identifier("x".into())),
+                    Token::Plus,
+                    Box::new(Expression::Identifier("y".into())),
+                ))],
+            ),
+        );
+    }
+
+    #[test]
+    fn it_parses_function_parameters() {
+        let input = r#"
+                fn() {};
+                fn(x) {};
+                fn(x, y, z) {};
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 3);
+        check_expression_statement(&program[0], &Expression::Function(vec![], vec![]));
+        check_expression_statement(&program[1], &Expression::Function(vec!["x".into()], vec![]));
+        check_expression_statement(
+            &program[2],
+            &Expression::Function(vec!["x".into(), "y".into(), "z".into()], vec![]),
+        );
+    }
+
+    #[test]
+    fn it_parses_function_call_expressions() {
+        let input = r#"
+                add(1, 2 * 3, 4 + 5);
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 1);
+        check_expression_statement(
+            &program[0],
+            &Expression::FunctionCall(
+                Box::new(Expression::Identifier("add".into())),
+                vec![
+                    Expression::Literal(Literal::Integer(1)),
+                    Expression::Infix(
+                        Box::new(Expression::Literal(Literal::Integer(2))),
+                        Token::Asterisk,
+                        Box::new(Expression::Literal(Literal::Integer(3))),
+                    ),
+                    Expression::Infix(
+                        Box::new(Expression::Literal(Literal::Integer(4))),
+                        Token::Plus,
+                        Box::new(Expression::Literal(Literal::Integer(5))),
+                    ),
+                ],
+            ),
+        );
+    }
+
+    #[test]
+    fn it_parses_function_call_operator_precedence() {
+        let input = r#"
+                add(a + add(b * c) + d);
+                add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8)),
+                add(a + b + c * d / f + g)
+                "#;
+        let expected = r#" 
+            ((a + add(b * c)) + d);
+            add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)));
+            add((((a + b) + ((c * d) / f)) + g))
+            "#;
+
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        let expected_lexer = Lexer::new(expected.into());
+        let mut expected_parser = Parser::new(expected_lexer);
+        let expected_program = expected_parser.parse_program().unwrap();
+        assert_eq!(program.len(), expected_program.len());
+        for (statement, expected_statement) in program.iter().zip(expected_program.iter()) {
+            assert_eq!(statement, expected_statement);
+        }
     }
 
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
@@ -680,6 +797,26 @@ mod test {
                     alternative.iter().zip(expected_alternative.iter())
                 {
                     assert_eq!(statement, expected_statement);
+                }
+            }
+            (
+                Expression::Function(params, body),
+                Expression::Function(expected_params, expected_body),
+            ) => {
+                assert_eq!(params, expected_params);
+                for (statement, expected_statement) in body.iter().zip(expected_body.iter()) {
+                    assert_eq!(statement, expected_statement);
+                }
+            }
+
+            (
+                Expression::FunctionCall(function, arguments),
+                Expression::FunctionCall(expected_function, expected_arguments),
+            ) => {
+                check_expression(&**function, &**expected_function);
+                for (argument, expected_argument) in arguments.iter().zip(expected_arguments.iter())
+                {
+                    check_expression(argument, expected_argument);
                 }
             }
             // ... other expression variants can be added as necessary ...

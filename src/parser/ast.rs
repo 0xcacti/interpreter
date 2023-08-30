@@ -53,6 +53,31 @@ impl Display for Expression {
                 }
                 Ok(())
             }
+            Expression::Function(parameters, body) => {
+                write!(f, "fn(")?;
+                for (i, parameter) in parameters.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", parameter)?;
+                }
+                write!(f, ") {{")?;
+                for statement in body {
+                    write!(f, "{}", statement)?;
+                }
+                write!(f, "}}")
+            }
+            Expression::FunctionCall(function, arguments) => {
+                write!(f, "{}(", function)?;
+                for (i, argument) in arguments.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", argument)?;
+                }
+                write!(f, ")")
+            }
+            Expression::Index(left, index) => write!(f, "({}[{}])", left, index),
         }
     }
 }

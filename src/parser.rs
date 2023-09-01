@@ -2,11 +2,13 @@ pub mod ast;
 pub mod errors;
 pub mod precedence;
 
+use self::ast::*;
+use self::errors::*;
+use self::precedence::*;
+
 use crate::lexer::Lexer;
-use crate::parser::ast::*;
-use crate::parser::errors::*;
-use crate::parser::precedence::*;
 use crate::token::Token;
+
 use anyhow::Result;
 
 pub struct Parser {

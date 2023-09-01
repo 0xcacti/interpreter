@@ -14,8 +14,8 @@ pub enum Precedence {
 pub fn token_precedence(token: &Token) -> Precedence {
     match token {
         Token::Eq | Token::NotEq => Precedence::Equals,
-        Token::Lt | Token::Gt => Precedence::LessGreater,
         Token::Plus | Token::Dash => Precedence::Sum,
+        Token::Lt | Token::Gt => Precedence::LessGreater,
         Token::Slash | Token::Asterisk => Precedence::Product,
         Token::Lparen => Precedence::Call,
         _ => Precedence::Lowest,

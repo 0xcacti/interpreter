@@ -33,7 +33,7 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
-    pub fn parse_program(&mut self) -> Result<Vec<Statement>> {
+    pub fn parse_program(&mut self) -> Result<Vec<Statement>, ParserErrors> {
         let mut program = Vec::new();
 
         while !self.current_token_is(&Token::Eof) {
@@ -44,7 +44,11 @@ impl Parser {
             self.next_token();
         }
 
-        Ok(program)
+        if !self.errors.is_empty() {
+            Err(self.errors.clone())
+        } else {
+            Ok(program)
+        }
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
@@ -132,7 +136,6 @@ impl Parser {
                 | Token::Lt
                 | Token::Gt => {
                     self.next_token();
-                    println!("parse_infix_expression: {:?}", exp);
                     exp = self.parse_infix_expression(exp)?;
                 }
                 Token::Lparen => {
@@ -148,7 +151,6 @@ impl Parser {
 
     fn parse_prefix_expression(&mut self) -> Result<Expression, ParserError> {
         let prefix = self.current_token.clone();
-        println!("parse_prefix_expression: {:?}", prefix);
         self.next_token();
         let exp = self.parse_expression(Precedence::Prefix)?;
         Ok(Expression::Prefix(prefix, Box::new(exp)))
@@ -156,7 +158,7 @@ impl Parser {
 
     fn parse_infix_expression(&mut self, left_exp: Expression) -> Result<Expression, ParserError> {
         let infix = self.current_token.clone();
-        let precedence = token_precedence(&infix);
+        let precedence = token_precedence(&self.current_token);
         self.next_token();
         let right_exp = self.parse_expression(precedence)?;
         Ok(Expression::Infix(
@@ -517,44 +519,47 @@ mod test {
     #[test]
     fn it_parses_operator_precedence() {
         let without_parens = r#"
-            -a * b;
-            !-a;
-            a + b + c;
-            a + b - c;
-            a * b * c;
-            a * b / c;
-            a + b / c;
-            a + b * c + d / e - f;
-            3 + 4; 
-            -5 * 5;
-            5 > 4 == 3 < 4;
-            5 < 4 != 3 > 4;
-            3 + 4 * 5 == 3 * 1 + 4 * 5;
+            3 + 4;
+           -5 * 5;
+           -a * b
+           !-a
+           a + b + c
+           a + b - c
+           a * b * c
+           a * b / c
+           a + b / c
+           a + b * c + d / e - f
+           5 > 4 == 3 < 4
+           5 < 4 != 3 > 4
+           3 + 4 * 5 == 3 * 1 + 4 * 5
             "#;
+        // "#;
         let with_parens = r#"
+            (3 + 4);
+            ((-5) * 5);
             ((-a) * b);
             (!(-a));
             ((a + b) + c);
             ((a + b) - c);
             ((a * b) * c);
-            ((a * b) / c);  
+            ((a * b) / c);
             (a + (b / c));
             (((a + (b * c)) + (d / e)) - f);
-            (3 + 4);
-            ((-5) * 5);
             ((5 > 4) == (3 < 4)));
             ((5 < 4) != (3 > 4));
             ((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));
             "#;
+        // "#;
+
         let without_parens_lexer = Lexer::new(without_parens.into());
         let mut without_parens_parser = Parser::new(without_parens_lexer);
         let without_parens_program = without_parens_parser.parse_program().unwrap();
-        println!("{:?}", without_parens_program.len());
-        assert_eq!(without_parens_program.len(), 13);
+
+        println!("==================");
         let with_parens_lexer = Lexer::new(with_parens.into());
         let mut with_parens_parser = Parser::new(with_parens_lexer);
         let with_parens_program = with_parens_parser.parse_program().unwrap();
-        //assert_eq!(with_parens_program.len(), 12);
+
         assert_eq!(without_parens_program, with_parens_program);
     }
 

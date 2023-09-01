@@ -8,12 +8,12 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(input: String) -> Lexer {
+    pub fn new(input: &str) -> Lexer {
         let mut lex = Lexer {
             position: 0,
             read_position: 0,
             ch: 0,
-            input: input.into_bytes(),
+            input: input.as_bytes().to_vec(),
         };
         lex.read_char();
         return lex;

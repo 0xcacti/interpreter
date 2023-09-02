@@ -547,7 +547,7 @@ mod test {
             ((a * b) / c);
             (a + (b / c));
             (((a + (b * c)) + (d / e)) - f);
-            ((5 > 4) == (3 < 4)));
+            ((5 > 4) == (3 < 4));
             ((5 < 4) != (3 > 4));
             ((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));
             "#;
@@ -733,7 +733,7 @@ mod test {
     fn it_parses_function_call_operator_precedence() {
         let input = r#"
                 a + add(b * c) + d;
-                add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8)),
+                add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))
                 add(a + b + c * d / f + g)
                 "#;
         let expected = r#" 

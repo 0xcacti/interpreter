@@ -1,4 +1,5 @@
 use anyhow::Result;
+use interpreter::evaluator::evaluate;
 use interpreter::lexer::Lexer;
 use interpreter::parser::ast::Node;
 use interpreter::parser::Parser;
@@ -30,7 +31,7 @@ fn main() -> Result<()> {
 
         match program {
             Ok(program) => {
-                println!("{}", Node::Program(program));
+                evaluate(Node::Program(program));
             }
             Err(err) => {
                 println!("Woops! We ran into some monkey business here!");

@@ -35,6 +35,14 @@ fn evaluate_statement(statement: &Statement) -> Result<Object, EvaluatorError> {
     }
 }
 
+fn is_truthy(object: &Object) -> bool {
+    match object {
+        Object::Null => false,
+        Object::Boolean(false) => false,
+        _ => true,
+    }
+}
+
 fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError> {
     match expression {
         Expression::Literal(literal) => evaluate_literal(literal),
@@ -47,8 +55,27 @@ fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError
             let right = evaluate_expression(right)?;
             evaluate_infix_expression(operator, &left, &right)
         }
+
+        Expression::If(condition, consequence, alternative) => {
+            let condition = evaluate_expression(condition)?;
+            if is_truthy(&condition) {
+                evaluate_statement(consequence)
+            } else if let Some(alternative) = alternative {
+                evaluate_statement(alternative)
+            } else {
+                Ok(Object::Null)
+            }
+        }
         _ => Ok(Object::Null),
     }
+}
+
+fn evaluate_block_statement(block: &BlockStatement) -> Result<Object, EvaluatorError> {
+    let mut result = Object::Null;
+    for statement in &block.statements {
+        result = evaluate_statement(statement)?;
+    }
+    Ok(result)
 }
 
 fn evaluate_literal(literal: &Literal) -> Result<Object, EvaluatorError> {
@@ -303,4 +330,23 @@ mod test {
     //         test_object_is_expected(&evaluated, &expected);
     //     }
     // }
+    //
+
+    #[test]
+    fn it_evaluates_if_else_expressions() {
+        let tests = vec![
+            ("if (true) { 10 }", 10.into()),
+            ("if (false) { 10 }", Object::Null),
+            ("if (1) { 10 }", 10.into()),
+            ("if (1 < 2) { 10 }", 10.into()),
+            ("if (1 > 2) { 10 }", Object::Null),
+            ("if (1 > 2) { 10 } else { 20 }", 20.into()),
+            ("if (1 < 2) { 10 } else { 20 }", 10.into()),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &expected);
+        }
+    }
 }

@@ -78,4 +78,17 @@ mod test {
             test_integer_value(evaluated, expected);
         }
     }
+
+    #[test]
+    fn it_evaluates_boolean_expressions() {
+        let tests = vec![("true", true), ("false", false)];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            match evaluated {
+                Object::Boolean(b) => assert_eq!(b, expected),
+                _ => panic!("Expected Boolean, got {:?}", evaluated),
+            }
+        }
+    }
 }

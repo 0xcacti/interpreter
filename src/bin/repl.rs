@@ -31,7 +31,7 @@ fn main() -> Result<()> {
 
         match program {
             Ok(program) => {
-                evaluate(Node::Program(program));
+                println!("{}", evaluate(Node::Program(program))?);
             }
             Err(err) => {
                 println!("Woops! We ran into some monkey business here!");

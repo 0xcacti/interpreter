@@ -27,3 +27,21 @@ impl Display for Object {
         }
     }
 }
+
+impl From<bool> for Object {
+    fn from(b: bool) -> Self {
+        Object::Boolean(b)
+    }
+}
+
+impl From<i64> for Object {
+    fn from(i: i64) -> Self {
+        Object::Integer(i)
+    }
+}
+
+impl From<String> for Object {
+    fn from(s: String) -> Self {
+        Object::String(s)
+    }
+}

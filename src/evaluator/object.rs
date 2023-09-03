@@ -1,11 +1,14 @@
-use std::fmt::{Display, Formatter, Result};
+use std::{
+    fmt::{Display, Formatter, Result},
+    rc::Rc,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
-    ReturnValue(Box<Object>),
+    ReturnValue(Rc<Object>),
     Null,
 }
 

@@ -5,13 +5,17 @@ use interpreter::evaluator::evaluate;
 use interpreter::lexer::Lexer;
 use interpreter::parser::ast::Node;
 use interpreter::parser::Parser;
-use std::io::{self, Write}; // <-- Add this import for flushing stdout
+use std::{
+    cell::RefCell,
+    io::{self, Write},
+    rc::Rc,
+}; // <-- Add this import for flushing stdout
 use users::get_current_username;
 
 const PROMPT: &str = ">> ";
 
 fn main() -> Result<()> {
-    let env = Environment::new();
+    let env = Rc::new(RefCell::new(Environment::new()));
     println!(
         "Dear {}, Welcome to the Mokey Programming Language REPL!",
         get_current_username().unwrap().to_string_lossy()
@@ -34,7 +38,7 @@ fn main() -> Result<()> {
 
         match program {
             Ok(program) => {
-                println!("{}", evaluate(Node::Program(program))?);
+                println!("{}", evaluate(Node::Program(program), &env)?);
             }
             Err(err) => {
                 println!("Woops! We ran into some monkey business here!");

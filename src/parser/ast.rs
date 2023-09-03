@@ -12,7 +12,7 @@ pub enum Literal {
 impl Display for Literal {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
-            Literal::Integer(i) => write!(f, "{}", i),
+            Literal::Integer(i) => write!(f, "{}", *i),
             Literal::String(s) => write!(f, "{}", s),
             Literal::Boolean(s) => write!(f, "{}", s),
         }
@@ -37,7 +37,7 @@ impl Display for Expression {
             Expression::Identifier(name) => write!(f, "{}", name),
             Expression::Literal(value) => write!(f, "{}", value),
             Expression::Prefix(token, value) => write!(f, "({}{})", token, value),
-            Expression::Infix(left, token, right) => write!(f, "({} {} {})", left, token, right),
+            Expression::Infix(left, token, right) => write!(f, "{} {} {}", left, token, right),
             Expression::If(condition, consequence, alternative) => {
                 write!(f, "if {} {{", condition)?;
                 for statement in consequence {

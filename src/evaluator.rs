@@ -122,7 +122,7 @@ fn evaluate_infix_expression(
             evaluate_string_infix_operator(operator, left, right)
         }
         _ => Err(EvaluatorError::new(format!(
-            "type mismatch between operands: {:?} {:?} {:?}",
+            "type mismatch between operands: {} {} {}",
             left, operator, right
         ))),
     }
@@ -140,7 +140,7 @@ fn evaluate_dash_prefix_operator(expression: &Object) -> Result<Box<Object>, Eva
     match expression {
         Object::Integer(i) => Ok(Box::new(Object::Integer(-i))),
         _ => Err(EvaluatorError::new(format!(
-            "Unknown operator: -{:?}",
+            "unknown operator: -{}",
             expression
         ))),
     }
@@ -161,7 +161,7 @@ fn evaluate_string_infix_operator(
         Token::NotEq => Ok(Box::new(Object::Boolean(left != right))),
 
         _ => Err(EvaluatorError::new(format!(
-            "Unknown operator: {:?} {:?} {:?}",
+            "unknown operator: {} {} {}",
             left, operator, right
         ))),
     }
@@ -177,7 +177,7 @@ fn evaluate_boolean_infix_operator(
         &Token::NotEq => Object::Boolean(left != right),
         _ => {
             return Err(EvaluatorError::new(format!(
-                "Unknown operator: {:?} {:?} {:?}",
+                "unknown operator: {} {} {}",
                 left, operator, right
             )))
         }
@@ -207,7 +207,7 @@ fn evaluate_integer_infix_operator(
         &Token::NotEq => Object::Boolean(left != right),
         _ => {
             return Err(EvaluatorError::new(format!(
-                "Unknown operator: {:?} {:?} {:?}",
+                "unknown operator: {} {} {}",
                 left, operator, right
             )))
         }
@@ -223,24 +223,33 @@ mod test {
     use crate::lexer::Lexer;
     use crate::parser::Parser;
 
-    fn test_eval(input: String) -> Object {
+    fn test_eval(input: String) -> Result<Box<Object>, EvaluatorError> {
         let l = Lexer::new(input.as_ref());
         let mut p = Parser::new(l);
         let program = p.parse_program();
-        *evaluate(Node::Program(program.unwrap())).unwrap()
+        evaluate(Node::Program(program.unwrap()))
     }
 
-    fn test_object_is_expected(o: &Object, expected: &Object) {
-        println!("o: {:?}, expected: {:?}", o, expected);
-        match (o, expected) {
-            (Object::Integer(i), Object::Integer(j)) => assert_eq!(i, j),
-            (Object::Boolean(b), Object::Boolean(c)) => assert_eq!(b, c),
-            (Object::Null, Object::Null) => assert!(true),
-            (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
-                println!("v1: {:?}, v2: {:?}", v1, v2);
-                test_object_is_expected(v1, v2);
-            }
-            (_, _) => panic!("unexpected types {} and {}", o, expected),
+    fn test_object_is_expected(
+        outcome: &Result<Box<Object>, EvaluatorError>,
+        expected: &Result<Box<Object>, EvaluatorError>,
+    ) {
+        match (outcome, expected) {
+            (Ok(object), Ok(expected_object)) => match (&**object, &**expected_object) {
+                (Object::Integer(i), Object::Integer(j)) => assert_eq!(i, j),
+                (Object::Boolean(b), Object::Boolean(c)) => assert_eq!(b, c),
+                (Object::Null, Object::Null) => assert!(true),
+                (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
+                    println!("v1: {:?}, v2: {:?}", v1, v2);
+                    test_object_is_expected(&Ok(v1.clone()), &Ok(v2.clone()));
+                }
+                (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
+            },
+            (Err(e), Err(expected_err)) => assert_eq!(e.msg, expected_err.msg),
+            (_, _) => panic!(
+                "mismatched Ok and Err types {:?} and {:?}",
+                outcome, expected
+            ),
         }
     }
 
@@ -250,7 +259,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::Integer(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::Integer(expected))));
         }
     }
 
@@ -260,7 +269,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::Boolean(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::Boolean(expected))));
         }
     }
 
@@ -275,7 +284,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::Boolean(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::Boolean(expected))));
         }
     }
 
@@ -285,7 +294,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::Integer(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::Integer(expected))));
         }
     }
     #[test]
@@ -304,7 +313,7 @@ mod test {
         ];
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &expected);
+            test_object_is_expected(&evaluated, &Ok(Box::new(expected)));
         }
     }
 
@@ -323,7 +332,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::Boolean(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::Boolean(expected))));
         }
     }
 
@@ -361,7 +370,7 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &expected);
+            test_object_is_expected(&evaluated, &Ok(Box::new(expected)));
         }
     }
 
@@ -387,7 +396,38 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Object::ReturnValue(expected));
+            test_object_is_expected(&evaluated, &Ok(Box::new(Object::ReturnValue(expected))));
+        }
+    }
+
+    #[test]
+    fn it_handles_errors_correctly() {
+        let tests = vec![
+            ("5 + true", "type mismatch between operands: 5 + true"),
+            ("5 + true; 5;", "type mismatch between operands: 5 + true"),
+            ("-true", "unknown operator: -true"),
+            ("true + false", "unknown operator: true + false"),
+            ("5; true + false; 5", "unknown operator: true + false"),
+            (
+                "if (10 > 1) { true + false; }",
+                "unknown operator: true + false",
+            ),
+            (
+                r#"
+            if (10 > 1) {
+                if (10 > 1) {
+                    return true + false;
+                }
+                return 1;
+                }
+            "#,
+                "unknown operator: true + false",
+            ),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Err(EvaluatorError::new(expected.to_string())));
         }
     }
 }

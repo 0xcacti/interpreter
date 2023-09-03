@@ -1,22 +1,30 @@
+pub mod environment;
 pub mod error;
 pub mod object;
 
+use std::rc::Rc;
+
+use self::environment::Env;
 use self::error::EvaluatorError;
 use self::object::Object;
 use crate::{parser::ast::*, token::Token};
 
-pub fn evaluate(node: Node) -> Result<Box<Object>, EvaluatorError> {
+pub fn evaluate(node: Node, env: &Env) -> Result<Box<Object>, EvaluatorError> {
     match node {
-        Node::Program(program) => evaluate_statements(&program),
-        Node::Statement(statement) => evaluate_statement(&statement),
-        Node::Expression(expression) => evaluate_expression(&expression),
+        Node::Program(program) => evaluate_statements(&program, env),
+        Node::Statement(statement) => evaluate_statement(&statement, env),
+        Node::Expression(expression) => evaluate_expression(&expression, env),
     }
 }
 
-fn evaluate_statements(statements: &Vec<Statement>) -> Result<Box<Object>, EvaluatorError> {
+fn evaluate_statements(
+    statements: &Vec<Statement>,
+    env: &Env,
+) -> Result<Box<Object>, EvaluatorError> {
     let mut result = Box::new(Object::Null);
     for statement in statements {
-        let intermediate_value = evaluate_statement(statement)?;
+        let intermediate_value = evaluate_statement(statement, env)?; // I want to figure out why I
+                                                                      // need to do an RC here
 
         match *intermediate_value {
             Object::ReturnValue(_) => return Ok(intermediate_value),
@@ -26,10 +34,12 @@ fn evaluate_statements(statements: &Vec<Statement>) -> Result<Box<Object>, Evalu
     Ok(result)
 }
 
-fn evaluate_statement(statement: &Statement) -> Result<Box<Object>, EvaluatorError> {
+fn evaluate_statement(statement: &Statement, env: &Env) -> Result<Box<Object>, EvaluatorError> {
     match statement {
         Statement::Let(name, expression) => {
-            let value = evaluate_expression(expression);
+            let value = evaluate_expression(expression, env)?;
+            let object = Rc::clone(&value);
+            env.borrow_mut().set(name.to_string(), object);
             return value;
         }
         Statement::Return(expression) => {
@@ -48,25 +58,25 @@ fn is_truthy(object: &Object) -> bool {
     }
 }
 
-fn evaluate_expression(expression: &Expression) -> Result<Box<Object>, EvaluatorError> {
+fn evaluate_expression(expression: &Expression, env: &Env) -> Result<Box<Object>, EvaluatorError> {
     match expression {
-        Expression::Literal(literal) => evaluate_literal(literal),
+        Expression::Literal(literal) => evaluate_literal(literal, env),
         Expression::Prefix(operator, expression) => {
-            let right = evaluate_expression(expression)?;
+            let right = evaluate_expression(expression, env)?;
             evaluate_prefix_expression(operator, &right)
         }
         Expression::Infix(left, operator, right) => {
-            let left = evaluate_expression(left)?;
-            let right = evaluate_expression(right)?;
+            let left = evaluate_expression(left, env)?;
+            let right = evaluate_expression(right, env)?;
             evaluate_infix_expression(operator, &left, &right)
         }
 
         Expression::If(condition, consequence, alternative) => {
-            let condition = evaluate_expression(condition)?;
+            let condition = evaluate_expression(condition, env)?;
             if is_truthy(&condition) {
-                evaluate_block_statement(&consequence)
+                evaluate_block_statement(&consequence, env)
             } else if let Some(alternative) = alternative {
-                evaluate_block_statement(&alternative)
+                evaluate_block_statement(&alternative, env)
             } else {
                 Ok(Box::new(Object::Null))
             }
@@ -75,7 +85,10 @@ fn evaluate_expression(expression: &Expression) -> Result<Box<Object>, Evaluator
     }
 }
 
-fn evaluate_block_statement(block: &Vec<Statement>) -> Result<Box<Object>, EvaluatorError> {
+fn evaluate_block_statement(
+    block: &Vec<Statement>,
+    env: &Env,
+) -> Result<Box<Object>, EvaluatorError> {
     let mut result = Box::new(Object::Null);
     for statement in block {
         let intermediate_value = evaluate_statement(statement)?;
@@ -87,7 +100,7 @@ fn evaluate_block_statement(block: &Vec<Statement>) -> Result<Box<Object>, Evalu
     Ok(result)
 }
 
-fn evaluate_literal(literal: &Literal) -> Result<Box<Object>, EvaluatorError> {
+fn evaluate_literal(literal: &Literal, env: &Env) -> Result<Box<Object>, EvaluatorError> {
     match literal {
         Literal::Integer(integer) => Ok(Box::new(Object::Integer(*integer))),
         Literal::Boolean(boolean) => Ok(Box::new(Object::Boolean(*boolean))),
@@ -423,11 +436,26 @@ mod test {
             "#,
                 "unknown operator: true + false",
             ),
+            ("foobar", "identifier not found: foobar"),
         ];
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(&evaluated, &Err(EvaluatorError::new(expected.to_string())));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_let_statement() {
+        let tests = [
+            ("let a = 5; a;", 5.into()),
+            ("let a = 5 * 5; a;", 25.into()),
+            ("let a = 5; let b = a; b;", 5.into()),
+            ("let a = 5; let b = a; let c = a + b + 5; c;", 15.into()),
+        ];
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Box::new(expected)));
         }
     }
 }

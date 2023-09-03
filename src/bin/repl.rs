@@ -1,5 +1,7 @@
 use anyhow::Result;
+use interpreter::evaluator::environment::Environment;
 use interpreter::evaluator::evaluate;
+
 use interpreter::lexer::Lexer;
 use interpreter::parser::ast::Node;
 use interpreter::parser::Parser;
@@ -9,6 +11,7 @@ use users::get_current_username;
 const PROMPT: &str = ">> ";
 
 fn main() -> Result<()> {
+    let env = Environment::new();
     println!(
         "Dear {}, Welcome to the Mokey Programming Language REPL!",
         get_current_username().unwrap().to_string_lossy()

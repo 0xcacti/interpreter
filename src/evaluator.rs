@@ -5,7 +5,7 @@ use self::error::EvaluatorError;
 use self::object::Object;
 use crate::{parser::ast::*, token::Token};
 
-pub fn evaluate(node: Node) -> Result<Object, EvaluatorError> {
+pub fn evaluate(node: Node) -> Result<Box<Object>, EvaluatorError> {
     match node {
         Node::Program(program) => evaluate_statements(&program),
         Node::Statement(statement) => evaluate_statement(&statement),
@@ -13,23 +13,28 @@ pub fn evaluate(node: Node) -> Result<Object, EvaluatorError> {
     }
 }
 
-fn evaluate_statements(statements: &Vec<Statement>) -> Result<Object, EvaluatorError> {
-    let mut result = Object::Null;
+fn evaluate_statements(statements: &Vec<Statement>) -> Result<Box<Object>, EvaluatorError> {
+    let mut result = Box::new(Object::Null);
     for statement in statements {
-        result = evaluate_statement(statement)?;
+        let intermediate_value = evaluate_statement(statement)?;
+
+        match *intermediate_value {
+            Object::ReturnValue(_) => return Ok(intermediate_value),
+            _ => result = intermediate_value,
+        }
     }
     Ok(result)
 }
 
-fn evaluate_statement(statement: &Statement) -> Result<Object, EvaluatorError> {
+fn evaluate_statement(statement: &Statement) -> Result<Box<Object>, EvaluatorError> {
     match statement {
         Statement::Let(name, expression) => {
             let value = evaluate_expression(expression);
             return value;
         }
         Statement::Return(expression) => {
-            let value = evaluate_expression(expression);
-            return value;
+            let value = evaluate_expression(expression)?;
+            return Ok(Box::new(Object::ReturnValue(value)));
         }
         Statement::Expression(expression) => evaluate_expression(expression),
     }
@@ -43,7 +48,7 @@ fn is_truthy(object: &Object) -> bool {
     }
 }
 
-fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError> {
+fn evaluate_expression(expression: &Expression) -> Result<Box<Object>, EvaluatorError> {
     match expression {
         Expression::Literal(literal) => evaluate_literal(literal),
         Expression::Prefix(operator, expression) => {
@@ -63,37 +68,41 @@ fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError
             } else if let Some(alternative) = alternative {
                 evaluate_block_statement(&alternative)
             } else {
-                Ok(Object::Null)
+                Ok(Box::new(Object::Null))
             }
         }
-        _ => Ok(Object::Null),
+        _ => Ok(Box::new(Object::Null)),
     }
 }
 
-fn evaluate_block_statement(block: &Vec<Statement>) -> Result<Object, EvaluatorError> {
-    let mut result = Object::Null;
+fn evaluate_block_statement(block: &Vec<Statement>) -> Result<Box<Object>, EvaluatorError> {
+    let mut result = Box::new(Object::Null);
     for statement in block {
-        result = evaluate_statement(statement)?;
+        let intermediate_value = evaluate_statement(statement)?;
+        match *result {
+            Object::ReturnValue(_) => return Ok(result),
+            _ => result = intermediate_value,
+        }
     }
     Ok(result)
 }
 
-fn evaluate_literal(literal: &Literal) -> Result<Object, EvaluatorError> {
+fn evaluate_literal(literal: &Literal) -> Result<Box<Object>, EvaluatorError> {
     match literal {
-        Literal::Integer(integer) => Ok(Object::Integer(*integer)),
-        Literal::Boolean(boolean) => Ok(Object::Boolean(*boolean)),
-        Literal::String(string) => Ok(Object::String(string.clone())),
+        Literal::Integer(integer) => Ok(Box::new(Object::Integer(*integer))),
+        Literal::Boolean(boolean) => Ok(Box::new(Object::Boolean(*boolean))),
+        Literal::String(string) => Ok(Box::new(Object::String(string.clone()))),
     }
 }
 
 fn evaluate_prefix_expression(
     operator: &Token,
     expression: &Object,
-) -> Result<Object, EvaluatorError> {
+) -> Result<Box<Object>, EvaluatorError> {
     match operator {
         Token::Bang => evaluate_bang_prefix_operator(expression),
         Token::Dash => evaluate_dash_prefix_operator(expression),
-        _ => Ok(Object::Null),
+        _ => Ok(Box::new(Object::Null)),
     }
 }
 
@@ -101,7 +110,7 @@ fn evaluate_infix_expression(
     operator: &Token,
     left: &Object,
     right: &Object,
-) -> Result<Object, EvaluatorError> {
+) -> Result<Box<Object>, EvaluatorError> {
     match (left, right) {
         (Object::Integer(left), Object::Integer(right)) => {
             evaluate_integer_infix_operator(operator, *left, *right)
@@ -119,17 +128,17 @@ fn evaluate_infix_expression(
     }
 }
 
-fn evaluate_bang_prefix_operator(expression: &Object) -> Result<Object, EvaluatorError> {
+fn evaluate_bang_prefix_operator(expression: &Object) -> Result<Box<Object>, EvaluatorError> {
     match expression {
-        Object::Boolean(b) => Ok(Object::Boolean(!b)),
-        Object::Null => Ok(Object::Boolean(true)),
-        _ => Ok(Object::Boolean(false)),
+        Object::Boolean(b) => Ok(Box::new(Object::Boolean(!b))),
+        Object::Null => Ok(Box::new(Object::Boolean(true))),
+        _ => Ok(Box::new(Object::Boolean(false))),
     }
 }
 
-fn evaluate_dash_prefix_operator(expression: &Object) -> Result<Object, EvaluatorError> {
+fn evaluate_dash_prefix_operator(expression: &Object) -> Result<Box<Object>, EvaluatorError> {
     match expression {
-        Object::Integer(i) => Ok(Object::Integer(-i)),
+        Object::Integer(i) => Ok(Box::new(Object::Integer(-i))),
         _ => Err(EvaluatorError::new(format!(
             "Unknown operator: -{:?}",
             expression
@@ -141,15 +150,15 @@ fn evaluate_string_infix_operator(
     operator: &Token,
     left: &String,
     right: &String,
-) -> Result<Object, EvaluatorError> {
+) -> Result<Box<Object>, EvaluatorError> {
     match operator {
         Token::Plus => {
             let mut string = left.clone();
             string.push_str(right);
-            Ok(Object::String(string))
+            Ok(Box::new(Object::String(string)))
         }
-        Token::Eq => Ok(Object::Boolean(left == right)),
-        Token::NotEq => Ok(Object::Boolean(left != right)),
+        Token::Eq => Ok(Box::new(Object::Boolean(left == right))),
+        Token::NotEq => Ok(Box::new(Object::Boolean(left != right))),
 
         _ => Err(EvaluatorError::new(format!(
             "Unknown operator: {:?} {:?} {:?}",
@@ -162,7 +171,7 @@ fn evaluate_boolean_infix_operator(
     operator: &Token,
     left: bool,
     right: bool,
-) -> Result<Object, EvaluatorError> {
+) -> Result<Box<Object>, EvaluatorError> {
     let result = match operator {
         &Token::Eq => Object::Boolean(left == right),
         &Token::NotEq => Object::Boolean(left != right),
@@ -174,14 +183,14 @@ fn evaluate_boolean_infix_operator(
         }
     };
 
-    Ok(result)
+    Ok(Box::new(result))
 }
 
 fn evaluate_integer_infix_operator(
     operator: &Token,
     left: i64,
     right: i64,
-) -> Result<Object, EvaluatorError> {
+) -> Result<Box<Object>, EvaluatorError> {
     let result = match operator {
         &Token::Plus => Object::Integer(left + right),
         &Token::Dash => Object::Integer(left - right),
@@ -204,7 +213,7 @@ fn evaluate_integer_infix_operator(
         }
     };
 
-    Ok(result)
+    Ok(Box::new(result))
 }
 
 #[cfg(test)]
@@ -218,14 +227,19 @@ mod test {
         let l = Lexer::new(input.as_ref());
         let mut p = Parser::new(l);
         let program = p.parse_program();
-        evaluate(Node::Program(program.unwrap())).unwrap()
+        *evaluate(Node::Program(program.unwrap())).unwrap()
     }
 
     fn test_object_is_expected(o: &Object, expected: &Object) {
+        println!("o: {:?}, expected: {:?}", o, expected);
         match (o, expected) {
             (Object::Integer(i), Object::Integer(j)) => assert_eq!(i, j),
             (Object::Boolean(b), Object::Boolean(c)) => assert_eq!(b, c),
             (Object::Null, Object::Null) => assert!(true),
+            (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
+                println!("v1: {:?}, v2: {:?}", v1, v2);
+                test_object_is_expected(v1, v2);
+            }
             (_, _) => panic!("unexpected types {} and {}", o, expected),
         }
     }
@@ -348,6 +362,32 @@ mod test {
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(&evaluated, &expected);
+        }
+    }
+
+    #[test]
+    fn it_evaluates_return_statements() {
+        let tests = vec![
+            ("return 10;", Box::new(10.into())),
+            // ("return 10; 9;", 10.into()),
+            // ("return 2 * 5; 9;", 10.into()),
+            // ("9; return 2 * 5; 9;", 10.into()),
+            // (
+            //     r#"
+            // if (10 > 1) {
+            //     if (10 > 1) {
+            //         return 10;
+            //     }
+            //     return 1;
+            //     }
+            // "#,
+            //     10.into(),
+            // ),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Object::ReturnValue(expected));
         }
     }
 }

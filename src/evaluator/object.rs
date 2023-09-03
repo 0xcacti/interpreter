@@ -5,6 +5,7 @@ pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
+    ReturnValue(Box<Object>),
     Null,
 }
 
@@ -23,6 +24,7 @@ impl Display for Object {
             Object::Integer(i) => write!(f, "{}", i),
             Object::Boolean(b) => write!(f, "{}", b),
             Object::String(s) => write!(f, "{}", s),
+            Object::ReturnValue(o) => write!(f, "{}", o),
             Object::Null => write!(f, "null"),
         }
     }

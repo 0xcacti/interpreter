@@ -59,9 +59,9 @@ fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError
         Expression::If(condition, consequence, alternative) => {
             let condition = evaluate_expression(condition)?;
             if is_truthy(&condition) {
-                evaluate_statement(consequence)
+                evaluate_block_statement(&consequence)
             } else if let Some(alternative) = alternative {
-                evaluate_statement(alternative)
+                evaluate_block_statement(&alternative)
             } else {
                 Ok(Object::Null)
             }
@@ -70,9 +70,9 @@ fn evaluate_expression(expression: &Expression) -> Result<Object, EvaluatorError
     }
 }
 
-fn evaluate_block_statement(block: &BlockStatement) -> Result<Object, EvaluatorError> {
+fn evaluate_block_statement(block: &Vec<Statement>) -> Result<Object, EvaluatorError> {
     let mut result = Object::Null;
-    for statement in &block.statements {
+    for statement in block {
         result = evaluate_statement(statement)?;
     }
     Ok(result)
@@ -225,6 +225,7 @@ mod test {
         match (o, expected) {
             (Object::Integer(i), Object::Integer(j)) => assert_eq!(i, j),
             (Object::Boolean(b), Object::Boolean(c)) => assert_eq!(b, c),
+            (Object::Null, Object::Null) => assert!(true),
             (_, _) => panic!("unexpected types {} and {}", o, expected),
         }
     }

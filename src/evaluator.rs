@@ -700,20 +700,24 @@ mod test {
         let tests = vec![
             ("rest([1, 2, 3])", vec![2, 3]),
             ("rest([1])", vec![]),
-            // ("rest([])", vec![]),
+            ("rest([])", vec![]),
         ];
-        for (input, expected) in &tests {
-            // Using &tests to get a reference, so you don't consume `tests`
-            let evaluated = test_eval(input.to_string());
 
-            let expected_objects: Vec<Rc<Object>> = expected
-                .clone() // Cloning `expected` before consuming it
-                .into_iter()
-                .map(|i| Rc::new(Object::Integer(i)))
-                .collect();
-
-            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Array(expected_objects))));
-        }
+        test_object_is_expected(
+            &test_eval(tests[0].0.to_string()),
+            &Ok(Rc::new(Object::Array(vec![
+                Rc::new(Object::Integer(2)),
+                Rc::new(Object::Integer(3)),
+            ]))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[1].0.to_string()),
+            &Ok(Rc::new(Object::Array(vec![]))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[2].0.to_string()),
+            &Ok(Rc::new(Object::Null)),
+        );
     }
 
     #[test]

@@ -111,12 +111,20 @@ impl Builtin {
                     ))),
                 }
             }
-            _ => Err(EvaluatorError::new(format!(
-                "builtin not implemented: {}",
-                self
-            ))),
-            // Builtin::Echo => echo(args),
-            // Builtin::Echoln => echoln(args),
+            Builtin::Echo => {
+                for arg in args {
+                    print!("{}", arg);
+                }
+
+                Ok(Rc::new(Object::Null))
+            }
+            Builtin::Echoln => {
+                for arg in args {
+                    print!("{}", arg);
+                }
+                println!();
+                Ok(Rc::new(Object::Null))
+            }
         }
     }
 }

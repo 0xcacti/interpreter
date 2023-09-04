@@ -3,12 +3,17 @@ use std::{
     rc::Rc,
 };
 
+use crate::parser::ast::Statement;
+
+use super::environment::Env;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
     ReturnValue(Rc<Object>),
+    Function(Vec<String>, Vec<Statement>, Env),
     Null,
 }
 
@@ -29,6 +34,10 @@ impl Display for Object {
             Object::String(s) => write!(f, "{}", s),
             Object::ReturnValue(o) => write!(f, "{}", o),
             Object::Null => write!(f, "null"),
+            Object::Function(parameters, _, _) => {
+                let params = parameters.join(", ");
+                write!(f, "fn({}) {{...}}", params)
+            }
         }
     }
 }

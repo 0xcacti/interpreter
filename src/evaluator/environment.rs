@@ -5,7 +5,7 @@ use super::object::Object;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     store: HashMap<String, Rc<Object>>,
-    // outer: Option<Rc<RefCell<Environment>>>,
+    outer: Option<Env>,
 }
 
 pub type Env = Rc<RefCell<Environment>>;
@@ -14,18 +14,23 @@ impl Environment {
     pub fn new() -> Self {
         Self {
             store: HashMap::new(),
-            // outer: None,
+            outer: None,
         }
+    }
+
+    pub fn new_enclosed_environment(outer: Env) -> Self {
+        let mut env: Environment = Self::new();
+        env.outer = Some(outer);
+        env
     }
 
     pub fn get(&self, name: &str) -> Option<Rc<Object>> {
         match self.store.get(name) {
             Some(obj) => Some(obj.clone()),
-            None => None,
-            //match &self.outer {
-            //     Some(outer) => outer.borrow().get(name),
-            //     None => None,
-            // },
+            None => match &self.outer {
+                Some(outer) => outer.borrow().get(name),
+                None => None,
+            },
         }
     }
 

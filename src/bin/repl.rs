@@ -38,7 +38,7 @@ fn main() -> Result<()> {
 
         match program {
             Ok(program) => {
-                println!("{}", evaluate(Node::Program(program), &env)?);
+                println!("{}", evaluate(Node::Program(program), Rc::clone(&env))?);
             }
             Err(err) => {
                 println!("Woops! We ran into some monkey business here!");

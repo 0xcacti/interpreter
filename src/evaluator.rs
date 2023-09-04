@@ -2,6 +2,7 @@ pub mod environment;
 pub mod error;
 pub mod object;
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use self::environment::{Env, Environment};
@@ -9,7 +10,7 @@ use self::error::EvaluatorError;
 use self::object::Object;
 use crate::{parser::ast::*, token::Token};
 
-pub fn evaluate(node: Node, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
+pub fn evaluate(node: Node, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match node {
         Node::Program(program) => evaluate_statements(&program, env),
         Node::Statement(statement) => evaluate_statement(&statement, env),
@@ -19,13 +20,12 @@ pub fn evaluate(node: Node, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
 
 fn evaluate_statements(
     statements: &Vec<Statement>,
-    env: &Env,
+    env: Env,
 ) -> Result<Rc<Object>, EvaluatorError> {
     let mut result = Rc::new(Object::Null);
 
     for statement in statements {
-        let intermediate_value = evaluate_statement(statement, env)?; // I want to figure out why I
-                                                                      // need to do an RC here
+        let intermediate_value = evaluate_statement(statement, Rc::clone(&env))?;
 
         match *intermediate_value {
             Object::ReturnValue(_) => return Ok(intermediate_value),
@@ -35,16 +35,16 @@ fn evaluate_statements(
     Ok(result)
 }
 
-fn evaluate_statement(statement: &Statement, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
+fn evaluate_statement(statement: &Statement, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match statement {
         Statement::Let(name, expression) => {
-            let value = evaluate_expression(expression, env)?;
+            let value = evaluate_expression(expression, Rc::clone(&env))?;
             let object = Rc::clone(&value);
             env.borrow_mut().set(name.to_string(), object);
             return Ok(value);
         }
         Statement::Return(expression) => {
-            let value = evaluate_expression(expression, env)?;
+            let value = evaluate_expression(expression, Rc::clone(&env))?;
             return Ok(Rc::new(Object::ReturnValue(value)));
         }
         Statement::Expression(expression) => evaluate_expression(expression, env),
@@ -59,35 +59,85 @@ fn is_truthy(object: &Object) -> bool {
     }
 }
 
-fn evaluate_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
+fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match expression {
-        Expression::Identifier(identifier) => evaluate_identifier(identifier, env),
-        Expression::Literal(literal) => evaluate_literal(literal, env),
+        Expression::Identifier(identifier) => evaluate_identifier(identifier, Rc::clone(&env)),
+        Expression::Literal(literal) => evaluate_literal(literal, Rc::clone(&env)),
         Expression::Prefix(operator, expression) => {
             let right = evaluate_expression(expression, env)?;
             evaluate_prefix_expression(operator, &right)
         }
         Expression::Infix(left, operator, right) => {
-            let left = evaluate_expression(left, env)?;
-            let right = evaluate_expression(right, env)?;
+            let left = evaluate_expression(left, Rc::clone(&env))?;
+            let right = evaluate_expression(right, Rc::clone(&env))?;
             evaluate_infix_expression(operator, &left, &right)
         }
 
         Expression::If(condition, consequence, alternative) => {
-            let condition = evaluate_expression(condition, env)?;
+            let condition = evaluate_expression(condition, Rc::clone(&env))?;
             if is_truthy(&condition) {
-                evaluate_block_statement(&consequence, env)
+                evaluate_block_statement(&consequence, Rc::clone(&env))
             } else if let Some(alternative) = alternative {
-                evaluate_block_statement(&alternative, env)
+                evaluate_block_statement(&alternative, Rc::clone(&env))
             } else {
                 Ok(Rc::new(Object::Null))
             }
+        }
+        Expression::Function(parameters, body) => Ok(Rc::new(Object::Function(
+            parameters.clone(),
+            body.clone(),
+            Rc::clone(&env),
+        ))),
+
+        Expression::FunctionCall(function, arguments) => {
+            let function = evaluate_expression(function, Rc::clone(&env))?;
+            let arguments = evaluate_expressions(arguments, Rc::clone(&env))?;
+            apply_function(Rc::clone(&function), &arguments)
         }
         _ => Ok(Rc::new(Object::Null)),
     }
 }
 
-fn evaluate_identifier(identifier: &str, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
+fn evaluate_expressions(
+    expressions: &Vec<Expression>,
+    env: Env,
+) -> Result<Vec<Rc<Object>>, EvaluatorError> {
+    let mut result = Vec::new();
+    for expression in expressions {
+        let evaluated = evaluate_expression(expression, Rc::clone(&env))?;
+        result.push(evaluated);
+    }
+    Ok(result)
+}
+
+fn apply_function(
+    function: Rc<Object>,
+    args: &Vec<Rc<Object>>,
+) -> Result<Rc<Object>, EvaluatorError> {
+    match &*function {
+        Object::Function(parameters, body, env) => {
+            let mut env = Environment::new_enclosed_environment(Rc::clone(&env));
+            if parameters.len() != args.len() {
+                return Err(EvaluatorError::new(format!(
+                    "wrong number of arguments: got={}, want={}",
+                    args.len(),
+                    parameters.len()
+                )));
+            }
+            for (i, parameter) in parameters.iter().enumerate() {
+                env.set(parameter.to_string(), Rc::clone(&args[i]));
+            }
+            let executed = evaluate_block_statement(&body, Rc::new(RefCell::new(env)))?;
+            match &*executed {
+                Object::ReturnValue(value) => Ok(Rc::clone(value)),
+                _ => Ok(executed),
+            }
+        }
+        _ => Err(EvaluatorError::new(format!("not a function: {}", function))),
+    }
+}
+
+fn evaluate_identifier(identifier: &str, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match env.borrow().get(identifier) {
         Some(object) => Ok(object),
         None => Err(EvaluatorError::new(format!(
@@ -99,11 +149,11 @@ fn evaluate_identifier(identifier: &str, env: &Env) -> Result<Rc<Object>, Evalua
 
 fn evaluate_block_statement(
     block: &Vec<Statement>,
-    env: &Env,
+    env: Env,
 ) -> Result<Rc<Object>, EvaluatorError> {
     let mut result = Rc::new(Object::Null);
     for statement in block {
-        let intermediate_value = evaluate_statement(statement, env)?;
+        let intermediate_value = evaluate_statement(statement, Rc::clone(&env))?;
         match *result {
             Object::ReturnValue(_) => return Ok(result),
             _ => result = intermediate_value,
@@ -112,7 +162,7 @@ fn evaluate_block_statement(
     Ok(result)
 }
 
-fn evaluate_literal(literal: &Literal, env: &Env) -> Result<Rc<Object>, EvaluatorError> {
+fn evaluate_literal(literal: &Literal, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match literal {
         Literal::Integer(integer) => Ok(Rc::new(Object::Integer(*integer))),
         Literal::Boolean(boolean) => Ok(Rc::new(Object::Boolean(*boolean))),
@@ -256,7 +306,7 @@ mod test {
         let program = p.parse_program();
         evaluate(
             Node::Program(program.unwrap()),
-            &Rc::new(RefCell::new(Environment::new())),
+            Rc::new(RefCell::new(Environment::new())),
         )
     }
 
@@ -464,11 +514,30 @@ mod test {
 
     #[test]
     fn it_evaluates_let_statement() {
-        let tests = [
+        let tests = vec![
             ("let a = 5; a;", 5.into()),
             ("let a = 5 * 5; a;", 25.into()),
             ("let a = 5; let b = a; b;", 5.into()),
             ("let a = 5; let b = a; let c = a + b + 5; c;", 15.into()),
+        ];
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_functions() {
+        let tests = vec![
+            ("let identity = fn(x) { x; }; identity(5);", 5.into()),
+            ("let identity = fn(x) { return x; }; identity(5);", 5.into()),
+            ("let double = fn(x) { x * 2; }; double(5);", 10.into()),
+            ("let add = fn(x, y) { x + y; }; add(5, 5);", 10.into()),
+            (
+                "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+                20.into(),
+            ),
+            ("fn(x) { x; }(5)", 5.into()),
         ];
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());

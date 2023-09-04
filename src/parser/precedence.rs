@@ -9,6 +9,7 @@ pub enum Precedence {
     Product,     // *
     Prefix,      // -X or !X
     Call,        // myFunction(X)
+    Index,
 }
 
 pub fn token_precedence(token: &Token) -> Precedence {
@@ -18,6 +19,7 @@ pub fn token_precedence(token: &Token) -> Precedence {
         Token::Lt | Token::Gt => Precedence::LessGreater,
         Token::Slash | Token::Asterisk => Precedence::Product,
         Token::Lparen => Precedence::Call,
+        Token::LBracket => Precedence::Index,
         _ => Precedence::Lowest,
     }
 }

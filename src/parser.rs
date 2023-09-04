@@ -270,14 +270,19 @@ impl Parser {
             self.next_token();
             return Ok(arguments);
         }
+
         self.next_token();
+
         arguments.push(self.parse_expression(Precedence::Lowest)?);
+
         while self.peek_token_is(&Token::Comma) {
             self.next_token();
             self.next_token();
             arguments.push(self.parse_expression(Precedence::Lowest)?);
         }
+
         self.expect_peek_token(ending_token)?;
+
         Ok(arguments)
     }
 
@@ -558,19 +563,20 @@ mod test {
         let without_parens = r#"
             3 + 4;
            -5 * 5;
-           -a * b
-           !-a
-           a + b + c
-           a + b - c
-           a * b * c
-           a * b / c
-           a + b / c
-           a + b * c + d / e - f
-           5 > 4 == 3 < 4
-           5 < 4 != 3 > 4
-           3 + 4 * 5 == 3 * 1 + 4 * 5
-            "#;
-        // "#;
+           -a * b;
+           !-a;
+           a + b + c;
+           a + b - c;
+           a * b * c;
+           a * b / c;
+           a + b / c;
+           a + b * c + d / e - f;
+           5 > 4 == 3 < 4;
+           5 < 4 != 3 > 4;
+           3 + 4 * 5 == 3 * 1 + 4 * 5;
+           a * [1, 2, 3, 4][b * c] * d;
+           add(a * b[2], b[1], 2 * [1, 2][1]);
+        "#;
         let with_parens = r#"
             (3 + 4);
             ((-5) * 5);
@@ -585,6 +591,8 @@ mod test {
             ((5 > 4) == (3 < 4));
             ((5 < 4) != (3 > 4));
             ((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));
+            ((a * ([1, 2, 3, 4][(b * c)])) * d);
+            add((a * (b[2])), (b[1]), (2 * ([1, 2][1])));
             "#;
         // "#;
 
@@ -812,17 +820,17 @@ mod test {
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        assert_eq!(program.len(), 2);
-        println!("{:?}", program);
-        println!("====================");
-        check_expression_statement(&program[0], &Expression::Identifier("myArray".into()));
+        assert_eq!(program.len(), 1);
         check_expression_statement(
-            &program[1],
-            &Expression::Literal(Literal::Array(vec![Expression::Infix(
-                Box::new(Expression::Literal(Literal::Integer(1))),
-                Token::Plus,
-                Box::new(Expression::Literal(Literal::Integer(1))),
-            )])),
+            &program[0],
+            &Expression::Index(
+                Box::new(Expression::Identifier("myArray".into())),
+                Box::new(Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(1))),
+                    Token::Plus,
+                    Box::new(Expression::Literal(Literal::Integer(1))),
+                )),
+            ),
         );
     }
 
@@ -946,6 +954,13 @@ mod test {
                 {
                     check_expression(argument, expected_argument);
                 }
+            }
+            (
+                Expression::Index(left_expr, index_expr),
+                Expression::Index(expected_left_expr, expected_index_expr),
+            ) => {
+                check_expression(&**left_expr, &**expected_left_expr);
+                check_expression(&**index_expr, &**expected_index_expr);
             }
             // ... other expression variants can be added as necessary ...
             _ => panic!("Expression type mismatch"),

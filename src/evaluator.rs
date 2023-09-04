@@ -721,11 +721,56 @@ mod test {
     }
 
     #[test]
-    fn it_evaluates_builtin_first() {}
+    fn it_evaluates_builtin_first() {
+        let tests = vec![("first([1, 2, 3])", 1), ("first([1])", 1), ("first([])", 0)];
+
+        test_object_is_expected(
+            &test_eval(tests[0].0.to_string()),
+            &Ok(Rc::new(Object::Integer(1))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[1].0.to_string()),
+            &Ok(Rc::new(Object::Integer(1))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[2].0.to_string()),
+            &Ok(Rc::new(Object::Null)),
+        );
+    }
 
     #[test]
-    fn it_evaluates_builtin_last() {}
+    fn it_evaluates_builtin_last() {
+        let tests = vec![("last([1, 2, 3])", 3), ("last([1])", 1), ("last([])", 0)];
+
+        test_object_is_expected(
+            &test_eval(tests[0].0.to_string()),
+            &Ok(Rc::new(Object::Integer(3))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[1].0.to_string()),
+            &Ok(Rc::new(Object::Integer(1))),
+        );
+        test_object_is_expected(
+            &test_eval(tests[2].0.to_string()),
+            &Ok(Rc::new(Object::Null)),
+        );
+    }
 
     #[test]
-    fn it_evaluates_builtin_push() {}
+    fn it_evaluates_builtin_push() {
+        let tests = vec![
+            ("push([], 1)", vec![1]),
+            ("push([1], 2)", vec![1, 2]),
+            ("push([1, 2], 3)", vec![1, 2, 3]),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            let expected_objects = expected
+                .into_iter()
+                .map(|i| Rc::new(Object::Integer(i)))
+                .collect();
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Array(expected_objects))));
+        }
+    }
 }

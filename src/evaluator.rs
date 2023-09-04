@@ -458,20 +458,20 @@ mod test {
     fn it_evaluates_return_statements() {
         let tests = vec![
             ("return 10;", Rc::new(10.into())),
-            // ("return 10; 9;", 10.into()),
-            // ("return 2 * 5; 9;", 10.into()),
-            // ("9; return 2 * 5; 9;", 10.into()),
-            // (
-            //     r#"
-            // if (10 > 1) {
-            //     if (10 > 1) {
-            //         return 10;
-            //     }
-            //     return 1;
-            //     }
-            // "#,
-            //     10.into(),
-            // ),
+            ("return 10; 9;", Rc::new(10.into())),
+            ("return 2 * 5; 9;", Rc::new(10.into())),
+            ("9; return 2 * 5; 9;", Rc::new(10.into())),
+            (
+                r#"
+             if (10 > 1) {
+                 if (10 > 1) {
+                     return 10;
+                 }
+                 return 1;
+                 }
+             "#,
+                Rc::new(10.into()),
+            ),
         ];
 
         for (input, expected) in tests {

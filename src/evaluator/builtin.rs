@@ -41,14 +41,80 @@ impl Builtin {
                     ))),
                 }
             }
+            Builtin::First => {
+                check_argument_count(1, args.len())?;
+                match *args[0] {
+                    Object::Array(ref a) => {
+                        if a.len() > 0 {
+                            Ok(a[0].clone())
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvaluatorError::new(format!(
+                        "argument to `first` must be ARRAY, got {}",
+                        args[0]
+                    ))),
+                }
+            }
+
+            Builtin::Last => {
+                check_argument_count(1, args.len())?;
+                match *args[0] {
+                    Object::Array(ref a) => {
+                        if a.len() > 0 {
+                            Ok(a[a.len() - 1].clone())
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvaluatorError::new(format!(
+                        "argument to `last` must be ARRAY, got {}",
+                        args[0]
+                    ))),
+                }
+            }
+            Builtin::Rest => {
+                check_argument_count(1, args.len())?;
+                match *args[0] {
+                    Object::Array(ref a) => {
+                        if a.len() > 0 {
+                            let mut new_array = Vec::new();
+                            for i in 1..a.len() {
+                                new_array.push(a[i].clone());
+                            }
+                            Ok(Rc::new(Object::Array(new_array)))
+                        } else {
+                            Ok(Rc::new(Object::Null))
+                        }
+                    }
+                    _ => Err(EvaluatorError::new(format!(
+                        "argument to `rest` must be ARRAY, got {}",
+                        args[0]
+                    ))),
+                }
+            }
+            Builtin::Push => {
+                check_argument_count(2, args.len())?;
+                match *args[0] {
+                    Object::Array(ref a) => {
+                        let mut new_array = Vec::new();
+                        for i in 0..a.len() {
+                            new_array.push(a[i].clone());
+                        }
+                        new_array.push(args[1].clone());
+                        Ok(Rc::new(Object::Array(new_array)))
+                    }
+                    _ => Err(EvaluatorError::new(format!(
+                        "argument to `push` must be ARRAY, got {}",
+                        args[0]
+                    ))),
+                }
+            }
             _ => Err(EvaluatorError::new(format!(
                 "builtin not implemented: {}",
                 self
             ))),
-            // Builtin::First => first(args),
-            // Builtin::Last => last(args),
-            // Builtin::Rest => rest(args),
-            // Builtin::Push => push(args),
             // Builtin::Echo => echo(args),
             // Builtin::Echoln => echoln(args),
         }

@@ -318,6 +318,7 @@ mod test {
             (Ok(object), Ok(expected_object)) => match (&**object, &**expected_object) {
                 (Object::Integer(i), Object::Integer(j)) => assert_eq!(i, j),
                 (Object::Boolean(b), Object::Boolean(c)) => assert_eq!(b, c),
+                (Object::String(s), Object::String(t)) => assert_eq!(s, t),
                 (Object::Null, Object::Null) => assert!(true),
                 (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
                     println!("v1: {:?}, v2: {:?}", v1, v2);
@@ -416,25 +417,24 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn it_evaluates_string_infix_expressions() {
-    //     let tests = vec![
-    //         (
-    //             r#""Hello" + " " + "World""#,
-    //             "Hello World".to_string().into(),
-    //         ),
-    //         (r#""Hello" == "Hello""#, true.into()),
-    //         (r#""Hello" != "Hello""#, false.into()),
-    //         (r#""Hello" == "World""#, false.into()),
-    //         (r#""Hello" != "World""#, true.into()),
-    //     ];
+    #[test]
+    fn it_evaluates_string_infix_expressions() {
+        let tests = vec![
+            (
+                r#""Hello" + " " + "World""#,
+                "Hello World".to_string().into(),
+            ),
+            (r#""Hello" == "Hello""#, true.into()),
+            (r#""Hello" != "Hello""#, false.into()),
+            (r#""Hello" == "World""#, false.into()),
+            (r#""Hello" != "World""#, true.into()),
+        ];
 
-    //     for (input, expected) in tests {
-    //         let evaluated = test_eval(input.to_string());
-    //         test_object_is_expected(&evaluated, &expected);
-    //     }
-    // }
-    //
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
+        }
+    }
 
     #[test]
     fn it_evaluates_if_else_expressions() {

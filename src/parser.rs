@@ -119,6 +119,7 @@ impl Parser {
             }
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_function_expression()?,
+            Token::String(ref s) => Expression::Literal(Literal::String(s.clone())),
             _ => {
                 return Err(ParserError::new(format!(
                     "parse error: no prefix parse function for {} found",
@@ -752,6 +753,21 @@ mod test {
         for (statement, expected_statement) in program.iter().zip(expected_program.iter()) {
             assert_eq!(statement, expected_statement);
         }
+    }
+
+    #[test]
+    fn it_parses_string_literal_expressions() {
+        let input = r#"
+                "hello world";
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 1);
+        check_expression_statement(
+            &program[0],
+            &Expression::Literal(Literal::String("hello world".into())),
+        );
     }
 
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {

@@ -51,6 +51,7 @@ impl Lexer {
             b'>' => Token::Gt,
             b'*' => Token::Asterisk,
             b'/' => Token::Slash,
+            b'"' => Token::String(self.read_string()),
 
             0 => Token::Eof,
             _ => Token::Illegal,
@@ -58,6 +59,17 @@ impl Lexer {
 
         self.read_char();
         return tok;
+    }
+
+    fn read_string(&mut self) -> String {
+        let position = self.position + 1;
+        loop {
+            self.read_char();
+            if self.ch == b'"' || self.ch == 0 {
+                break;
+            }
+        }
+        return String::from_utf8_lossy(&self.input[position..self.position]).to_string();
     }
 
     fn single_or_double(
@@ -168,6 +180,8 @@ mod test {
 
         10 == 10;
         10 != 9;
+        "foobar"
+        "foo bar" 
         "#;
         let mut lexer = Lexer::new(input.into());
 
@@ -245,6 +259,8 @@ mod test {
             Token::NotEq,
             Token::Int(9),
             Token::Semicolon,
+            Token::String(String::from("foobar")),
+            Token::String(String::from("foo bar")),
             Token::Eof,
         ];
 

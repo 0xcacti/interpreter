@@ -323,6 +323,7 @@ impl Parser {
                 self.expect_peek_token(&Token::Comma)?;
             }
         }
+        self.expect_peek_token(&Token::Rbrace)?;
         Ok(Expression::Literal(Literal::Hash(map)))
     }
 
@@ -872,6 +873,96 @@ mod test {
         check_expression_statement(&program[2], &Expression::Literal(Literal::Array(vec![])));
     }
 
+    #[test]
+    fn it_parses_hash_literal_expressions() {
+        let input = r#"
+                {"one": 1, "two": 2, "three": 3};
+                {"one": 0 + 1, "two": 10 - 8, "three": 15 / 5};
+                {"one": 0 + 1, "two": 10 - 8, "three": 15 / 5};
+                {};"#;
+
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 4);
+        check_expression_statement(
+            &program[0],
+            &Expression::Literal(Literal::Hash(vec![
+                (
+                    Expression::Literal(Literal::String("one".into())),
+                    Expression::Literal(Literal::Integer(1)),
+                ),
+                (
+                    Expression::Literal(Literal::String("two".into())),
+                    Expression::Literal(Literal::Integer(2)),
+                ),
+                (
+                    Expression::Literal(Literal::String("three".into())),
+                    Expression::Literal(Literal::Integer(3)),
+                ),
+            ])),
+        );
+
+        // check_expression_statement(
+        //     &program[1],
+        //     &Expression::Literal(Literal::Hash(vec![
+        //         (
+        //             Expression::Literal(Literal::String("one".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(0))),
+        //                 Token::Plus,
+        //                 Box::new(Expression::Literal(Literal::Integer(1))),
+        //             ),
+        //         ),
+        //         (
+        //             Expression::Literal(Literal::String("two".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(10))),
+        //                 Token::Dash,
+        //                 Box::new(Expression::Literal(Literal::Integer(8))),
+        //             ),
+        //         ),
+        //         (
+        //             Expression::Literal(Literal::String("three".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(15))),
+        //                 Token::Slash,
+        //                 Box::new(Expression::Literal(Literal::Integer(5))),
+        //             ),
+        //         ),
+        //     ])),
+        // );
+        // check_expression_statement(
+        //     &program[2],
+        //     &Expression::Literal(Literal::Hash(vec![
+        //         (
+        //             Expression::Literal(Literal::String("one".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(0))),
+        //                 Token::Plus,
+        //                 Box::new(Expression::Literal(Literal::Integer(1))),
+        //             ),
+        //         ),
+        //         (
+        //             Expression::Literal(Literal::String("two".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(10))),
+        //                 Token::Dash,
+        //                 Box::new(Expression::Literal(Literal::Integer(8))),
+        //             ),
+        //         ),
+        //         (
+        //             Expression::Literal(Literal::String("three".into())),
+        //             Expression::Infix(
+        //                 Box::new(Expression::Literal(Literal::Integer(15))),
+        //                 Token::Slash,
+        //                 Box::new(Expression::Literal(Literal::Integer(5))),
+        //             ),
+        //         ),
+        //     ])),
+        // );
+    }
+
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
         match statement {
             Statement::Expression(expression) => check_expression(expression, expected_value),
@@ -896,6 +987,15 @@ mod test {
                         assert_eq!(a.len(), expected_a.len());
                         for (expr, expected_expr) in a.iter().zip(expected_a.iter()) {
                             check_expression(expr, expected_expr);
+                        }
+                    }
+                    (Literal::Hash(h), Literal::Hash(expected_h)) => {
+                        assert_eq!(h.len(), expected_h.len());
+                        for i in 0..h.len() {
+                            let (key, value) = &h[i];
+                            let (expected_key, expected_value) = &expected_h[i];
+                            check_expression(key, expected_key);
+                            check_expression(value, expected_value);
                         }
                     }
                     _ => panic!("Literal type mismatch"),

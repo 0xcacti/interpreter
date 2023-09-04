@@ -35,6 +35,7 @@ impl Lexer {
             b'-' => Token::Dash,
             b'{' => Token::Lbrace,
             b'}' => Token::Rbrace,
+            b':' => Token::Colon,
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                 let ident = self.read_ident();
                 return match ident.as_str() {
@@ -185,6 +186,7 @@ mod test {
         "foobar"
         "foo bar" 
         [1, 2];
+        {"foo": "bar"}
         "#;
         let mut lexer = Lexer::new(input.into());
 
@@ -270,6 +272,11 @@ mod test {
             Token::Int(2),
             Token::RBracket,
             Token::Semicolon,
+            Token::Lbrace,
+            Token::String(String::from("foo")),
+            Token::Colon,
+            Token::String(String::from("bar")),
+            Token::Rbrace,
             Token::Eof,
         ];
 

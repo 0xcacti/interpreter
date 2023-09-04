@@ -378,6 +378,12 @@ mod test {
                         test_object_is_expected(&Ok(v.clone()), &Ok(b[i].clone()));
                     }
                 }
+                (Object::Hash(a), Object::Hash(b)) => {
+                    assert_eq!(a.len(), b.len());
+                    for (k, v) in a.iter() {
+                        test_object_is_expected(&Ok(v.clone()), &Ok(b[k].clone()));
+                    }
+                }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
             },
             (Err(e), Err(expected_err)) => assert_eq!(e.msg, expected_err.msg),
@@ -771,6 +777,56 @@ mod test {
                 .map(|i| Rc::new(Object::Integer(i)))
                 .collect();
             test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Array(expected_objects))));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_hash_literals() {
+        let tests = vec![(
+            r#"let two = "two"
+                {
+                    "one": 10 - 9,
+                    two: 1 + 1,
+                    "thr" + "ee": 6 / 2,
+                    4: 4,
+                    true: 5,
+                    false: 6
+                }"#,
+            vec![
+                (Object::String("one".to_string()), Object::Integer(1)),
+                (Object::String("two".to_string()), Object::Integer(2)),
+                (Object::String("three".to_string()), Object::Integer(3)),
+                (Object::Integer(4), Object::Integer(4)),
+                (Object::Boolean(true), Object::Integer(5)),
+                (Object::Boolean(false), Object::Integer(6)),
+            ],
+        )];
+
+        for (input, expected) in &tests {
+            let evaluated = test_eval(input.to_string());
+            let expected_hash: HashMap<Rc<Object>, Rc<Object>> = expected
+                .iter()
+                .map(|(k, v)| (Rc::new(k.clone()), Rc::new(v.clone())))
+                .collect();
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Hash(expected_hash))));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_hash_index_expressions() {
+        let tests = vec![
+            (r#"{"foo": 5}["foo"]"#, Object::Integer(5)),
+            (r#"{"foo": 5}["bar"]"#, Object::Null),
+            (r#"let key = "foo"; {"foo": 5}[key]"#, Object::Integer(5)),
+            (r#"{}["foo"]"#, Object::Null),
+            (r#"{5: 5}[5]"#, Object::Integer(5)),
+            (r#"{true: 5}[true]"#, Object::Integer(5)),
+            (r#"{false: 5}[false]"#, Object::Integer(5)),
+        ];
+
+        for (input, expected) in &tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(expected.clone())));
         }
     }
 }

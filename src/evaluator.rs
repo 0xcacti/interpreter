@@ -343,6 +343,12 @@ mod test {
                 (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
                     test_object_is_expected(&Ok(v1.clone()), &Ok(v2.clone()));
                 }
+                (Object::Array(a), Object::Array(b)) => {
+                    assert_eq!(a.len(), b.len());
+                    for (i, v) in a.iter().enumerate() {
+                        test_object_is_expected(&Ok(v.clone()), &Ok(b[i].clone()));
+                    }
+                }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
             },
             (Err(e), Err(expected_err)) => assert_eq!(e.msg, expected_err.msg),
@@ -612,6 +618,23 @@ mod test {
         for (input, expected) in test {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_array_literal_expressions() {
+        let tests = vec![
+            ("[1, 2 * 2, 3 + 3]", vec![1, 4, 6]),
+            ("[]", vec![]),
+            ("[1 + 2, 3 * 4, 5 + 6]", vec![3, 12, 11]),
+        ];
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            let expected_objects = expected
+                .into_iter()
+                .map(|i| Rc::new(Object::Integer(i)))
+                .collect();
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Array(expected_objects))));
         }
     }
 }

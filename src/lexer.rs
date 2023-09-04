@@ -28,6 +28,8 @@ impl Lexer {
             b';' => Token::Semicolon,
             b'(' => Token::Lparen,
             b')' => Token::Rparen,
+            b'[' => Token::LBracket,
+            b']' => Token::RBracket,
             b',' => Token::Comma,
             b'+' => Token::Plus,
             b'-' => Token::Dash,
@@ -182,6 +184,7 @@ mod test {
         10 != 9;
         "foobar"
         "foo bar" 
+        [1, 2];
         "#;
         let mut lexer = Lexer::new(input.into());
 
@@ -261,6 +264,12 @@ mod test {
             Token::Semicolon,
             Token::String(String::from("foobar")),
             Token::String(String::from("foo bar")),
+            Token::LBracket,
+            Token::Int(1),
+            Token::Comma,
+            Token::Int(2),
+            Token::RBracket,
+            Token::Semicolon,
             Token::Eof,
         ];
 

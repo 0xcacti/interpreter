@@ -1,3 +1,4 @@
+pub mod builtin;
 pub mod environment;
 pub mod error;
 pub mod object;

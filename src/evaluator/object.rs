@@ -1,8 +1,11 @@
 use std::{
+    collections::HashMap,
     fmt::{Display, Formatter, Result},
+    hash::{Hash, Hasher},
     rc::Rc,
 };
 
+use crate::evaluator::builtin::Builtin;
 use crate::parser::ast::Statement;
 
 use super::environment::Env;
@@ -12,10 +15,15 @@ pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
+    Array(Vec<Rc<Object>>),
+    Hash(HashMap<Rc<Object>, Rc<Object>>),
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
+    Builtin(Builtin),
     Null,
 }
+
+impl Eq for Object {}
 
 impl Object {
     pub fn is_integer(&self) -> bool {
@@ -38,6 +46,18 @@ impl Display for Object {
                 let params = parameters.join(", ");
                 write!(f, "fn({}) {{...}}", params)
             }
+            Object::Builtin(b) => write!(f, "{}", b),
+            Object::Array(a) => {
+                let elements: Vec<String> = a.iter().map(|e| format!("{}", e)).collect();
+                write!(f, "[{}]", elements.join(", "))
+            }
+            Object::Hash(h) => {
+                let mut pairs: Vec<String> = Vec::new();
+                for (k, v) in h.iter() {
+                    pairs.push(format!("{}: {}", k, v));
+                }
+                write!(f, "{{{}}}", pairs.join(", "))
+            }
         }
     }
 }
@@ -57,5 +77,43 @@ impl From<i64> for Object {
 impl From<String> for Object {
     fn from(s: String) -> Self {
         Object::String(s)
+    }
+}
+
+impl Object {
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Object::Boolean(b) => *b,
+            Object::Null => false,
+            _ => true,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Object::String(s) => s.is_empty(),
+            Object::Array(a) => a.is_empty(),
+            _ => false,
+        }
+    }
+
+    pub fn is_hashable(&self) -> bool {
+        match self {
+            Object::Integer(_) => true,
+            Object::Boolean(_) => true,
+            Object::String(_) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Hash for Object {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Object::Integer(i) => i.hash(state),
+            Object::Boolean(b) => b.hash(state),
+            Object::String(s) => s.hash(state),
+            _ => "".hash(state),
+        }
     }
 }

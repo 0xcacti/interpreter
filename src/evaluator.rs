@@ -97,6 +97,12 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
             let arguments = evaluate_expressions(arguments, Rc::clone(&env))?;
             apply_function(Rc::clone(&function), &arguments)
         }
+
+        Expression::Index(left, index) => {
+            let left = evaluate_expression(left, Rc::clone(&env))?;
+            let index = evaluate_expression(index, Rc::clone(&env))?;
+            evaluate_index_expression(&left, &index)
+        }
         _ => Ok(Rc::new(Object::Null)),
     }
 }
@@ -309,6 +315,29 @@ fn evaluate_integer_infix_operator(
     };
 
     Ok(Rc::new(result))
+}
+
+fn evaluate_index_expression(left: &Object, index: &Object) -> Result<Rc<Object>, EvaluatorError> {
+    match (left, index) {
+        (Object::Array(elements), Object::Integer(i)) => {
+            let i = *i as usize;
+            if i >= elements.len() {
+                return Ok(Rc::new(Object::Null));
+            }
+            Ok(Rc::clone(&elements[i]))
+        }
+        (Object::Hash(hash), index) => {
+            let key = index.clone();
+            match hash.get(&key) {
+                Some(value) => Ok(Rc::clone(value)),
+                None => Ok(Rc::new(Object::Null)),
+            }
+        }
+        _ => Err(EvaluatorError::new(format!(
+            "index operator not supported: {}",
+            left
+        ))),
+    }
 }
 
 #[cfg(test)]
@@ -635,6 +664,34 @@ mod test {
                 .map(|i| Rc::new(Object::Integer(i)))
                 .collect();
             test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Array(expected_objects))));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_array_index_expressions() {
+        let tests = vec![
+            ("[1, 2, 3][0]", 1),
+            ("[1, 2, 3][1]", 2),
+            ("[1, 2, 3][2]", 3),
+            ("let i = 0; [1][i];", 1),
+            ("[1, 2, 3][1 + 1];", 3),
+            ("let myArray = [1, 2, 3]; myArray[2];", 3),
+            (
+                "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+                6,
+            ),
+            ("let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2),
+            //  ("[1, 2, 3][3]", 0),
+            //  ("[1, 2, 3][-1]", 0),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            if expected == 0 {
+                test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Null)));
+            } else {
+                test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Integer(expected))));
+            }
         }
     }
 }

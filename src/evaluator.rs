@@ -4,6 +4,7 @@ pub mod error;
 pub mod object;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use self::environment::{Env, Environment};
@@ -168,6 +169,19 @@ fn evaluate_literal(literal: &Literal, env: Env) -> Result<Rc<Object>, Evaluator
         Literal::Integer(integer) => Ok(Rc::new(Object::Integer(*integer))),
         Literal::Boolean(boolean) => Ok(Rc::new(Object::Boolean(*boolean))),
         Literal::String(string) => Ok(Rc::new(Object::String(string.clone()))),
+        Literal::Array(elements) => {
+            let elements = evaluate_expressions(elements, Rc::clone(&env))?;
+            Ok(Rc::new(Object::Array(elements)))
+        }
+        Literal::Hash(pairs) => {
+            let mut hash = HashMap::new();
+            for (key, value) in pairs {
+                let key = evaluate_expression(key, Rc::clone(&env))?;
+                let value = evaluate_expression(value, Rc::clone(&env))?;
+                hash.insert(key, value);
+            }
+            Ok(Rc::new(Object::Hash(hash)))
+        }
     }
 }
 

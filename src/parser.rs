@@ -119,6 +119,7 @@ impl Parser {
             }
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_function_expression()?,
+            Token::LBracket => self.parse_array_literal()?,
             Token::String(ref s) => Expression::Literal(Literal::String(s.clone())),
             _ => {
                 return Err(ParserError::new(format!(
@@ -193,6 +194,11 @@ impl Parser {
         self.expect_peek_token(&Token::Lbrace)?;
         let body = self.parse_block_statement()?;
         Ok(Expression::Function(parameters, body))
+    }
+
+    fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
+        let elements = self.parse_expression_list(&Token::RBracket)?;
+        Ok(Expression::Literal(Literal::Array(elements)))
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, ParserError> {
@@ -770,6 +776,44 @@ mod test {
         );
     }
 
+    #[test]
+    fn it_parses_array_literal_expressions() {
+        let input = r#"
+                [1, 2 * 2, 3 + 3];
+                [1, 2, 3];
+                [];
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 3);
+        check_expression_statement(
+            &program[0],
+            &Expression::Literal(Literal::Array(vec![
+                Expression::Literal(Literal::Integer(1)),
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(2))),
+                    Token::Asterisk,
+                    Box::new(Expression::Literal(Literal::Integer(2))),
+                ),
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(3))),
+                    Token::Plus,
+                    Box::new(Expression::Literal(Literal::Integer(3))),
+                ),
+            ])),
+        );
+        check_expression_statement(
+            &program[1],
+            &Expression::Literal(Literal::Array(vec![
+                Expression::Literal(Literal::Integer(1)),
+                Expression::Literal(Literal::Integer(2)),
+                Expression::Literal(Literal::Integer(3)),
+            ])),
+        );
+        check_expression_statement(&program[2], &Expression::Literal(Literal::Array(vec![])));
+    }
+
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
         match statement {
             Statement::Expression(expression) => check_expression(expression, expected_value),
@@ -789,6 +833,12 @@ mod test {
                     }
                     (Literal::Boolean(b), Literal::Boolean(expected_b)) => {
                         assert_eq!(b, expected_b);
+                    }
+                    (Literal::Array(a), Literal::Array(expected_a)) => {
+                        assert_eq!(a.len(), expected_a.len());
+                        for (expr, expected_expr) in a.iter().zip(expected_a.iter()) {
+                            check_expression(expr, expected_expr);
+                        }
                     }
                     _ => panic!("Literal type mismatch"),
                 }

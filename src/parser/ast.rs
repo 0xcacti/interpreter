@@ -7,6 +7,8 @@ pub enum Literal {
     Integer(i64),
     Boolean(bool),
     String(String),
+    Array(Vec<Expression>),
+    Hash(Vec<(Expression, Expression)>),
 }
 
 impl Display for Literal {
@@ -15,6 +17,26 @@ impl Display for Literal {
             Literal::Integer(i) => write!(f, "{}", *i),
             Literal::String(s) => write!(f, "{}", s),
             Literal::Boolean(s) => write!(f, "{}", s),
+            Literal::Array(a) => {
+                write!(f, "[")?;
+                for (i, e) in a.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", e)?;
+                }
+                write!(f, "]")
+            }
+            Literal::Hash(h) => {
+                write!(f, "{{")?;
+                for (i, (k, v)) in h.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", k, v)?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }

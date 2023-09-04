@@ -544,4 +544,37 @@ mod test {
             test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
         }
     }
+
+    #[test]
+    fn it_evaluates_closures() {
+        let tests = vec![
+            (
+                r#"
+                let intSeq = fn() {
+                    let i = 0;
+                    return fn() { i = i + 1; };
+                };
+
+                let seq = intSeq();
+                seq();
+                "#,
+                1.into(),
+            ),
+            (
+                r#"
+                   
+               let newAdder = fn(x) {
+                 fn(y) { x + y };
+                };
+               let addTwo = newAdder(2);
+               addTwo(2);
+               "#,
+                4.into(),
+            ),
+        ];
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
+        }
+    }
 }

@@ -7,6 +7,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use self::builtin::Builtin;
 use self::environment::{Env, Environment};
 use self::error::EvaluatorError;
 use self::object::Object;
@@ -135,17 +136,21 @@ fn apply_function(
                 _ => Ok(executed),
             }
         }
+        Object::Builtin(builtin) => builtin.apply(args),
         _ => Err(EvaluatorError::new(format!("not a function: {}", function))),
     }
 }
 
 fn evaluate_identifier(identifier: &str, env: Env) -> Result<Rc<Object>, EvaluatorError> {
     match env.borrow().get(identifier) {
-        Some(object) => Ok(object),
-        None => Err(EvaluatorError::new(format!(
-            "identifier not found: {}",
-            identifier
-        ))),
+        Some(object) => Ok(Rc::clone(&object)),
+        None => match Builtin::lookup(identifier) {
+            Some(builtin) => Ok(Rc::new(builtin)),
+            None => Err(EvaluatorError::new(format!(
+                "identifier not found: {}",
+                identifier
+            ))),
+        },
     }
 }
 
@@ -336,7 +341,6 @@ mod test {
                 (Object::String(s), Object::String(t)) => assert_eq!(s, t),
                 (Object::Null, Object::Null) => assert!(true),
                 (Object::ReturnValue(v1), Object::ReturnValue(v2)) => {
-                    println!("v1: {:?}, v2: {:?}", v1, v2);
                     test_object_is_expected(&Ok(v1.clone()), &Ok(v2.clone()));
                 }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
@@ -519,6 +523,11 @@ mod test {
                 "unknown operator: true + false",
             ),
             ("foobar", "identifier not found: foobar"),
+            (r#"len(1)"#, "argument to `len` not supported, got 1"),
+            (
+                r#"len("one", "two")"#,
+                "wrong number of arguments. expected=1, got=2",
+            ),
         ];
 
         for (input, expected) in tests {
@@ -588,6 +597,19 @@ mod test {
             ),
         ];
         for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
+        }
+    }
+
+    #[test]
+    fn it_evaluates_builtin_len() {
+        let test = vec![
+            (r#"len("")"#, 0.into()),
+            (r#"len("four")"#, 4.into()),
+            (r#"len("hello world")"#, 11.into()),
+        ];
+        for (input, expected) in test {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(&evaluated, &Ok(Rc::new(expected)));
         }

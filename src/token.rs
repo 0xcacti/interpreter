@@ -31,6 +31,7 @@ pub enum Token {
     Rbrace,
     LBracket,
     RBracket,
+    Colon,
 
     // keywords
     Function,
@@ -46,6 +47,7 @@ impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> Result {
         return match self {
             Token::Illegal => write!(f, "Illegal"),
+            Token::Colon => write!(f, ":"),
             Token::Eof => write!(f, "Eof"),
             Token::Ident(s) => write!(f, "{}", s),
             Token::Int(s) => write!(f, "{}", s),

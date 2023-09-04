@@ -120,6 +120,7 @@ impl Parser {
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_function_expression()?,
             Token::LBracket => self.parse_array_literal()?,
+            Token::Lbrace => self.parse_hash_literal()?,
             Token::String(ref s) => Expression::Literal(Literal::String(s.clone())),
             _ => {
                 return Err(ParserError::new(format!(
@@ -145,6 +146,10 @@ impl Parser {
                 Token::Lparen => {
                     self.next_token();
                     exp = self.parse_function_call_expression(exp)?;
+                }
+                Token::LBracket => {
+                    self.next_token();
+                    exp = self.parse_index_expression(exp)?;
                 }
                 _ => break,
             }
@@ -298,6 +303,29 @@ impl Parser {
                 token, self.peek_token
             )))
         }
+    }
+
+    fn parse_hash_literal(&mut self) -> Result<Expression, ParserError> {
+        let mut map = Vec::new();
+        while !self.peek_token_is(&Token::Rbrace) {
+            self.next_token();
+            let key = self.parse_expression(Precedence::Lowest)?;
+            self.expect_peek_token(&Token::Colon)?;
+            self.next_token();
+            let value = self.parse_expression(Precedence::Lowest)?;
+            map.push((key, value));
+            if !self.peek_token_is(&Token::Rbrace) {
+                self.expect_peek_token(&Token::Comma)?;
+            }
+        }
+        Ok(Expression::Literal(Literal::Hash(map)))
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
+        self.next_token();
+        let index = self.parse_expression(Precedence::Lowest)?;
+        self.expect_peek_token(&Token::RBracket)?;
+        Ok(Expression::Index(Box::new(left), Box::new(index)))
     }
 }
 
@@ -773,6 +801,28 @@ mod test {
         check_expression_statement(
             &program[0],
             &Expression::Literal(Literal::String("hello world".into())),
+        );
+    }
+
+    #[test]
+    fn it_parses_array_index_expressions() {
+        let input = r#"
+                myArray[1 + 1];
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 2);
+        println!("{:?}", program);
+        println!("====================");
+        check_expression_statement(&program[0], &Expression::Identifier("myArray".into()));
+        check_expression_statement(
+            &program[1],
+            &Expression::Literal(Literal::Array(vec![Expression::Infix(
+                Box::new(Expression::Literal(Literal::Integer(1))),
+                Token::Plus,
+                Box::new(Expression::Literal(Literal::Integer(1))),
+            )])),
         );
     }
 

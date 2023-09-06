@@ -20,6 +20,7 @@ pub enum Object {
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
     Builtin(Builtin),
+    Quote(Vec<Statement>),
     Null,
 }
 
@@ -57,6 +58,10 @@ impl Display for Object {
                     pairs.push(format!("{}: {}", k, v));
                 }
                 write!(f, "{{{}}}", pairs.join(", "))
+            }
+            Object::Quote(s) => {
+                let statements: Vec<String> = s.iter().map(|s| format!("{}", s)).collect();
+                write!(f, "QUOTE({})", statements.join(", "))
             }
         }
     }

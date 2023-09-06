@@ -96,13 +96,11 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
             // we need to add checking for function here
             println!("function call");
             println!("function: {:?}", function);
+
+            // TODO - do we need to change this to literally work on vec<Expression> because we
+            // don't want to evaluate yet
             if **function == Expression::Identifier("quote".to_string()) {
-                println!("quote");
-                println!("quote");
-                println!("quote");
-                println!("quote");
-                println!("quote");
-                println!("quote");
+                return Ok(Rc::new(Object::Quote(arguments[0].clone())));
             }
             let function = evaluate_expression(function, Rc::clone(&env))?;
             let arguments = evaluate_expressions(arguments, Rc::clone(&env))?;

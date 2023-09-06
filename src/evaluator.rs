@@ -93,6 +93,17 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
         ))),
 
         Expression::FunctionCall(function, arguments) => {
+            // we need to add checking for function here
+            println!("function call");
+            println!("function: {:?}", function);
+            if **function == Expression::Identifier("quote".to_string()) {
+                println!("quote");
+                println!("quote");
+                println!("quote");
+                println!("quote");
+                println!("quote");
+                println!("quote");
+            }
             let function = evaluate_expression(function, Rc::clone(&env))?;
             let arguments = evaluate_expressions(arguments, Rc::clone(&env))?;
             apply_function(Rc::clone(&function), &arguments)
@@ -382,6 +393,11 @@ mod test {
                     assert_eq!(a.len(), b.len());
                     for (k, v) in a.iter() {
                         test_object_is_expected(&Ok(v.clone()), &Ok(b[k].clone()));
+                    }
+                }
+                (Object::Quote(a), Object::Quote(b)) => {
+                    for (i, v) in a.iter().enumerate() {
+                        test_object_is_expected(&Ok(v.clone()), &Ok(b[i].clone()));
                     }
                 }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),

@@ -829,4 +829,35 @@ mod test {
             test_object_is_expected(&evaluated, &Ok(Rc::new(expected.clone())));
         }
     }
+
+    #[test]
+    fn it_evaluates_quotes() {
+        let tests = vec![
+            (r#"quote(5)"#, vec![Rc::new(Object::Integer(5))]),
+            (
+                r#"quote(5 + 8)"#,
+                vec![Rc::new(Object::Quote(vec![
+                    Rc::new(Object::Integer(5)),
+                    Rc::new(Object::Integer(8)),
+                ]))],
+            ),
+            (
+                r#"quote(foobar)"#,
+                vec![Rc::new(Object::String("foobar".to_string()))],
+            ),
+            (
+                r#"quote(foobar + barfoo)"#,
+                vec![Rc::new(Object::Quote(vec![
+                    Rc::new(Object::String("foobar".to_string())),
+                    Rc::new(Object::String("barfoo".to_string())),
+                ]))],
+            ),
+        ];
+
+        for (input, expected) in &tests {
+            let evaluated = test_eval(input.to_string());
+
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected.clone()))));
+        }
+    }
 }

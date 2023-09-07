@@ -368,13 +368,6 @@ mod test {
         )
     }
 
-    fn get_parsed_program(input: String) -> Vec<Statement> {
-        let l = Lexer::new(input.as_ref());
-        let mut p = Parser::new(l);
-        let program = p.parse_program();
-        program.unwrap()
-    }
-
     fn test_object_is_expected(
         outcome: &Result<Rc<Object>, EvaluatorError>,
         expected: &Result<Rc<Object>, EvaluatorError>,
@@ -401,9 +394,7 @@ mod test {
                     }
                 }
                 (Object::Quote(a), Object::Quote(b)) => {
-                    for (i, v) in a.iter().enumerate() {
-                        assert_eq!(v, &b[i]);
-                    }
+                    assert_eq!(a, b);
                 }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
             },
@@ -853,32 +844,42 @@ mod test {
 
     #[test]
     fn it_evaluates_quotes() {
-        let lexer = Lexer::new(r#"quote(5)"#);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program().unwrap();
-
         let tests = vec![
             {
                 let input = r#"quote(5)"#;
-                (input, get_parsed_program(input.to_string()))
+                (input, Expression::Literal(Literal::Integer(5)))
             },
             {
                 let input = r#"quote(5 + 8)"#;
-                (input, get_parsed_program(input.to_string()))
+                (
+                    input,
+                    Expression::Infix(
+                        Box::new(Expression::Literal(Literal::Integer(5))),
+                        Token::Plus,
+                        Box::new(Expression::Literal(Literal::Integer(8))),
+                    ),
+                )
             },
             {
                 let input = r#"quote(foobar)"#;
-                (input, get_parsed_program(input.to_string()))
+                (input, Expression::Identifier("foobar".to_string()))
             },
             {
                 let input = r#"quote(foobar + barfoo)"#;
-                (input, get_parsed_program(input.to_string()))
+                (
+                    input,
+                    Expression::Infix(
+                        Box::new(Expression::Identifier("foobar".to_string())),
+                        Token::Plus,
+                        Box::new(Expression::Identifier("barfoo".to_string())),
+                    ),
+                )
             },
         ];
 
-        for (input, expected) in &tests {
+        for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected.clone()))));
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected))));
         }
     }
 }

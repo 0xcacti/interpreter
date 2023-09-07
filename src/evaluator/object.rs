@@ -5,8 +5,8 @@ use std::{
     rc::Rc,
 };
 
-use crate::evaluator::builtin::Builtin;
 use crate::parser::ast::Statement;
+use crate::{evaluator::builtin::Builtin, parser::ast::Expression};
 
 use super::environment::Env;
 
@@ -20,7 +20,7 @@ pub enum Object {
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
     Builtin(Builtin),
-    Quote(Vec<Statement>),
+    Quote(Expression),
     Null,
 }
 
@@ -60,8 +60,7 @@ impl Display for Object {
                 write!(f, "{{{}}}", pairs.join(", "))
             }
             Object::Quote(s) => {
-                let statements: Vec<String> = s.iter().map(|s| format!("{}", s)).collect();
-                write!(f, "QUOTE({})", statements.join(", "))
+                write!(f, "QUOTE({})", s)
             }
         }
     }

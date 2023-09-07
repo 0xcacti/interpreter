@@ -161,5 +161,18 @@ mod test {
                 _ => return expr,
             }
         };
+
+        let tests = vec![
+            (one(), Expression::Literal(Literal::Integer(2))),
+            (two(), Expression::Literal(Literal::Integer(2))),
+        ];
+
+        for (input, expected) in tests {
+            let modified = modify(input, turn_one_into_two);
+            assert_eq!(
+                modified,
+                Node::Program(vec![Statement::Expression(expected)])
+            );
+        }
     }
 }

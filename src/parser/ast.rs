@@ -143,6 +143,23 @@ impl Display for Node {
     }
 }
 
+pub fn modify<M>(node: Node, modifier: M) -> Node {
+    where: M: Fn(Node) -> Node,
+    {
+    match node {
+        Node::Program(statements) => statements
+            .iter()
+            .map(|s| modify(s.clone(), modifier.clone()))
+            .collect(),
+        Node::Statement(statement) => {
+
+        }
+        Node::Expression(expression) => {
+            modifier(Node::Expression(expression))
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
 

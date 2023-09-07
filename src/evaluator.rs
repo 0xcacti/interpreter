@@ -882,4 +882,39 @@ mod test {
             test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected))));
         }
     }
+
+    #[test]
+    fn it_evaluates_unquotes() {
+        let tests = vec![
+            (
+                "quote(unquote(4))",
+                Expression::Literal(Literal::Integer(4)),
+            ),
+            (
+                "quote(unquote(4 + 4))",
+                Expression::Literal(Literal::Integer(8)),
+            ),
+            (
+                "quote(8 + unquote(4 + 4))",
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(8))),
+                    Token::Plus,
+                    Box::new(Expression::Literal(Literal::Integer(8))),
+                ),
+            ),
+            (
+                "quote(unquote(4 + 4) + 8)",
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(8))),
+                    Token::Plus,
+                    Box::new(Expression::Literal(Literal::Integer(8))),
+                ),
+            ),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected))));
+        }
+    }
 }

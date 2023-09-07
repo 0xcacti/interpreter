@@ -142,3 +142,24 @@ impl Display for Node {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn it_modifies() {
+        let one = || -> Expression { Expression::Literal(Literal::Integer(1)) };
+        let two = || -> Expression { Expression::Literal(Literal::Integer(2)) };
+
+        let turn_one_into_two = |expr: Expression| -> Expression {
+            match expr {
+                Expression::Literal(Literal::Integer(1)) => {
+                    return Expression::Literal(Literal::Integer(2))
+                }
+                _ => return expr,
+            }
+        };
+    }
+}

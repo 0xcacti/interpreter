@@ -97,7 +97,7 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
             println!("function call");
             println!("function: {:?}", function);
 
-            // TODO - do we need to change this to literally work on vec<Expression> because we
+            // TODO- do we need to change this to literally work on vec<Expression> because we
             // don't want to evaluate yet
             if **function == Expression::Identifier("quote".to_string()) {
                 return Ok(Rc::new(Object::Quote(arguments[0].clone())));
@@ -368,6 +368,13 @@ mod test {
         )
     }
 
+    fn get_parsed_program(input: String) -> Vec<Statement> {
+        let l = Lexer::new(input.as_ref());
+        let mut p = Parser::new(l);
+        let program = p.parse_program();
+        program.unwrap()
+    }
+
     fn test_object_is_expected(
         outcome: &Result<Rc<Object>, EvaluatorError>,
         expected: &Result<Rc<Object>, EvaluatorError>,
@@ -395,7 +402,7 @@ mod test {
                 }
                 (Object::Quote(a), Object::Quote(b)) => {
                     for (i, v) in a.iter().enumerate() {
-                        test_object_is_expected(&Ok(v.clone()), &Ok(b[i].clone()));
+                        assert_eq!(v, &b[i]);
                     }
                 }
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
@@ -846,31 +853,31 @@ mod test {
 
     #[test]
     fn it_evaluates_quotes() {
+        let lexer = Lexer::new(r#"quote(5)"#);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+
         let tests = vec![
-            (r#"quote(5)"#, vec![Rc::new(Object::Integer(5))]),
-            (
-                r#"quote(5 + 8)"#,
-                vec![Rc::new(Object::Quote(vec![
-                    Rc::new(Object::Integer(5)),
-                    Rc::new(Object::Integer(8)),
-                ]))],
-            ),
-            (
-                r#"quote(foobar)"#,
-                vec![Rc::new(Object::String("foobar".to_string()))],
-            ),
-            (
-                r#"quote(foobar + barfoo)"#,
-                vec![Rc::new(Object::Quote(vec![
-                    Rc::new(Object::String("foobar".to_string())),
-                    Rc::new(Object::String("barfoo".to_string())),
-                ]))],
-            ),
+            {
+                let input = r#"quote(5)"#;
+                (input, get_parsed_program(input.to_string()))
+            },
+            {
+                let input = r#"quote(5 + 8)"#;
+                (input, get_parsed_program(input.to_string()))
+            },
+            {
+                let input = r#"quote(foobar)"#;
+                (input, get_parsed_program(input.to_string()))
+            },
+            {
+                let input = r#"quote(foobar + barfoo)"#;
+                (input, get_parsed_program(input.to_string()))
+            },
         ];
 
         for (input, expected) in &tests {
             let evaluated = test_eval(input.to_string());
-
             test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected.clone()))));
         }
     }

@@ -20,7 +20,7 @@ pub enum Object {
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
     Builtin(Builtin),
-    Quote(Vec<Rc<Object>>),
+    Quote(Vec<Statement>),
     Null,
 }
 

@@ -164,10 +164,27 @@ where
                 .collect();
             Node::Program(modified_statements)
         }
-        // Node::Expression(expression) => Node::Expression(expression),
+        Node::Expression(expression) => match expression {
+            Expression::Infix(left, token, right) => {
+                let modified_left = modify(Node::Expression(*left), modifier.clone());
+                let modified_right = modify(Node::Expression(*right), modifier.clone());
+                Node::Expression(Expression::Infix(
+                    Box::new(unwrap_node_to_expression(modified_left)),
+                    token,
+                    Box::new(unwrap_node_to_expression(modified_right)),
+                ))
+            }
+            _ => Node::Expression(expression),
+        },
         _ => node,
     };
     modifier(new_node)
+}
+fn unwrap_node_to_expression(node: Node) -> Expression {
+    match node {
+        Node::Expression(expr) => expr,
+        _ => panic!("Expected Node::Expression!"),
+    }
 }
 
 // type ModifierFunc = fn(Node) -> Node;
@@ -194,12 +211,6 @@ where
 mod test {
 
     use super::*;
-    fn unwrap_node_to_expression(node: Node) -> Expression {
-        match node {
-            Node::Expression(expr) => expr,
-            _ => panic!("Expected Node::Expression!"),
-        }
-    }
 
     #[test]
     fn it_modifies() {

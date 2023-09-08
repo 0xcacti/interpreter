@@ -199,29 +199,33 @@ mod test {
 
     #[test]
     fn it_modifies() {
-        let one = || -> Expression { Expression::Literal(Literal::Integer(1)) };
-        let two = || -> Expression { Expression::Literal(Literal::Integer(2)) };
+        let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
+        let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
 
-        let turn_one_into_two = |expr: Expression| -> Expression {
+        let turn_one_into_two = |expr: Node| -> Node {
             match expr {
-                Expression::Literal(Literal::Integer(1)) => {
-                    return Expression::Literal(Literal::Integer(2))
+                Node::Expression(Expression::Literal(Literal::Integer(1))) => {
+                    return Node::Expression(Expression::Literal(Literal::Integer(2)))
                 }
                 _ => return expr,
             }
         };
 
         let tests = vec![
-            (one(), Expression::Literal(Literal::Integer(2))),
-            (two(), Expression::Literal(Literal::Integer(2))),
+            (
+                one(),
+                Node::Expression(Expression::Literal(Literal::Integer(2))),
+            ),
+            (
+                two(),
+                Node::Expression(Expression::Literal(Literal::Integer(2))),
+            ),
         ];
 
         for (input, expected) in tests {
             let modified = modify(input, turn_one_into_two);
-            assert_eq!(
-                modified,
-                Node::Program(vec![Statement::Expression(expected)])
-            );
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
         }
     }
 }

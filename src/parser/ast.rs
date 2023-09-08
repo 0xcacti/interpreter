@@ -174,6 +174,13 @@ where
                     Box::new(unwrap_node_to_expression(modified_right)),
                 ))
             }
+            Expression::Prefix(left, expression) => {
+                let modified_expression = modify(Node::Expression(*expression), modifier.clone());
+                Node::Expression(Expression::Prefix(
+                    left,
+                    Box::new(unwrap_node_to_expression(modified_expression)),
+                ))
+            }
             _ => Node::Expression(expression),
         },
         _ => node,
@@ -211,9 +218,11 @@ fn unwrap_node_to_expression(node: Node) -> Expression {
 mod test {
 
     use super::*;
-
-    #[test]
-    fn it_modifies() {
+    fn get_closures() -> (
+        Box<dyn Fn() -> Node>,
+        Box<dyn Fn() -> Node>,
+        Box<dyn Fn(Node) -> Node>,
+    ) {
         let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
         let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
 
@@ -225,6 +234,12 @@ mod test {
                 _ => return expr,
             }
         };
+        (Box::new(one), Box::new(two), Box::new(turn_one_into_two))
+    }
+
+    #[test]
+    fn it_modifies() {
+        let (one, two, turn_one_into_two) = get_closures();
 
         let tests = vec![
             (
@@ -238,7 +253,7 @@ mod test {
         ];
 
         for (input, expected) in tests {
-            let modified = modify(input, turn_one_into_two);
+            let modified = modify(input, &turn_one_into_two);
             println!("modified: {}", modified);
             println!("expected: {}", expected);
             assert_eq!(modified, expected);
@@ -247,17 +262,7 @@ mod test {
 
     #[test]
     fn it_modifies_infixs() {
-        let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
-        let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
-
-        let turn_one_into_two = |expr: Node| -> Node {
-            match expr {
-                Node::Expression(Expression::Literal(Literal::Integer(1))) => {
-                    return Node::Expression(Expression::Literal(Literal::Integer(2)))
-                }
-                _ => return expr,
-            }
-        };
+        let (one, two, turn_one_into_two) = get_closures();
 
         let tests = vec![(
             Node::Expression(Expression::Infix(
@@ -273,7 +278,29 @@ mod test {
         )];
 
         for (input, expected) in tests {
-            let modified = modify(input, turn_one_into_two);
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_prefixs() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::Prefix(
+                Token::Bang,
+                Box::new(unwrap_node_to_expression(one())),
+            )),
+            Node::Expression(Expression::Prefix(
+                Token::Bang,
+                Box::new(unwrap_node_to_expression(two())),
+            )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
             println!("modified: {}", modified);
             println!("expected: {}", expected);
             assert_eq!(modified, expected);

@@ -122,6 +122,7 @@ impl Display for Statement {
 }
 
 // define node enum - our parser works on statement and expression nodes
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     Program(Vec<Statement>),
     Statement(Statement),
@@ -163,7 +164,7 @@ where
                 .collect();
             Node::Program(modified_statements)
         }
-        Node::Expression(expression) => Node::Expression(expression),
+        // Node::Expression(expression) => Node::Expression(expression),
         _ => node,
     };
     modifier(new_node)
@@ -223,6 +224,42 @@ mod test {
             let modified = modify(input, turn_one_into_two);
             println!("modified: {}", modified);
             println!("expected: {}", expected);
+            assert_eq!(modified, expected);
         }
     }
+
+    // #[test]
+    // fn it_modifies_infixs() {
+    //     let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
+    //     let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
+
+    //     let turn_one_into_two = |expr: Node| -> Node {
+    //         match expr {
+    //             Node::Expression(Expression::Literal(Literal::Integer(1))) => {
+    //                 return Node::Expression(Expression::Literal(Literal::Integer(2)))
+    //             }
+    //             _ => return expr,
+    //         }
+    //     };
+
+    //     let tests = vec![(
+    //         Node::Expression(Expression::Infix(
+    //             Box::new(one()),
+    //             Token::Plus,
+    //             Box::new(two()),
+    //         )),
+    //         (Node::Expression(Expression::Infix(
+    //             Box::new(two()),
+    //             Token::Plus,
+    //             Box::new(two()),
+    //         ))),
+    //     )];
+
+    //     for (input, expected) in tests {
+    //         let modified = modify(input, turn_one_into_two);
+    //         println!("modified: {}", modified);
+    //         println!("expected: {}", expected);
+    //         assert_eq!(modified, expected);
+    //     }
+    // }
 }

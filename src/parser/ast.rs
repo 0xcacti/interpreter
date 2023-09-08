@@ -181,6 +181,14 @@ where
                     Box::new(unwrap_node_to_expression(modified_expression)),
                 ))
             }
+            Expression::Index(left, index) => {
+                let modified_left = modify(Node::Expression(*left), modifier.clone());
+                let modified_index = modify(Node::Expression(*index), modifier.clone());
+                Node::Expression(Expression::Index(
+                    Box::new(unwrap_node_to_expression(modified_left)),
+                    Box::new(unwrap_node_to_expression(modified_index)),
+                ))
+            }
             _ => Node::Expression(expression),
         },
         _ => node,
@@ -295,6 +303,28 @@ mod test {
             )),
             Node::Expression(Expression::Prefix(
                 Token::Bang,
+                Box::new(unwrap_node_to_expression(two())),
+            )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_indexs() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::Index(
+                Box::new(unwrap_node_to_expression(one())),
+                Box::new(unwrap_node_to_expression(one())),
+            )),
+            Node::Expression(Expression::Index(
+                Box::new(unwrap_node_to_expression(two())),
                 Box::new(unwrap_node_to_expression(two())),
             )),
         )];

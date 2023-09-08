@@ -150,10 +150,11 @@ where
     let new_node = match node {
         Node::Program(statements) => {
             let modified_statements: Vec<Statement> = statements
-                .iter()
+                .into_iter()
                 .map(|s| {
-                    let result_node = modify(Node::Statement(s.clone()), modifier.clone());
-                    if let Node::Statement(modified_s) = result_node {
+                    if let Node::Statement(modified_s) =
+                        modify(Node::Statement(s), modifier.clone())
+                    {
                         modified_s
                     } else {
                         panic!("Expected a Node::Statement variant!"); // Handle this better based on your requirements
@@ -162,11 +163,7 @@ where
                 .collect();
             Node::Program(modified_statements)
         }
-
-        // this is an infinite loop?
-        Node::Expression(expression) => {
-            modify(Node::Expression(expression.clone()), modifier.clone())
-        }
+        Node::Expression(expression) => Node::Expression(expression),
         _ => node,
     };
     modifier(new_node)

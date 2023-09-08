@@ -143,22 +143,54 @@ impl Display for Node {
     }
 }
 
-pub fn modify<M>(node: Node, modifier: M) -> Node {
-    where: M: Fn(Node) -> Node,
-    {
-    match node {
-        Node::Program(statements) => statements
-            .iter()
-            .map(|s| modify(s.clone(), modifier.clone()))
-            .collect(),
-        Node::Statement(statement) => {
+pub fn modify<M>(node: Node, modifier: M) -> Node
+where
+    M: Fn(Node) -> Node + Clone,
+{
+    let new_node = match node {
+        Node::Program(statements) => {
+            let modified_statements: Vec<Statement> = statements
+                .iter()
+                .map(|s| {
+                    let result_node = modify(Node::Statement(s.clone()), modifier.clone());
+                    if let Node::Statement(modified_s) = result_node {
+                        modified_s
+                    } else {
+                        panic!("Expected a Node::Statement variant!"); // Handle this better based on your requirements
+                    }
+                })
+                .collect();
+            Node::Program(modified_statements)
+        }
 
-        }
+        // this is an infinite loop?
         Node::Expression(expression) => {
-            modifier(Node::Expression(expression))
+            modify(Node::Expression(expression.clone()), modifier.clone())
         }
-    }
+        _ => node,
+    };
+    modifier(new_node)
 }
+
+// type ModifierFunc = fn(Node) -> Node;
+// pub fn modify_with_function<M>(node: Node, modifier: ModifierFunc) -> Node
+// where
+//     M: Fn(Node) -> Node + Clone,
+// {
+//     let new_node = match node {
+//         Node::Program(statements) => {
+//             let modified_statements: Vec<Statement> = statements.iter().map(|s| modify(Node::Statement(s), modifier.clone())).collect();
+//             Node::Program(modified_statements)
+//         }
+//         Node::Expression(expression) => {
+//             let modified_expression = modify(expression, modifier);
+//
+//         }
+//         _ => node,
+//     }
+//     modifier(new_node)
+//
+// }
 
 #[cfg(test)]
 mod test {

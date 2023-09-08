@@ -194,6 +194,12 @@ where
 mod test {
 
     use super::*;
+    fn unwrap_node_to_expression(node: Node) -> Expression {
+        match node {
+            Node::Expression(expr) => expr,
+            _ => panic!("Expected Node::Expression!"),
+        }
+    }
 
     #[test]
     fn it_modifies() {
@@ -228,38 +234,38 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn it_modifies_infixs() {
-    //     let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
-    //     let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
+    #[test]
+    fn it_modifies_infixs() {
+        let one = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(1))) };
+        let two = || -> Node { Node::Expression(Expression::Literal(Literal::Integer(2))) };
 
-    //     let turn_one_into_two = |expr: Node| -> Node {
-    //         match expr {
-    //             Node::Expression(Expression::Literal(Literal::Integer(1))) => {
-    //                 return Node::Expression(Expression::Literal(Literal::Integer(2)))
-    //             }
-    //             _ => return expr,
-    //         }
-    //     };
+        let turn_one_into_two = |expr: Node| -> Node {
+            match expr {
+                Node::Expression(Expression::Literal(Literal::Integer(1))) => {
+                    return Node::Expression(Expression::Literal(Literal::Integer(2)))
+                }
+                _ => return expr,
+            }
+        };
 
-    //     let tests = vec![(
-    //         Node::Expression(Expression::Infix(
-    //             Box::new(one()),
-    //             Token::Plus,
-    //             Box::new(two()),
-    //         )),
-    //         (Node::Expression(Expression::Infix(
-    //             Box::new(two()),
-    //             Token::Plus,
-    //             Box::new(two()),
-    //         ))),
-    //     )];
+        let tests = vec![(
+            Node::Expression(Expression::Infix(
+                Box::new(unwrap_node_to_expression(one())),
+                Token::Plus,
+                Box::new(unwrap_node_to_expression(two())),
+            )),
+            (Node::Expression(Expression::Infix(
+                Box::new(unwrap_node_to_expression(two())),
+                Token::Plus,
+                Box::new(unwrap_node_to_expression(two())),
+            ))),
+        )];
 
-    //     for (input, expected) in tests {
-    //         let modified = modify(input, turn_one_into_two);
-    //         println!("modified: {}", modified);
-    //         println!("expected: {}", expected);
-    //         assert_eq!(modified, expected);
-    //     }
-    // }
+        for (input, expected) in tests {
+            let modified = modify(input, turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
 }

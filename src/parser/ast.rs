@@ -213,6 +213,28 @@ where
                 ))
             }
 
+            Expression::Function(arguments, body) => {
+                let modified_arguments: Vec<String> = arguments
+                    .iter()
+                    .map(|argument| {
+                        let modified_argument = modify(
+                            Node::Expression(Expression::Identifier(argument.clone())),
+                            modifier.clone(),
+                        );
+                        let modified_expression = unwrap_node_to_expression(modified_argument);
+                        let modified_identifier = match modified_expression {
+                            Expression::Identifier(identifier) => identifier,
+                            _ => panic!("Expected Expression::Identifier!"),
+                        };
+                        modified_identifier
+                    })
+                    .collect();
+
+                let modified_body: Vec<Statement> =
+                    unwrap_node_to_statements(modify(Node::Program(body), modifier.clone()));
+                Node::Expression(Expression::Function(modified_arguments, modified_body))
+            }
+
             _ => Node::Expression(expression),
         },
         Node::Statement(statement) => match statement {
@@ -448,6 +470,28 @@ mod test {
             Node::Statement(Statement::Let(
                 "a".to_string(),
                 unwrap_node_to_expression(two()),
+            )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_function_literals() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::Function(
+                vec!["a".to_string()],
+                vec![Statement::Expression(unwrap_node_to_expression(one()))],
+            )),
+            Node::Expression(Expression::Function(
+                vec!["a".to_string()],
+                vec![Statement::Expression(unwrap_node_to_expression(two()))],
             )),
         )];
 

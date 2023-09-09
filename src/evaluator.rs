@@ -11,6 +11,7 @@ use self::builtin::Builtin;
 use self::environment::{Env, Environment};
 use self::error::EvaluatorError;
 use self::object::Object;
+use crate::parser::ast;
 use crate::{parser::ast::*, token::Token};
 
 pub fn evaluate(node: Node, env: Env) -> Result<Rc<Object>, EvaluatorError> {
@@ -114,6 +115,34 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
         }
         _ => Ok(Rc::new(Object::Null)),
     }
+}
+
+fn quote(node: Node) -> Node {
+    todo!()
+}
+
+fn evaluate_unquote_call(node: Node) -> Node {
+    let modifier = |node: Node| -> Node { 
+        match node {
+            Node::Expression(expression) => {
+                match expression {
+                    Expression::FunctionCall(function, arguments) => {
+                        if **function == Expression::Identifier("unquote".to_string()) {
+                            return arguments[0].clone();
+                        }
+                        return node;
+                    }
+                    _ => node,
+                }
+            }
+
+
+            _ => node,
+        }
+    };
+
+
+    });
 }
 
 fn evaluate_expressions(

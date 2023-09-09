@@ -558,4 +558,26 @@ mod test {
             assert_eq!(modified, expected);
         }
     }
+
+    #[test]
+    fn it_modifies_hash_literals() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::Literal(Literal::Hash(vec![(
+                unwrap_node_to_expression(one()),
+                unwrap_node_to_expression(one()),
+            )]))),
+            Node::Expression(Expression::Literal(Literal::Hash(vec![(
+                unwrap_node_to_expression(two()),
+                unwrap_node_to_expression(two()),
+            )]))),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
 }

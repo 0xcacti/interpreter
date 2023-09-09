@@ -5,8 +5,8 @@ use std::{
     rc::Rc,
 };
 
-use crate::parser::ast::Statement;
-use crate::{evaluator::builtin::Builtin, parser::ast::Expression};
+use crate::evaluator::builtin::Builtin;
+use crate::parser::ast::{Node, Statement};
 
 use super::environment::Env;
 
@@ -20,7 +20,7 @@ pub enum Object {
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
     Builtin(Builtin),
-    Quote(Expression),
+    Quote(Node),
     Null,
 }
 

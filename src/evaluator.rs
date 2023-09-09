@@ -5,6 +5,7 @@ pub mod object;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::convert;
 use std::rc::Rc;
 
 use self::builtin::Builtin;
@@ -101,7 +102,10 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
             // TODO- do we need to change this to literally work on vec<Expression> because we
             // don't want to evaluate yet
             if **function == Expression::Identifier("quote".to_string()) {
-                return Ok(Rc::new(Object::Quote(arguments[0].clone())));
+                return Ok(Rc::new(Object::Quote(quote(
+                    Node::Expression(arguments[0].clone()),
+                    Rc::clone(&env),
+                )?)));
             }
             let function = evaluate_expression(function, Rc::clone(&env))?;
             let arguments = evaluate_expressions(arguments, Rc::clone(&env))?;
@@ -117,32 +121,41 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
     }
 }
 
-fn quote(node: Node) -> Node {
-    todo!()
+fn quote(node: Node, env: Env) -> Result<Node, EvaluatorError> {
+    evaluate_unquote_call(node, Rc::clone(&env))
 }
 
-fn evaluate_unquote_call(node: Node) -> Node {
-    let modifier = |node: Node| -> Node { 
-        match node {
-            Node::Expression(expression) => {
-                match expression {
-                    Expression::FunctionCall(function, arguments) => {
-                        if **function == Expression::Identifier("unquote".to_string()) {
-                            return arguments[0].clone();
-                        }
+fn evaluate_unquote_call(node: Node, env: Env) -> Result<Node, EvaluatorError> {
+    let modifier = |node: Node| -> Node {
+        match &node {
+            Node::Expression(expression) => match expression {
+                Expression::FunctionCall(function, arguments) => {
+                    if **function != Expression::Identifier("unquote".to_string()) {
                         return node;
                     }
-                    _ => node,
+                    if arguments.len() != 1 {
+                        return node;
+                    }
+                    convert_object_to_ast_node(
+                        &evaluate(Node::Expression(arguments[0].clone()), Rc::clone(&env)).unwrap(),
+                    )
                 }
-            }
-
+                _ => node,
+            },
 
             _ => node,
         }
     };
+    Ok(modify(node, modifier))
+}
 
-
-    });
+fn convert_object_to_ast_node(object: &Object) -> Node {
+    match *object {
+        Object::Integer(i) => Node::Expression(Expression::Literal(Literal::Integer(i))),
+        Object::Boolean(b) => Node::Expression(Expression::Literal(Literal::Boolean(b))),
+        Object::String(ref s) => Node::Expression(Expression::Literal(Literal::String(s.clone()))),
+        _ => Node::Expression(Expression::Literal(Literal::Integer(0))),
+    }
 }
 
 fn evaluate_expressions(
@@ -422,9 +435,18 @@ mod test {
                         test_object_is_expected(&Ok(v.clone()), &Ok(b[k].clone()));
                     }
                 }
-                (Object::Quote(a), Object::Quote(b)) => {
-                    assert_eq!(a, b);
-                }
+                (Object::Quote(a), Object::Quote(b)) => match (*a, *b) {
+                    (Node::Expression(a), Node::Expression(b)) => {
+                        assert_eq!(a, b);
+                    }
+                    (Node::Statement(a), Node::Statement(b)) => {
+                        assert_eq!(a, b);
+                    }
+                    (Node::Program(a), Node::Program(b)) => {
+                        assert_eq!(a, b);
+                    }
+                    (_, _) => panic!("unexpected types {:?} and {:?}", a, b),
+                },
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
             },
             (Err(e), Err(expected_err)) => assert_eq!(e.msg, expected_err.msg),
@@ -908,20 +930,24 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected))));
+            test_object_is_expected(
+                &evaluated,
+                &Ok(Rc::new(Object::Quote(convert_object_to_ast_node(expected)))),
+            );
         }
     }
 
     #[test]
     fn it_evaluates_unquotes() {
         let tests = vec![
-            (
-                "quote(unquote(4))",
-                Expression::Literal(Literal::Integer(4)),
-            ),
+            ("quote(unquote(4))", Object::Integer(4)),
             (
                 "quote(unquote(4 + 4))",
-                Expression::Literal(Literal::Integer(8)),
+                Object::Infix(
+                    Box::new(Object::Integer(4)),
+                    Token::Plus,
+                    Box::new(Object::Integer(4)),
+                ),
             ),
             (
                 "quote(8 + unquote(4 + 4))",

@@ -435,7 +435,7 @@ mod test {
                         test_object_is_expected(&Ok(v.clone()), &Ok(b[k].clone()));
                     }
                 }
-                (Object::Quote(a), Object::Quote(b)) => match (*a, *b) {
+                (Object::Quote(a), Object::Quote(b)) => match (&*a, &*b) {
                     (Node::Expression(a), Node::Expression(b)) => {
                         assert_eq!(a, b);
                     }
@@ -932,7 +932,7 @@ mod test {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(
                 &evaluated,
-                &Ok(Rc::new(Object::Quote(convert_object_to_ast_node(expected)))),
+                &Ok(Rc::new(Object::Quote(Node::Expression(expected)))),
             );
         }
     }
@@ -940,14 +940,13 @@ mod test {
     #[test]
     fn it_evaluates_unquotes() {
         let tests = vec![
-            ("quote(unquote(4))", Object::Integer(4)),
+            (
+                "quote(unquote(4))",
+                Expression::Literal(Literal::Integer(4)),
+            ),
             (
                 "quote(unquote(4 + 4))",
-                Object::Infix(
-                    Box::new(Object::Integer(4)),
-                    Token::Plus,
-                    Box::new(Object::Integer(4)),
-                ),
+                Expression::Literal(Literal::Integer(8)),
             ),
             (
                 "quote(8 + unquote(4 + 4))",
@@ -969,7 +968,10 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Ok(Rc::new(Object::Quote(expected))));
+            test_object_is_expected(
+                &evaluated,
+                &Ok(Rc::new(Object::Quote(Node::Expression(expected)))),
+            );
         }
     }
 }

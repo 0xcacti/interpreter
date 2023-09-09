@@ -164,6 +164,7 @@ where
                 .collect();
             Node::Program(modified_statements)
         }
+
         Node::Expression(expression) => match expression {
             Expression::Infix(left, token, right) => {
                 let modified_left = modify(Node::Expression(*left), modifier.clone());
@@ -174,6 +175,7 @@ where
                     Box::new(unwrap_node_to_expression(modified_right)),
                 ))
             }
+
             Expression::Prefix(left, expression) => {
                 let modified_expression = modify(Node::Expression(*expression), modifier.clone());
                 Node::Expression(Expression::Prefix(
@@ -181,6 +183,7 @@ where
                     Box::new(unwrap_node_to_expression(modified_expression)),
                 ))
             }
+
             Expression::Index(left, index) => {
                 let modified_left = modify(Node::Expression(*left), modifier.clone());
                 let modified_index = modify(Node::Expression(*index), modifier.clone());
@@ -189,16 +192,61 @@ where
                     Box::new(unwrap_node_to_expression(modified_index)),
                 ))
             }
+
+            Expression::If(condition, consequence, alternative) => {
+                let modified_condition = modify(Node::Expression(*condition), modifier.clone());
+
+                let modified_consequence: Vec<Statement> =
+                    unwrap_node_to_statements(modify(Node::Program(consequence), modifier.clone()));
+
+                let modified_alternative: Option<Vec<Statement>> = match alternative {
+                    Some(alternative) => Some(unwrap_node_to_statements(modify(
+                        Node::Program(alternative),
+                        modifier.clone(),
+                    ))),
+                    None => None,
+                };
+                Node::Expression(Expression::If(
+                    Box::new(unwrap_node_to_expression(modified_condition)),
+                    modified_consequence,
+                    modified_alternative,
+                ))
+            }
+
             _ => Node::Expression(expression),
+        },
+        Node::Statement(statement) => match statement {
+            Statement::Expression(expression) => {
+                let modified_expression = modify(Node::Expression(expression), modifier.clone());
+                Node::Statement(Statement::Expression(unwrap_node_to_expression(
+                    modified_expression,
+                )))
+            }
+            _ => Node::Statement(statement),
         },
         _ => node,
     };
     modifier(new_node)
 }
+
 fn unwrap_node_to_expression(node: Node) -> Expression {
     match node {
         Node::Expression(expr) => expr,
         _ => panic!("Expected Node::Expression!"),
+    }
+}
+
+fn unwrap_node_to_statements(node: Node) -> Vec<Statement> {
+    match node {
+        Node::Program(statements) => statements,
+        _ => panic!("Expected Node::Program!"),
+    }
+}
+
+fn unwrap_node_to_statement(node: Node) -> Statement {
+    match node {
+        Node::Statement(statement) => statement,
+        _ => panic!("Expected Node::Statement!"),
     }
 }
 
@@ -326,6 +374,30 @@ mod test {
             Node::Expression(Expression::Index(
                 Box::new(unwrap_node_to_expression(two())),
                 Box::new(unwrap_node_to_expression(two())),
+            )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_if_expressions() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::If(
+                Box::new(unwrap_node_to_expression(one())),
+                vec![Statement::Expression(unwrap_node_to_expression(one()))],
+                None,
+            )),
+            Node::Expression(Expression::If(
+                Box::new(unwrap_node_to_expression(two())),
+                vec![Statement::Expression(unwrap_node_to_expression(two()))],
+                None,
             )),
         )];
 

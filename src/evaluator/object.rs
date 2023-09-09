@@ -20,6 +20,7 @@ pub enum Object {
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
     Builtin(Builtin),
+    Macro(Vec<String>, Vec<Statement>, Env),
     Quote(Node),
     Null,
 }

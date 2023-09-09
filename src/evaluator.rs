@@ -411,6 +411,13 @@ mod test {
         )
     }
 
+    fn test_parse(input: String) -> Vec<Statement> {
+        let l = Lexer::new(input.as_ref());
+        let mut p = Parser::new(l);
+        let program = p.parse_program();
+        program.unwrap()
+    }
+
     fn test_object_is_expected(
         outcome: &Result<Rc<Object>, EvaluatorError>,
         expected: &Result<Rc<Object>, EvaluatorError>,
@@ -1018,5 +1025,38 @@ mod test {
                 &Ok(Rc::new(Object::Quote(Node::Expression(expected)))),
             );
         }
+    }
+
+    #[test]
+    fn it_expands_macros() {
+        let input = r#"
+            let number = 1;
+            let function = fn(x, y) { x + y };
+            let mymacro = macro(x, y) { x + y; };
+            "#;
+
+        let environment = Rc::new(RefCell::new(Environment::new()));
+        define_macros(program, environment.clone());
+        assert_eq!(program.len(), 2);
+        environment.borrow_mut().get("number").unwrap();
+        environment.borrow_mut().get("function").unwrap();
+        let obj = environment.borrow_mut().get("mymacro").unwrap();
+        match *obj {
+            Object::Macro(ref parameters, ref body, _) => {
+                assert_eq!(parameters.len(), 2);
+                assert_eq!(parameters[0].to_string(), "x");
+                assert_eq!(parameters[1].to_string(), "y");
+                assert_eq!(body.len(), 1);
+                match &body[0] {
+                    Statement::Expression(Expression::Infix(left, Token::Plus, right)) => {
+                        assert_eq!(**left, Expression::Identifier("x".to_string()));
+                        assert_eq!(**right, Expression::Identifier("y".to_string()));
+                    }
+                    _ => panic!("expected infix expression"),
+                }
+            }
+            _ => panic!("expected macro"),
+        }
+        //.get("number".to_string());
     }
 }

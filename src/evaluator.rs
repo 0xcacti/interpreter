@@ -392,6 +392,43 @@ fn evaluate_index_expression(left: &Object, index: &Object) -> Result<Rc<Object>
     }
 }
 
+fn define_macros(program: &mut Vec<Statement>, env: Env) {
+    let mut definitions = Vec::new();
+    for (i, statement) in program.iter().enumerate() {
+        if is_macro_definition(statement) {
+            add_macro(statement, Rc::clone(&env));
+            definitions.push(i);
+        }
+    }
+    for &definition_index in definitions.iter().rev() {
+        program.remove(definition_index);
+    }
+}
+
+fn add_macro(statement: &Statement, env: Env) {
+    match statement {
+        Statement::Let(name, expression) => match expression {
+            Expression::Macro(parameters, body) => {
+                let macro_object = Object::Macro(parameters.clone(), body.clone(), Rc::clone(&env));
+                env.borrow_mut()
+                    .set(name.to_string(), Rc::new(macro_object));
+            }
+            _ => (),
+        },
+        _ => (),
+    }
+}
+
+fn is_macro_definition(statement: &Statement) -> bool {
+    match statement {
+        Statement::Let(_, expression) => match expression {
+            Expression::Macro(_, _) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -1035,11 +1072,12 @@ mod test {
             let mymacro = macro(x, y) { x + y; };
             "#;
 
+        let mut program = test_parse(input.to_string());
         let environment = Rc::new(RefCell::new(Environment::new()));
-        define_macros(program, environment.clone());
+        define_macros(&mut program, environment.clone());
         assert_eq!(program.len(), 2);
-        environment.borrow_mut().get("number").unwrap();
-        environment.borrow_mut().get("function").unwrap();
+        assert!(environment.borrow_mut().get("number").is_none());
+        assert!(environment.borrow_mut().get("function").is_none());
         let obj = environment.borrow_mut().get("mymacro").unwrap();
         match *obj {
             Object::Macro(ref parameters, ref body, _) => {

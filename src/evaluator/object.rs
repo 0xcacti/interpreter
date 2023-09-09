@@ -63,6 +63,10 @@ impl Display for Object {
             Object::Quote(s) => {
                 write!(f, "QUOTE({})", s)
             }
+            Object::Macro(parameters, _, _) => {
+                let params = parameters.join(", ");
+                write!(f, "macro({}) {{...}}", params)
+            }
         }
     }
 }

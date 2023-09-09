@@ -154,6 +154,7 @@ fn convert_object_to_ast_node(object: &Object) -> Node {
         Object::Integer(i) => Node::Expression(Expression::Literal(Literal::Integer(i))),
         Object::Boolean(b) => Node::Expression(Expression::Literal(Literal::Boolean(b))),
         Object::String(ref s) => Node::Expression(Expression::Literal(Literal::String(s.clone()))),
+        Object::Quote(ref q) => q.clone(),
         _ => Node::Expression(Expression::Literal(Literal::Integer(0))),
     }
 }
@@ -964,8 +965,52 @@ mod test {
                     Box::new(Expression::Literal(Literal::Integer(8))),
                 ),
             ),
+            (
+                "quote(unquote(true))",
+                Expression::Literal(Literal::Boolean(true)),
+            ),
+            (
+                "quote(unquote(true == false))",
+                Expression::Literal(Literal::Boolean(false)),
+            ),
         ];
 
+        for (input, expected) in tests {
+            let evaluated = test_eval(input.to_string());
+            test_object_is_expected(
+                &evaluated,
+                &Ok(Rc::new(Object::Quote(Node::Expression(expected)))),
+            );
+        }
+    }
+
+    #[test]
+    fn it_evaluates_nested_quote_unquotes() {
+        let tests = vec![
+            (
+                "quote(unquote(quote(4+4)))",
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(4))),
+                    Token::Plus,
+                    Box::new(Expression::Literal(Literal::Integer(4))),
+                ),
+            ),
+            (
+                r#"
+                let quotedInfixExpression = quote(4+4);
+                quote(unquote(4+4) + unquote(quotedInfixExpression))
+                "#,
+                Expression::Infix(
+                    Box::new(Expression::Literal(Literal::Integer(8))),
+                    Token::Plus,
+                    Box::new(Expression::Infix(
+                        Box::new(Expression::Literal(Literal::Integer(4))),
+                        Token::Plus,
+                        Box::new(Expression::Literal(Literal::Integer(4))),
+                    )),
+                ),
+            ),
+        ];
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
             test_object_is_expected(

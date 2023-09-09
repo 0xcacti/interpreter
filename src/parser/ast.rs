@@ -222,7 +222,19 @@ where
                     modified_expression,
                 )))
             }
-            _ => Node::Statement(statement),
+            Statement::Return(expression) => {
+                let modified_expression = modify(Node::Expression(expression), modifier.clone());
+                Node::Statement(Statement::Return(unwrap_node_to_expression(
+                    modified_expression,
+                )))
+            }
+            Statement::Let(name, expression) => {
+                let modified_expression = modify(Node::Expression(expression), modifier.clone());
+                Node::Statement(Statement::Let(
+                    name,
+                    unwrap_node_to_expression(modified_expression),
+                ))
+            }
         },
         _ => node,
     };
@@ -398,6 +410,44 @@ mod test {
                 Box::new(unwrap_node_to_expression(two())),
                 vec![Statement::Expression(unwrap_node_to_expression(two()))],
                 None,
+            )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_return_statements() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Statement(Statement::Return(unwrap_node_to_expression(one()))),
+            Node::Statement(Statement::Return(unwrap_node_to_expression(two()))),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_let_statements() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Statement(Statement::Let(
+                "a".to_string(),
+                unwrap_node_to_expression(one()),
+            )),
+            Node::Statement(Statement::Let(
+                "a".to_string(),
+                unwrap_node_to_expression(two()),
             )),
         )];
 

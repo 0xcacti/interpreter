@@ -49,6 +49,7 @@ pub enum Expression {
     Infix(Box<Expression>, Token, Box<Expression>),
     If(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
     Function(Vec<String>, Vec<Statement>),
+    Macro(Vec<String>, Vec<Statement>),
     FunctionCall(Box<Expression>, Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
 }
@@ -100,6 +101,20 @@ impl Display for Expression {
                 write!(f, ")")
             }
             Expression::Index(left, index) => write!(f, "({}[{}])", left, index),
+            Expression::Macro(parameters, body) => {
+                write!(f, "macro(")?;
+                for (i, parameter) in parameters.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", parameter)?;
+                }
+                write!(f, ") {{")?;
+                for statement in body {
+                    write!(f, "{}", statement)?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }

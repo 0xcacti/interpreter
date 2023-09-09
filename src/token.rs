@@ -41,6 +41,7 @@ pub enum Token {
     If,
     Else,
     Return,
+    Macro,
 }
 
 impl Display for Token {
@@ -70,6 +71,7 @@ impl Display for Token {
             Token::LBracket => write!(f, "["),
             Token::RBracket => write!(f, "]"),
             Token::Function => write!(f, "fn"),
+            Token::Macro => write!(f, "macro"),
             Token::Let => write!(f, "let"),
             Token::True => write!(f, "true"),
             Token::False => write!(f, "false"),

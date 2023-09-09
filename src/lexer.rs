@@ -40,6 +40,7 @@ impl Lexer {
                 let ident = self.read_ident();
                 return match ident.as_str() {
                     "fn" => Token::Function,
+                    "macro" => Token::Macro,
                     "let" => Token::Let,
                     "if" => Token::If,
                     "else" => Token::Else,
@@ -187,6 +188,7 @@ mod test {
         "foo bar" 
         [1, 2];
         {"foo": "bar"}
+        macro(x, y) { x + y; };
         "#;
         let mut lexer = Lexer::new(input.into());
 
@@ -277,6 +279,19 @@ mod test {
             Token::Colon,
             Token::String(String::from("bar")),
             Token::Rbrace,
+            Token::Macro,
+            Token::Lparen,
+            Token::Ident(String::from("x")),
+            Token::Comma,
+            Token::Ident(String::from("y")),
+            Token::Rparen,
+            Token::Lbrace,
+            Token::Ident(String::from("x")),
+            Token::Plus,
+            Token::Ident(String::from("y")),
+            Token::Semicolon,
+            Token::Rbrace,
+            Token::Semicolon,
             Token::Eof,
         ];
 

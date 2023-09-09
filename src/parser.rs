@@ -119,6 +119,7 @@ impl Parser {
             }
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_function_expression()?,
+            Token::Macro => self.parse_macro_expression()?,
             Token::LBracket => self.parse_array_literal()?,
             Token::Lbrace => self.parse_hash_literal()?,
             Token::String(ref s) => Expression::Literal(Literal::String(s.clone())),
@@ -191,6 +192,14 @@ impl Parser {
             None
         };
         Ok(Expression::If(Box::new(condition), if_block, else_block))
+    }
+
+    fn parse_macro_expression(&mut self) -> Result<Expression, ParserError> {
+        self.expect_peek_token(&Token::Lparen)?;
+        let parameters = self.parse_function_parameters()?;
+        self.expect_peek_token(&Token::Lbrace)?;
+        let body = self.parse_block_statement()?;
+        Ok(Expression::Macro(parameters, body))
     }
 
     fn parse_function_expression(&mut self) -> Result<Expression, ParserError> {
@@ -965,6 +974,29 @@ mod test {
         check_expression_statement(&program[3], &Expression::Literal(Literal::Hash(vec![])));
     }
 
+    #[test]
+    fn it_parses_macro_literals() {
+        let input = r#"
+                macro(x, y) { x + y; };
+                "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        check_expression_statement(
+            &program[0],
+            &Expression::Macro(
+                vec!["x".into(), "y".into()],
+                vec![Statement::Expression(Expression::Infix(
+                    Box::new(Expression::Identifier("x".into())),
+                    Token::Plus,
+                    Box::new(Expression::Identifier("y".into())),
+                ))],
+            ),
+        );
+    }
+
     fn check_expression_statement(statement: &Statement, expected_value: &Expression) {
         match statement {
             Statement::Expression(expression) => check_expression(expression, expected_value),
@@ -1063,6 +1095,15 @@ mod test {
             ) => {
                 check_expression(&**left_expr, &**expected_left_expr);
                 check_expression(&**index_expr, &**expected_index_expr);
+            }
+            (
+                Expression::Macro(params, body),
+                Expression::Macro(expected_params, expected_body),
+            ) => {
+                assert_eq!(params, expected_params);
+                for (statement, expected_statement) in body.iter().zip(expected_body.iter()) {
+                    assert_eq!(statement, expected_statement);
+                }
             }
             // ... other expression variants can be added as necessary ...
             _ => panic!("Expression type mismatch"),

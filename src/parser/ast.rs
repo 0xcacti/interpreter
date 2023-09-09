@@ -235,6 +235,40 @@ where
                 Node::Expression(Expression::Function(modified_arguments, modified_body))
             }
 
+            Expression::Literal(literal) => {
+                let modified_literal = match literal {
+                    Literal::Array(expressions) => {
+                        let modified_expressions: Vec<Expression> = expressions
+                            .iter()
+                            .map(|expression| {
+                                let modified_expression =
+                                    modify(Node::Expression(expression.clone()), modifier.clone());
+                                unwrap_node_to_expression(modified_expression)
+                            })
+                            .collect();
+                        Literal::Array(modified_expressions)
+                    }
+                    Literal::Hash(pairs) => {
+                        let modified_pairs: Vec<(Expression, Expression)> = pairs
+                            .iter()
+                            .map(|(key, value)| {
+                                let modified_key =
+                                    modify(Node::Expression(key.clone()), modifier.clone());
+                                let modified_value =
+                                    modify(Node::Expression(value.clone()), modifier.clone());
+                                (
+                                    unwrap_node_to_expression(modified_key),
+                                    unwrap_node_to_expression(modified_value),
+                                )
+                            })
+                            .collect();
+                        Literal::Hash(modified_pairs)
+                    }
+                    _ => literal.clone(),
+                };
+                Node::Expression(Expression::Literal(modified_literal))
+            }
+
             _ => Node::Expression(expression),
         },
         Node::Statement(statement) => match statement {
@@ -493,6 +527,28 @@ mod test {
                 vec!["a".to_string()],
                 vec![Statement::Expression(unwrap_node_to_expression(two()))],
             )),
+        )];
+
+        for (input, expected) in tests {
+            let modified = modify(input, &turn_one_into_two);
+            println!("modified: {}", modified);
+            println!("expected: {}", expected);
+            assert_eq!(modified, expected);
+        }
+    }
+
+    #[test]
+    fn it_modifies_array_literals() {
+        let (one, two, turn_one_into_two) = get_closures();
+        let tests = vec![(
+            Node::Expression(Expression::Literal(Literal::Array(vec![
+                unwrap_node_to_expression(one()),
+                unwrap_node_to_expression(one()),
+            ]))),
+            Node::Expression(Expression::Literal(Literal::Array(vec![
+                unwrap_node_to_expression(two()),
+                unwrap_node_to_expression(two()),
+            ]))),
         )];
 
         for (input, expected) in tests {

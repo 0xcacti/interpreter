@@ -1065,7 +1065,7 @@ mod test {
     }
 
     #[test]
-    fn it_expands_macros() {
+    fn it_binds_macros() {
         let input = r#"
             let number = 1;
             let function = fn(x, y) { x + y };
@@ -1096,5 +1096,33 @@ mod test {
             _ => panic!("expected macro"),
         }
         //.get("number".to_string());
+    }
+
+    #[test]
+    fn it_expands_macros() {
+        let tests = vec![
+            (
+                r#"
+            let infixExpression = macro() { quote(1 + 2); };
+            infixExpression();
+            "#,
+                "(1 + 2)",
+            ),
+            (
+                r#"
+                let reverse = macro(a, b) { quote(unquote(b) - unquote(a)); };
+                reverse(2 + 2, 10 - 5);
+                "#,
+                "(10 - 5) - (2 + 2)",
+            ),
+        ];
+        for test in tests {
+            let program = test_parse(test.0.to_string());
+            let expected = test_eval(test.1.to_string());
+            let environment = Rc::new(RefCell::new(Environment::new()));
+            define_macros(&mut program.clone(), environment.clone());
+            let expanded = expand_macros(program, environment);
+            assert_eq!(expanded, expected);
+        }
     }
 }

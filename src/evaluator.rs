@@ -429,6 +429,10 @@ fn is_macro_definition(statement: &Statement) -> bool {
     }
 }
 
+fn expand_macros(node: Node, env: Env) -> Result<Node, EvaluatorError> {
+    ast::modify(node, ||  )
+}
+
 #[cfg(test)]
 mod test {
 

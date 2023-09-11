@@ -430,7 +430,7 @@ fn is_macro_definition(statement: &Statement) -> bool {
 }
 
 fn expand_macros(node: Node, env: Env) -> Result<Node, EvaluatorError> {
-    // I somehow have to figure out how to get the env in here
+    // TODO: I somehow have to figure out how to get the env in here
     ast::modify(node, ||  )
 }
 

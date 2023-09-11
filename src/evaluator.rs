@@ -429,9 +429,42 @@ fn is_macro_definition(statement: &Statement) -> bool {
     }
 }
 
-fn expand_macros(node: Node, env: Env) -> Result<Node, EvaluatorError> {
+fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
     // TODO: I somehow have to figure out how to get the env in here
-    ast::modify(node, ||  )
+    Ok(ast::modify(program, |node: Node| -> Node {
+        match &node {
+            Node::Expression(expression) => match expression {
+                Expression::FunctionCall(function, arguments) => match &**function {
+                    Expression::Identifier(identifier) => {
+                        let object = env.borrow_mut().get(&identifier).unwrap();
+                        let args: Vec<Object> = arguments
+                            .iter()
+                            .map(|a| Object::Quote(Node::Expression(a.clone())))
+                            .collect();
+                    }
+                    _ => return node,
+                },
+                _ => return node,
+            },
+            _ => return node,
+        }
+    }))
+}
+fn extend_macro_env(macro_object: Object, arguments: Vec<Object>) -> Result<Env, EvaluatorError> {
+    if let Object::Macro(_) = macro_object {
+        if arguments.iter().all(|arg| matches!(arg, Object::Quote(_))) {
+            let env = Rc::new(RefCell::new(Environment::new_enclosed_environment()));
+            return Ok(Rc < R);
+        } else {
+            return Err(EvaluatorError::new(
+                "arguments to macro must be quoted".to_string(),
+            ));
+        }
+    } else {
+        Err(EvaluatorError::new(
+            "only macros can be extended".to_string(),
+        ));
+    }
 }
 
 #[cfg(test)]

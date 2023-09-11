@@ -420,7 +420,6 @@ mod test {
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        println!("{:?}", program);
         assert_eq!(program.len(), 5);
         check_expression_statement(
             &program[0],
@@ -610,7 +609,6 @@ mod test {
         let mut without_parens_parser = Parser::new(without_parens_lexer);
         let without_parens_program = without_parens_parser.parse_program().unwrap();
 
-        println!("==================");
         let with_parens_lexer = Lexer::new(with_parens.into());
         let mut with_parens_parser = Parser::new(with_parens_lexer);
         let with_parens_program = with_parens_parser.parse_program().unwrap();
@@ -760,7 +758,6 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 1);
-        println!("MEOWMEWOWEM");
         check_expression_statement(
             &program[0],
             &Expression::FunctionCall(

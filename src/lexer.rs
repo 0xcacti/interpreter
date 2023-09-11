@@ -83,9 +83,6 @@ impl Lexer {
         double_token: Token,
     ) -> Token {
         if self.peek() == expected_next {
-            println!("peek: {}", self.peek());
-            println!("for some reason we are in here");
-
             self.read_char();
             return double_token;
         }

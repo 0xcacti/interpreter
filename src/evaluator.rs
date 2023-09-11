@@ -392,7 +392,7 @@ fn evaluate_index_expression(left: &Object, index: &Object) -> Result<Rc<Object>
     }
 }
 
-fn define_macros(program: &mut Vec<Statement>, env: Env) {
+pub fn define_macros(program: &mut Vec<Statement>, env: Env) {
     let mut definitions = Vec::new();
     for (i, statement) in program.iter().enumerate() {
         if is_macro_definition(statement) {
@@ -429,7 +429,7 @@ fn is_macro_definition(statement: &Statement) -> bool {
     }
 }
 
-fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
+pub fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
     Ok(ast::modify(program, |node: Node| -> Node {
         match &node {
             Node::Expression(expression) => match expression {

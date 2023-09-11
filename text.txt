@@ -1,8 +1,1 @@
-
-expanded: Program([Let("infixExpression", Macro([], [Expression(FunctionCall(Identifier("quote"), [Infix(Literal(Integer(1)), Plus, Literal(Integer(2)))]))])), Expression(Infix(Literal(Integer(1)), Plus, Literal(Integer(2))))])
-expected: [Expression(Infix(Literal(Integer(1)), Plus, Literal(Integer(2))))]
-thread 'evaluator::test::it_expands_macros' panicked at src/evaluator.rs:1188:13:
-assertion `left == right` failed
-  left: Program([Let("infixExpression", Macro([], [Expression(FunctionCall(Identifier("quote"), [Infix(Literal(Integer(1)), Plus, Literal(Integer(2)))]))])), Expression(Infix(Literal(Integer(1)), Plus, Literal(Integer(2))))])
- right: Program([Expression(Infix(Literal(Integer(1)), Plus, Literal(Integer(2))))])
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+let unless = macro(condition, consequence, alternative) { quote(if (!(unquote(condition))) { unquote(consequence); } else { unquote(alternative); }); };

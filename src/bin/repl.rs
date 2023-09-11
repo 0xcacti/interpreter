@@ -1,6 +1,6 @@
 use anyhow::Result;
 use interpreter::evaluator::environment::Environment;
-use interpreter::evaluator::evaluate;
+use interpreter::evaluator::{define_macros, evaluate, expand_macros};
 
 use interpreter::lexer::Lexer;
 use interpreter::parser::ast::Node;
@@ -16,6 +16,7 @@ const PROMPT: &str = ">> ";
 
 fn main() -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
+    let macro_env = Rc::new(RefCell::new(Environment::new()));
     println!(
         "Dear {}, Welcome to the Mokey Programming Language REPL!",
         get_current_username().unwrap().to_string_lossy()
@@ -36,16 +37,16 @@ fn main() -> Result<()> {
         let mut parser = Parser::new(lexer.into());
         let program = parser.parse_program();
 
-        match program {
-            Ok(program) => {
-                println!("{}", evaluate(Node::Program(program), Rc::clone(&env))?);
-            }
-            Err(err) => {
-                println!("Woops! We ran into some monkey business here!");
-                println!("parser errors:");
-                for e in err {
-                    eprintln!("\t{}", e);
-                }
+        if let Ok(mut program) = program {
+            define_macros(&mut program, Rc::clone(&macro_env));
+            let expanded =
+                expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
+            println!("{}", evaluate(expanded, Rc::clone(&env))?);
+        } else if let Err(err) = &program {
+            println!("Woops! We ran into some monkey business here!");
+            println!("parser errors:");
+            for e in err {
+                eprintln!("\t{}", e);
             }
         }
     }

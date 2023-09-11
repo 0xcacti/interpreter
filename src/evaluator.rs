@@ -1183,6 +1183,27 @@ mod test {
                 "#,
                 "(10 - 5) - (2 + 2)",
             ),
+            (
+                r#"
+                let unless = macro(condition, consequence, alternative) {
+                    quote(
+                        if (!(unquote(condition))) {
+                            unquote(consequence);
+                        } else {
+                            unquote(alternative);
+                        }
+                    );
+                };
+                unless(10 > 5, puts("not greater"), puts("greater"));   
+                "#,
+                r#"
+                if (!(10 > 5)) {
+                    puts("not greater");
+                } else {
+                    puts("greater");
+                }
+                "#,
+            ),
         ];
         for test in tests {
             let program = test_parse(test.0.to_string());

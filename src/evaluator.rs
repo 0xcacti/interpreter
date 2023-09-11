@@ -436,11 +436,24 @@ fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
             Node::Expression(expression) => match expression {
                 Expression::FunctionCall(function, arguments) => match &**function {
                     Expression::Identifier(identifier) => {
-                        let object = env.borrow_mut().get(&identifier).unwrap();
-                        let args: Vec<Object> = arguments
-                            .iter()
-                            .map(|a| Object::Quote(Node::Expression(a.clone())))
-                            .collect();
+                        let macro_object = env.borrow_mut().get(&identifier).unwrap();
+                        match &*macro_object {
+                            Object::Macro(_, body, _) => {
+                                let args: Vec<Object> = arguments
+                                    .iter()
+                                    .map(|a| Object::Quote(Node::Expression(a.clone())))
+                                    .collect();
+                                let extended_env =
+                                    extend_macro_env(Rc::clone(&macro_object), args).unwrap();
+                                let evaluated =
+                                    evaluate(Node::Program(body.clone()), extended_env).unwrap();
+                                match &*evaluated {
+                                    Object::Quote(quote) => return quote.clone(),
+                                    _ => panic!("unexpected object type: {:?} - we only support returning AST-nodes from macros", evaluated),
+                                }
+                            }
+                            _ => return node,
+                        }
                     }
                     _ => return node,
                 },
@@ -450,18 +463,27 @@ fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
         }
     }))
 }
-fn extend_macro_env(macro_object: Object, arguments: Vec<Object>) -> Result<Env, EvaluatorError> {
-    if let Object::Macro(_) = macro_object {
+fn extend_macro_env(
+    macro_object: Rc<Object>,
+    arguments: Vec<Object>,
+) -> Result<Env, EvaluatorError> {
+    if let Object::Macro(macro_args, body, env) = &*macro_object {
+        //
         if arguments.iter().all(|arg| matches!(arg, Object::Quote(_))) {
-            let env = Rc::new(RefCell::new(Environment::new_enclosed_environment()));
-            return Ok(Rc < R);
+            let mut extended_env = Environment::new_enclosed_environment(Rc::clone(env));
+            for (i, macro_arg) in macro_args.iter().enumerate() {
+                let arg = arguments[i].clone();
+
+                extended_env.set(macro_arg.to_string(), Rc::new(arg));
+            }
+            return Ok(Rc::new(RefCell::new(extended_env)));
         } else {
             return Err(EvaluatorError::new(
                 "arguments to macro must be quoted".to_string(),
             ));
         }
     } else {
-        Err(EvaluatorError::new(
+        return Err(EvaluatorError::new(
             "only macros can be extended".to_string(),
         ));
     }

@@ -430,29 +430,36 @@ fn is_macro_definition(statement: &Statement) -> bool {
 }
 
 fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
-    // TODO: I somehow have to figure out how to get the env in here
     Ok(ast::modify(program, |node: Node| -> Node {
         match &node {
             Node::Expression(expression) => match expression {
                 Expression::FunctionCall(function, arguments) => match &**function {
                     Expression::Identifier(identifier) => {
-                        let macro_object = env.borrow_mut().get(&identifier).unwrap();
-                        match &*macro_object {
-                            Object::Macro(_, body, _) => {
-                                let args: Vec<Object> = arguments
-                                    .iter()
-                                    .map(|a| Object::Quote(Node::Expression(a.clone())))
-                                    .collect();
-                                let extended_env =
-                                    extend_macro_env(Rc::clone(&macro_object), args).unwrap();
-                                let evaluated =
-                                    evaluate(Node::Program(body.clone()), extended_env).unwrap();
-                                match &*evaluated {
-                                    Object::Quote(quote) => return quote.clone(),
-                                    _ => panic!("unexpected object type: {:?} - we only support returning AST-nodes from macros", evaluated),
+                        // Use a simple borrow here
+                        let macro_object = env.borrow().get(&identifier);
+                        match macro_object {
+                            Some(macro_obj) => match &*macro_obj {
+                                Object::Macro(_, body, _) => {
+                                    let args: Vec<Object> = arguments
+                                        .iter()
+                                        .map(|a| Object::Quote(Node::Expression(a.clone())))
+                                        .collect();
+                                    match extend_macro_env(Rc::clone(&macro_obj), args) {
+                                        Ok(extended_env) => {
+                                            match evaluate(Node::Program(body.clone()), extended_env) {
+                                                Ok(evaluated) => match &*evaluated {
+                                                    Object::Quote(quote) => return quote.clone(),
+                                                    _ => panic!("unexpected object type: {:?} - we only support returning AST-nodes from macros", evaluated),
+                                                },
+                                                Err(_) => return node,
+                                            }
+                                        }
+                                        Err(_) => return node,
+                                    }
                                 }
-                            }
-                            _ => return node,
+                                _ => return node,
+                            },
+                            None => return node,
                         }
                     }
                     _ => return node,
@@ -463,6 +470,7 @@ fn expand_macros(program: Node, env: Env) -> Result<Node, EvaluatorError> {
         }
     }))
 }
+
 fn extend_macro_env(
     macro_object: Rc<Object>,
     arguments: Vec<Object>,
@@ -1178,11 +1186,16 @@ mod test {
         ];
         for test in tests {
             let program = test_parse(test.0.to_string());
-            let expected = test_eval(test.1.to_string());
+            let expected = test_parse(test.1.to_string());
             let environment = Rc::new(RefCell::new(Environment::new()));
-            define_macros(&mut program.clone(), environment.clone());
-            let expanded = expand_macros(program, environment);
-            assert_eq!(expanded, expected);
+            define_macros(&mut program.clone(), Rc::clone(&environment));
+            let expanded = expand_macros(Node::Program(program), Rc::clone(&environment)).unwrap();
+
+            if let Node::Program(expanded_program) = expanded {
+                assert_eq!(expanded_program.last(), expected.first());
+            } else {
+                panic!("expected program");
+            }
         }
     }
 }

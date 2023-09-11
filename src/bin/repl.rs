@@ -1,6 +1,8 @@
 use anyhow::Result;
+
 use interpreter::evaluator::environment::Environment;
 use interpreter::evaluator::{define_macros, evaluate, expand_macros};
+use wasm_bindgen::prelude::*;
 
 use interpreter::lexer::Lexer;
 use interpreter::parser::ast::Node;
@@ -35,7 +37,7 @@ fn main() -> Result<()> {
 
         let lexer = Lexer::new(&line);
         let mut parser = Parser::new(lexer.into());
-        let program = parser.parse_program();
+        let mut program = parser.parse_program();
 
         if let Ok(mut program) = program {
             define_macros(&mut program, Rc::clone(&macro_env));

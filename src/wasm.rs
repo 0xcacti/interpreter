@@ -8,8 +8,6 @@ use crate::parser::Parser;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const PROMPT: &str = ">> ";
-
 #[wasm_bindgen]
 pub fn interpret(input: &str) -> String {
     let env = Rc::new(RefCell::new(Environment::new()));
@@ -22,13 +20,17 @@ pub fn interpret(input: &str) -> String {
     match program {
         Ok(mut program) => {
             define_macros(&mut program, Rc::clone(&macro_env));
-            let expanded =
-                expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
+            let expanded = expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env));
 
-            // Note: You may want to return the result of evaluation. Assuming `evaluate` returns a Result<String, SomeError>:
-            match evaluate(expanded, Rc::clone(&env)) {
-                Ok(result) => result.to_string(),
-                Err(err) => format!("Evaluation error: {:?}", err),
+            match expanded {
+                Ok(expanded) => {
+                    // Note: You may want to return the result of evaluation. Assuming `evaluate` returns a Result<String, SomeError>:
+                    match evaluate(expanded, Rc::clone(&env)) {
+                        Ok(result) => return result.to_string(),
+                        Err(err) => return format!("Evaluation error: {:?}", err),
+                    }
+                }
+                Err(err) => return format!("macro expansion error: {:?}", err),
             }
         }
         Err(err) => {
@@ -41,4 +43,3 @@ pub fn interpret(input: &str) -> String {
         }
     }
 }
-

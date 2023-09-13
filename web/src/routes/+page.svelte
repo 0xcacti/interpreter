@@ -1,44 +1,44 @@
+
 <script lang="ts">
-    import "../app.css";
-
-    let wasmModule: any;
-    let wasmReady = false;
+    let wasmModule: any = null;
     let result: string | null = null;
+    let monkeyCode: string = "";
 
-    // @ts-ignore
-    import('/pkg/interpreter.js?url').then((module: any) => {
-        wasmModule = module;
-        console.log("Wasm module loaded:", wasmModule);
+    // Import the WASM binary URL using the vite-plugin-wasm approach.
+    import wasmBinaryUrl from "../lib/pkg/interpreter_bg.wasm?url"; 
 
-        // If the module provides a readiness promise
-        if (wasmModule && wasmModule.ready) {
-            wasmModule.ready.then(() => {
-                wasmReady = true;
-            });
-        } else {
-            wasmReady = true;
+    import { onMount } from "svelte";
+
+    onMount(async () => {
+        if (typeof window !== 'undefined') {
+            try {
+                const response = await fetch(wasmBinaryUrl);
+                const wasmBinary = await response.arrayBuffer();
+                
+                const wasm = await import("../lib/pkg/interpreter.js");
+                wasm.initSync(wasmBinary);
+                wasmModule = wasm;
+            } catch (error) {
+                console.error("Error importing wasm module:", error);
+            }
         }
     });
 
     function handleSubmit(event: Event): void {
         event.preventDefault();
+        
+        // Reset the result before interpreting the new input
+        result = null;
 
-        if (wasmReady && wasmModule) {
-            // Get the value from the textarea
-            const code = (document.getElementById("monkey-code") as HTMLTextAreaElement).value;
-
-            // Now, call the interpret function from the wasmModule directly
-            result = wasmModule.exports?.interpret(code);
+        if (wasmModule && wasmModule.interpret) {
+            // Call the interpret function from the wasmModule directly
+            result = wasmModule.interpret(monkeyCode);
             console.log("Result:", result);
         } else {
             console.log("Wasm module is not yet ready.");
         }
     }
 </script>
-
-<svelte:head>
-    <title>Monkey Playground</title>
-</svelte:head>
 
 <div class="bg-white m-10">
     <header class="flex w-full mb-5">
@@ -52,6 +52,7 @@
                     <textarea
                         id="monkey-code"
                         rows={4}
+                        bind:value={monkeyCode}
                         class="w-full px-8 py-6 text-xl border-black focus:shadow-soft-primary-outline appearance-none rounded-lg border-2 border-solid"
                         placeholder="monkey code goes here"
                     />

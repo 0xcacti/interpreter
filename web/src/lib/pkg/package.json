@@ -1,0 +1,14 @@
+{
+  "name": "interpreter",
+  "version": "0.1.0",
+  "files": [
+    "interpreter_bg.wasm",
+    "interpreter.js",
+    "interpreter.d.ts"
+  ],
+  "module": "interpreter.js",
+  "types": "interpreter.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

@@ -1,5 +1,6 @@
 
 <script lang="ts">
+    import "../app.css";
     let wasmModule: any = null;
     let result: string | null = null;
     let monkeyCode: string = "";

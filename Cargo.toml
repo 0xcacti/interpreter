@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.71"
 thiserror = "1.0.46"
-users = "0.11.0"
 wasm-bindgen = "0.2.87"
 
 
@@ -17,3 +16,6 @@ name = "repl"
 path = "src/bin/repl.rs"
 
 
+
+[lib]
+crate-type = ["cdylib", "rlib"]

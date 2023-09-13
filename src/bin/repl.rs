@@ -12,17 +12,17 @@ use std::{
     io::{self, Write},
     rc::Rc,
 }; // <-- Add this import for flushing stdout
-use users::get_current_username;
+   // use users::get_current_username;
 
 const PROMPT: &str = ">> ";
 
 fn main() -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
     let macro_env = Rc::new(RefCell::new(Environment::new()));
-    println!(
-        "Dear {}, Welcome to the Mokey Programming Language REPL!",
-        get_current_username().unwrap().to_string_lossy()
-    );
+    //  println!(
+    //      "Dear {}, Welcome to the Mokey Programming Language REPL!",
+    //      get_current_username().unwrap().to_string_lossy()
+    //  );
 
     loop {
         print!("{}", PROMPT);

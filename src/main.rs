@@ -1,21 +1,13 @@
-/// bible-rs is a command line tool for getting a random verse from the Bible.
+/// monkey is the binary for executing the monkey programming language
 #[derive(Debug, Parser)]
-#[command(name="bible-rs", version=crate_version!(), about="daily bread", long_about = "Get a random verse from the Bible.", arg_required_else_help(true))]
-struct BibleParser {
-    /// The subcommand to run
-    #[command(subcommand)]
-    command: Option<Commands>,
-    /// The version of the Bible to use
+#[command(name="monkey", version=crate_version!(), about="monkey language", long_about = "Run monkey code", arg_required_else_help(true))]
+struct MonkeyCmd {
+    /// Exec mode
     #[arg(short, long, required = false, global = true)]
-    bible_version: Option<String>,
-    /// The API key to use
-    #[arg(short, long, required = false, global = true)]
-    api_key: Option<String>,
+    exec_mode: Option<String>,
 }
-
-#[derive(Debug, Subcommand)]
-enum Commands {}
 
 fn main() {
     println!("hello world");
+    let args = MonkeyCmd::parse();
 }

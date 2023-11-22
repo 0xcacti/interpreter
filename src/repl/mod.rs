@@ -16,7 +16,7 @@ use std::{
 
 const PROMPT: &str = ">> ";
 
-fn main() -> Result<()> {
+fn repl() -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
     let macro_env = Rc::new(RefCell::new(Environment::new()));
     //  println!(

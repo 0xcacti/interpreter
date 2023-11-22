@@ -1,3 +1,5 @@
+use monkey::repl;
+
 enum ExecMode {
     VM,
     Raw,
@@ -24,15 +26,17 @@ fn main() {
 
     let read_file = false;
 
-    match args.path {
-        Some(path) => {}
-        None() => {}
-    }
-
     match args.exec_mode {
         Some(mode) => {}
         None => {
             // launch repl
+        }
+    }
+
+    match args.path {
+        Some(path) => {}
+        None => {
+            repl::interpret();
         }
     }
 }

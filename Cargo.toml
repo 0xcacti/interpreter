@@ -1,5 +1,5 @@
 [package]
-name = "interpreter"
+name = "monkey"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,13 +9,10 @@ edition = "2021"
 anyhow = "1.0.71"
 thiserror = "1.0.46"
 wasm-bindgen = "0.2.87"
-
-
-[[bin]]
-name = "repl"
-path = "src/bin/repl.rs"
-
+clap = { version = "4.3.1", features = ["derive", "cargo"] }
 
 
 [lib]
+path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
+

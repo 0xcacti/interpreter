@@ -20,6 +20,10 @@ struct MonkeyCmd {
     /// Exec mode
     #[arg(short, long, required = false, global = true)]
     exec_mode: Option<String>,
+
+    /// Enter interactive mode after executing 'script'
+    #[arg(short, long = "interactive", required = false, global = true)]
+    interactive: Option<String>,
 }
 
 // desired behavior, if it has no path => repl, if it has a path, read and run

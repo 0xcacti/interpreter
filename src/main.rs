@@ -1,3 +1,4 @@
+use anyhow::Result;
 use clap::arg;
 use clap::crate_version;
 use clap::Parser;
@@ -35,11 +36,13 @@ fn main() {
     // }
 
     match args.path {
-        Some(path) => {
-            repl::repl(Some(path));
-        }
-        None => {
-            repl::repl(None);
-        }
+        Some(path) => match repl::repl(Some(path)) {
+            Ok(_) => {}
+            Err(e) => eprintln!("Error: {}", e),
+        },
+        None => match repl::repl(None) {
+            Ok(_) => {}
+            Err(e) => eprintln!("Error: {}", e),
+        },
     }
 }

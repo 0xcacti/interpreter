@@ -1,12 +1,12 @@
 use anyhow::Result;
 
-use interpreter::evaluator::environment::Environment;
-use interpreter::evaluator::{define_macros, evaluate, expand_macros};
+use crate::evaluator::environment::Environment;
+use crate::evaluator::{define_macros, evaluate, expand_macros};
 use wasm_bindgen::prelude::*;
 
-use interpreter::lexer::Lexer;
-use interpreter::parser::ast::Node;
-use interpreter::parser::Parser;
+use crate::lexer::Lexer;
+use crate::parser::ast::Node;
+use crate::parser::Parser;
 use std::{
     cell::RefCell,
     io::{self, Write},
@@ -16,7 +16,7 @@ use std::{
 
 const PROMPT: &str = ">> ";
 
-fn repl() -> Result<()> {
+pub fn repl() -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
     let macro_env = Rc::new(RefCell::new(Environment::new()));
     //  println!(

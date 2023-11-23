@@ -1,9 +1,13 @@
+use clap::arg;
+use clap::crate_version;
+use clap::Parser;
 use monkey::repl;
 
-enum ExecMode {
-    VM,
-    Raw,
-}
+// #[derive(Debug)]
+// enum ExecMode {
+//     VM,
+//     Raw,
+// }
 
 /// monkey is the binary for executing the monkey programming language
 #[derive(Debug, Parser)]
@@ -11,10 +15,10 @@ enum ExecMode {
 struct MonkeyCmd {
     /// Path
     #[arg(required = false, global = true)]
-    path: Option<Path>,
+    path: Option<String>,
     /// Exec mode
     #[arg(short, long, required = false, global = true)]
-    exec_mode: Option<ExecMode>,
+    exec_mode: Option<String>,
 }
 
 // desired behavior, if it has no path => repl, if it has a path, read and run
@@ -36,7 +40,7 @@ fn main() {
     match args.path {
         Some(path) => {}
         None => {
-            repl::interpret();
+            repl::repl();
         }
     }
 }

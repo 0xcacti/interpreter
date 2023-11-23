@@ -1,10 +1,9 @@
 pub struct Definition {
-    pub name: string,
-    pub name: operand_widths: 
+    pub name: String,
+    pub size: u64,
 }
 pub enum Opcode {
-    OpConstant(1),
+    OpConstant(u64),
 }
 
 pub type Instructions = Vec<Opcode>;
-

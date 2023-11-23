@@ -16,13 +16,28 @@ use std::{
 
 const PROMPT: &str = ">> ";
 
-pub fn repl() -> Result<()> {
+pub fn repl(path: Option<String>) -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
     let macro_env = Rc::new(RefCell::new(Environment::new()));
-    //  println!(
-    //      "Dear {}, Welcome to the Mokey Programming Language REPL!",
-    //      get_current_username().unwrap().to_string_lossy()
-    //  );
+    println!("Welcome to the Mokey Programming Language REPL!",);
+    if let Some(path) = path {
+        let contents = load_monkey(path)?;
+        let lexer = Lexer::new(&contents);
+        let mut parser = Parser::new(lexer.into());
+        let program = parser.parse_program();
+        if let Ok(mut program) = program {
+            define_macros(&mut program, Rc::clone(&macro_env));
+            let expanded =
+                expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
+            println!("{}", evaluate(expanded, Rc::clone(&env))?);
+        } else if let Err(err) = &program {
+            println!("Woops! We ran into some monkey business here!");
+            println!("parser errors:");
+            for e in err {
+                eprintln!("\t{}", e);
+            }
+        }
+    }
 
     loop {
         print!("{}", PROMPT);
@@ -37,7 +52,7 @@ pub fn repl() -> Result<()> {
 
         let lexer = Lexer::new(&line);
         let mut parser = Parser::new(lexer.into());
-        let mut program = parser.parse_program();
+        let program = parser.parse_program();
 
         if let Ok(mut program) = program {
             define_macros(&mut program, Rc::clone(&macro_env));
@@ -52,4 +67,9 @@ pub fn repl() -> Result<()> {
             }
         }
     }
+}
+
+fn load_monkey(path: String) -> Result<String> {
+    let contents = std::fs::read_to_string(path)?;
+    Ok(contents)
 }

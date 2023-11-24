@@ -42,7 +42,7 @@ fn main() {
     match args.path {
         Some(path) => match utils::load_monkey(path) {
             Ok(contents) => match monkey::interpret_chunk(contents, None, None) {
-                Ok(_) => {}
+                Ok(_) => return,
                 Err(e) => {
                     eprintln!("Error: {}", e);
                     std::process::exit(1);
@@ -62,6 +62,9 @@ fn main() {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },
-        None => {}
+        None => match monkey::repl(None) {
+            Ok(_) => {}
+            Err(e) => eprintln!("Error: {}", e),
+        },
     }
 }

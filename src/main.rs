@@ -1,8 +1,7 @@
-use anyhow::Result;
 use clap::arg;
 use clap::crate_version;
 use clap::Parser;
-use monkey::repl;
+use monkey::monkey::repl;
 
 // #[derive(Debug)]
 // enum ExecMode {
@@ -17,9 +16,9 @@ struct MonkeyCmd {
     /// Path
     #[arg(required = false, global = true)]
     path: Option<String>,
-    /// Exec mode
-    #[arg(short, long, required = false, global = true)]
-    exec_mode: Option<String>,
+    /// Execution mode (vm or raw)
+    #[arg(short = 'm', long = "mode", required = false, global = true)]
+    mode: Option<String>,
 
     /// Enter interactive mode after executing 'script'
     #[arg(short = 'i', long = "interactive", required = false, global = true)]
@@ -32,19 +31,25 @@ struct MonkeyCmd {
 fn main() {
     let args = MonkeyCmd::parse();
 
-    // match args.exec_mode {
+    match args.path {
+        Some(path) => {}
+        None => {}
+    }
+
+    // match args.mode {
     //     Some(mode) => {}
     //     None => {
     //         // launch repl
     //     }
     // }
 
-    match args.path {
-        Some(path) => match repl::repl(Some(path)) {
+    // repl mode
+    match args.script {
+        Some(path) => match repl(Some(path)) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },
-        None => match repl::repl(None) {
+        None => match repl(None) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },

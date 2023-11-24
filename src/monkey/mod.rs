@@ -23,7 +23,7 @@ pub fn repl(path: Option<String>) -> Result<()> {
     println!("Welcome to the Mokey Programming Language REPL!",);
     if let Some(path) = path {
         let contents = utils::load_monkey(path)?;
-        interpret_chunk(contents, Rc::clone(&env), Rc::clone(&macro_env))?;
+        interpret_chunk(contents, Some(Rc::clone(&env)), Some(Rc::clone(&macro_env)))?;
     }
 
     loop {
@@ -37,15 +37,18 @@ pub fn repl(path: Option<String>) -> Result<()> {
             std::process::exit(0);
         }
 
-        interpret_chunk(line, Rc::clone(&env), Rc::clone(&macro_env))?;
+        interpret_chunk(line, Some(Rc::clone(&env)), Some(Rc::clone(&macro_env)))?;
     }
 }
 
 pub fn interpret_chunk(
     contents: String,
-    env: Rc<RefCell<Environment>>,
-    macro_env: Rc<RefCell<Environment>>,
+    env: Option<Rc<RefCell<Environment>>>,
+    macro_env: Option<Rc<RefCell<Environment>>>,
 ) -> Result<()> {
+    let env = env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));
+    let macro_env = macro_env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));
+
     let lexer = Lexer::new(&contents);
     let mut parser = Parser::new(lexer.into());
     let program = parser.parse_program();

@@ -1,7 +1,8 @@
+use ::monkey::utils;
 use clap::arg;
 use clap::crate_version;
 use clap::Parser;
-use monkey::monkey::repl;
+use monkey::monkey;
 
 // #[derive(Debug)]
 // enum ExecMode {
@@ -31,11 +32,6 @@ struct MonkeyCmd {
 fn main() {
     let args = MonkeyCmd::parse();
 
-    match args.path {
-        Some(path) => {}
-        None => {}
-    }
-
     // match args.mode {
     //     Some(mode) => {}
     //     None => {
@@ -43,15 +39,29 @@ fn main() {
     //     }
     // }
 
+    match args.path {
+        Some(path) => match utils::load_monkey(path) {
+            Ok(contents) => match monkey::interpret_chunk(contents, None, None) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+            },
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            }
+        },
+        None => {}
+    };
+
     // repl mode
     match args.script {
-        Some(path) => match repl(Some(path)) {
+        Some(path) => match monkey::repl(Some(path)) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },
-        None => match repl(None) {
-            Ok(_) => {}
-            Err(e) => eprintln!("Error: {}", e),
-        },
+        None => {}
     }
 }

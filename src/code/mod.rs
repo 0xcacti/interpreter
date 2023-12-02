@@ -49,13 +49,9 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
         let width = def.operand_widths[i];
         match width {
             2 => {
-                instructions.push((o >> 8) as u8);
-                instructions.push(o as u8);
-                println!("{:?}", (o as u16).to_be_bytes());
-                // let mut wtr = Cursor::new(&mut instructions[offset..]);
-                // wtr.write_u16::<BigEndian>(o as u16).unwrap();
-
-                // instructions.extend_from_slice(&o.to_be_bytes()[..2]);
+                let bytes = (o as u16).to_be_bytes();
+                instructions.push(bytes[0]);
+                instructions.push(bytes[1]);
             }
             _ => panic!("invalid operand width"),
         }

@@ -7,7 +7,7 @@ pub type Instructions = Vec<Opcode>;
 
 pub struct Definition {
     pub name: String,
-    pub operand_widths: Vec<u64>,
+    pub operand_widths: Vec<usize>,
 }
 
 trait Operation {
@@ -28,11 +28,23 @@ impl Operation for Opcode {
     }
 }
 
-pub fn make(op: Opcode, operands: Vec<u64>) -> Instructions {
-    let definition = op.definition().unwrap();
-    let length: u64 = definition.operand_widths.into_iter().sum();
-    let mut instructions = Vec::new();
-    instructions[0] = op;
+pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
+    let def = op.definition().unwrap();
+    let length: usize = def.operand_widths.into_iter().sum();
+    let mut instructions = Vec::new().resize(length, 0);
+    let mut offset = 1;
+    for (i, o) in operands.iter().enumerate() {
+        let width = def.operand_widths[i];
+        match width {
+            2 => {
+                instructions[offset + 1] = *o as u8;
+                instructions[offset + 2] = (*o >> 8) as u8;
+            }
+            _ => panic!("invalid operand width"),
+        }
+        offset += width
+    }
+
     return instructions;
 }
 
@@ -40,7 +52,7 @@ pub fn make(op: Opcode, operands: Vec<u64>) -> Instructions {
 mod test {
     use super::*;
 
-    fn check(opcode: Opcode, operands: Vec<u64>, expected: Vec<u8>) {
+    fn check(opcode: Opcode, operands: Vec<usize>, expected: Vec<u8>) {
         let instruction = make(opcode, operands);
         assert_eq!(instruction.len(), expected.len());
         for (i, b) in expected.iter().enumerate() {
@@ -50,7 +62,7 @@ mod test {
 
     #[test]
     fn it_makes_correctly() {
-        check(0, vec![0], vec![0]);
-        assert!(false);
+        let tests = (0, vec![65543], vec![0, 255, 254]);
+        check(tests.0, tests.1, tests.2);
     }
 }

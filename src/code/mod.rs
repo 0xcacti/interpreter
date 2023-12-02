@@ -1,3 +1,6 @@
+pub mod error;
+use self::error::CodeError;
+
 pub type Opcode = u8;
 
 pub type Instructions = Vec<Opcode>;
@@ -7,40 +10,29 @@ pub struct Definition {
     pub operand_widths: Vec<u64>,
 }
 
-pub enum Opcodes {
-    Constant,
+trait Operation {
+    fn definition(&self) -> Result<Definition, CodeError>;
 }
 
-pub fn opcode_from_u8(byte: u8) -> Opcodes {
-    match byte {
-        0 => Opcodes::Constant,
-    }
-}
-impl Opcodes {
-    pub fn definition(&self) -> Definition {
+impl Operation for Opcode {
+    fn definition(&self) -> Result<Definition, CodeError> {
         match self {
-            Opcodes::Constant => {
-                return Definition {
+            0 => {
+                return Ok(Definition {
                     name: "OpConstant".to_string(),
                     operand_widths: vec![2],
-                }
+                })
             }
+            _ => return Err(CodeError::new("opcode not found".to_string())),
         }
     }
 }
 
 pub fn make(op: Opcode, operands: Vec<u64>) -> Instructions {
-    let definition = opcode_from_u8(op).definition();
-    let length: u64 = definition.operand_widths.iter().sum() + 1;
+    let definition = op.definition().unwrap();
+    let length: u64 = definition.operand_widths.into_iter().sum();
     let mut instructions = Vec::new();
     instructions[0] = op;
-    let offset = operands.iter().reduce(|width| {
-        match width {
-            2: 
-
-
-        }
-    })
     return instructions;
 }
 

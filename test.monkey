@@ -7,4 +7,5 @@ let y = 33;
 
 let z = x / y;
 
-meow(x, z)
+echoln(meow(x, z))
+echoln("hello, world")

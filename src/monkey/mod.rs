@@ -56,7 +56,7 @@ pub fn interpret_chunk(
         define_macros(&mut program, Rc::clone(&macro_env));
         let expanded =
             expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
-        println!("{}", evaluate(expanded, Rc::clone(&env))?);
+        evaluate(expanded, Rc::clone(&env))?;
     } else if let Err(err) = &program {
         println!("Woops! We ran into some monkey business here!");
         println!("parser errors:");

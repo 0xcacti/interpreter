@@ -11,6 +11,11 @@ pub enum Opcodes {
     Constant,
 }
 
+pub fn opcode_from_u8(byte: u8) -> Opcodes {
+    match byte {
+        0 => Opcodes::Constant,
+    }
+}
 impl Opcodes {
     pub fn definition(&self) -> Definition {
         match self {
@@ -25,10 +30,20 @@ impl Opcodes {
 }
 
 pub fn make(op: Opcode, operands: Vec<u64>) -> Instructions {
-    let definition = op.definition()
-    let length = op.
+    let definition = opcode_from_u8(op).definition();
+    let length: u64 = definition.operand_widths.iter().sum() + 1;
+    let mut instructions = Vec::new();
+    instructions[0] = op;
+    let offset = operands.iter().reduce(|width| {
+        match width {
+            2: 
 
+
+        }
+    })
+    return instructions;
 }
+
 #[cfg(test)]
 mod test {
     use super::*;

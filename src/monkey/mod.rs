@@ -12,8 +12,7 @@ use std::{
     cell::RefCell,
     io::{self, Write},
     rc::Rc,
-}; // <-- Add this import for flushing stdout
-   // use users::get_current_username;
+};
 
 const PROMPT: &str = ">> ";
 

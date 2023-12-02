@@ -31,7 +31,8 @@ impl Operation for Opcode {
 pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
     let def = op.definition().unwrap();
     let length: usize = def.operand_widths.into_iter().sum();
-    let mut instructions = Vec::new().resize(length, 0);
+    let mut instructions = Vec::new();
+    instructions.resize_with(length, f)
     let mut offset = 1;
     for (i, o) in operands.iter().enumerate() {
         let width = def.operand_widths[i];

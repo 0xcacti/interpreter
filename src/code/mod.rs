@@ -1,4 +1,8 @@
 pub mod error;
+use std::io::Cursor;
+
+use byteorder::{BigEndian, WriteBytesExt};
+
 use self::error::CodeError;
 
 pub type Opcode = u8;
@@ -29,25 +33,36 @@ impl Operation for Opcode {
 }
 
 pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
+    println!("make");
+    println!("{:?}", op);
+    println!("{:?}", operands);
     let def = op.definition().unwrap();
     let length: usize = (def.operand_widths.iter().sum::<usize>()) + 1;
-    let mut instructions = Vec::new();
-    instructions.resize_with(length, Default::default);
-    instructions[0] = op;
+    let mut instructions = Vec::with_capacity(length);
+
+    instructions.push(op);
     let mut offset = 1;
-    for (i, o) in operands.iter().enumerate() {
+    for (i, &o) in operands.iter().enumerate() {
+        println!("====================");
+        println!("{}: {}", i, o);
+        println!("====================");
         let width = def.operand_widths[i];
         match width {
             2 => {
-                instructions[offset + 1] = *o as u8;
-                instructions[offset + 2] = (*o >> 8) as u8;
+                instructions.push((o >> 8) as u8);
+                instructions.push(o as u8);
+                println!("{:?}", (o as u16).to_be_bytes());
+                // let mut wtr = Cursor::new(&mut instructions[offset..]);
+                // wtr.write_u16::<BigEndian>(o as u16).unwrap();
+
+                // instructions.extend_from_slice(&o.to_be_bytes()[..2]);
             }
             _ => panic!("invalid operand width"),
         }
         offset += width
     }
-
-    return instructions;
+    println!("{:?}", instructions);
+    instructions
 }
 
 #[cfg(test)]
@@ -64,7 +79,7 @@ mod test {
 
     #[test]
     fn it_makes_correctly() {
-        let tests = (0, vec![65543], vec![0, 255, 254]);
+        let tests = (0, vec![65534], vec![0, 255, 254]);
         check(tests.0, tests.1, tests.2);
     }
 }

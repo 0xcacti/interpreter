@@ -34,5 +34,22 @@ impl Compiler {
 
 #[cfg(test)]
 mod test {
+    use crate::{
+        lexer::Lexer,
+        parser::{ast::Node, Parser},
+    };
+
     use super::*;
+
+    fn test_compilation(input: &str) {
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        let mut compiler = Compiler::new();
+        compiler.compile(Node::Program(program)).unwrap();
+        let bytecode = compiler.bytecode();
+    }
+
+    #[test]
+    fn it_compiles_integer_arithmetic() {}
 }

@@ -1,52 +1,35 @@
 pub mod error;
 use std::io::Cursor;
 
-use byteorder::{BigEndian, WriteBytesExt};
-
-use self::error::CodeError;
-
-pub type Opcode = u8;
-
-pub type Instructions = Vec<Opcode>;
-
-pub struct Definition {
-    pub name: String,
-    pub operand_widths: Vec<usize>,
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Opcode {
+    Constant,
 }
 
-trait Operation {
-    fn definition(&self) -> Result<Definition, CodeError>;
-}
+pub type Instructions = Vec<u8>;
 
-impl Operation for Opcode {
-    fn definition(&self) -> Result<Definition, CodeError> {
+impl Opcode {
+    pub fn name(&self) -> &str {
         match self {
-            0 => {
-                return Ok(Definition {
-                    name: "OpConstant".to_string(),
-                    operand_widths: vec![2],
-                })
-            }
-            _ => return Err(CodeError::new("opcode not found".to_string())),
+            Opcode::Constant => "OpConstant",
+        }
+    }
+
+    pub fn operand_widths(&self) -> Vec<usize> {
+        match self {
+            Opcode::Constant => vec![2],
         }
     }
 }
 
-pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
-    println!("make");
-    println!("{:?}", op);
-    println!("{:?}", operands);
-    let def = op.definition().unwrap();
-    let length: usize = (def.operand_widths.iter().sum::<usize>()) + 1;
+pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
+    let length: usize = (op.operand_widths().iter().sum::<usize>()) + 1;
     let mut instructions = Vec::with_capacity(length);
+    instructions.push(op as u8);
 
-    instructions.push(op);
-    let mut offset = 1;
     for (i, &o) in operands.iter().enumerate() {
-        println!("====================");
-        println!("{}: {}", i, o);
-        println!("====================");
-        let width = def.operand_widths[i];
+        let width = op.operand_widths()[i];
         match width {
             2 => {
                 let bytes = (o as u16).to_be_bytes();
@@ -55,9 +38,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
             }
             _ => panic!("invalid operand width"),
         }
-        offset += width
     }
-    println!("{:?}", instructions);
     instructions
 }
 
@@ -75,7 +56,9 @@ mod test {
 
     #[test]
     fn it_makes_correctly() {
-        let tests = (0, vec![65534], vec![0, 255, 254]);
-        check(tests.0, tests.1, tests.2);
+        let tests = vec![(Opcode::Constant, vec![65534], vec![0, 255, 254])];
+        for (opcode, operands, expected) in tests {
+            check(opcode, operands, expected);
+        }
     }
 }

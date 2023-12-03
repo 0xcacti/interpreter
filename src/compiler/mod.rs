@@ -44,8 +44,8 @@ mod test {
 
     fn test_compilation(
         input: &str,
-        expected_instructions: Vec<Instructions>,
-        expected_constants: Vec<object::Object>,
+        actual_instructions: Vec<Instructions>,
+        actual_constants: Vec<object::Object>,
     ) {
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
@@ -53,8 +53,8 @@ mod test {
         let mut compiler = Compiler::new();
         compiler.compile(Node::Program(program)).unwrap();
         let bytecode = compiler.bytecode();
-        test_instructions(expected_instructions, bytecode.instructions);
-        test_constants(expected_constants, bytecode.constants);
+        test_instructions(bytecode.instructions, actual_instructions);
+        test_constants(bytecode.constants, actual_constants);
     }
 
     fn concatenate_instructions(instructions: &Vec<Instructions>) -> Instructions {
@@ -65,7 +65,7 @@ mod test {
         concattenated
     }
 
-    fn test_instructions(actual: Vec<Instructions>, expected: Instructions) {
+    fn test_instructions(expected: Instructions, actual: Vec<Instructions>) {
         let concattenated = concatenate_instructions(&actual);
 
         assert_eq!(concattenated.len(), actual.len());

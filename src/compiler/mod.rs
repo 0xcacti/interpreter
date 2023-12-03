@@ -35,6 +35,7 @@ impl Compiler {
 #[cfg(test)]
 mod test {
     use crate::{
+        code::make,
         lexer::Lexer,
         parser::{ast::Node, Parser},
     };
@@ -90,12 +91,7 @@ mod test {
     fn it_compiles_integer_arithmetic() {
         test_compilation(
             "1 + 2",
-            vec![
-                vec![0x01, 0x00], // OpConstant 0
-                vec![0x01, 0x01], // OpConstant 1
-                vec![0x02],       // OpAdd
-                vec![0x00],       // OpPop
-            ],
+            vec![make(0, vec![0]), make(0, vec![1])],
             vec![object::Object::Integer(1), object::Object::Integer(2)],
         );
     }

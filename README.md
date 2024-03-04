@@ -2,10 +2,13 @@
 
 This repo contains an implementation of Thorsten Ball's Monkey Language in Rust. 
 Initially, I only implemented the interpreter as defined in his Interpreter Book. 
-As I really enjoyed the book, I decided to give the Compiler book a spin.  Now, the 
+As I really enjoyed the book, I decided to give the Compiler Book a spin.  Now, the 
 implementation includes both the original naively interpreted implementation, and the 
 bytecode compiled + vm implementation.  As a treat, you can also run this project 
 in the browser using wasm. 
+
+I used this project to learn rust, and I imagine it isn't the most idiomatic rust code.
+Please feel free to rip into it.
 
 ### Instructions
 

@@ -26,18 +26,8 @@ struct MonkeyCmd {
     script: Option<String>,
 }
 
-// desired behavior, if it has no path => repl, if it has a path, read and run
-// if it has exec mode, use that exec mode
-
 fn main() {
     let args = MonkeyCmd::parse();
-
-    // match args.mode {
-    //     Some(mode) => {}
-    //     None => {
-    //         // launch repl
-    //     }
-    // }
 
     match args.path {
         Some(path) => match utils::load_monkey(path) {

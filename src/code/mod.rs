@@ -1,8 +1,8 @@
 pub mod error;
 use std::io::Cursor;
 
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
 pub enum Opcode {
     Constant,
 }

@@ -48,7 +48,5 @@ two chapters into the book.  Much of the code is influenced by [monkey-wasm](htt
 
 
 TODO: 
-
-- Recall where you are at in the process 
 - Continue on with compiler work 
 

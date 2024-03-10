@@ -1,5 +1,5 @@
 pub mod error;
-use std::io::Cursor;
+use std::{fmt::Display, io::Cursor};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -7,7 +7,7 @@ pub enum Opcode {
     Constant,
 }
 
-pub type Instructions = Vec<u8>;
+struct Instructions(Vec<u8>);
 
 impl Opcode {
     pub fn name(&self) -> &str {
@@ -20,6 +20,12 @@ impl Opcode {
         match self {
             Opcode::Constant => vec![2],
         }
+    }
+}
+
+impl Display for Instructions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
     }
 }
 
@@ -59,6 +65,24 @@ mod test {
         let tests = vec![(Opcode::Constant, vec![65534], vec![0, 255, 254])];
         for (opcode, operands, expected) in tests {
             check(opcode, operands, expected);
+        }
+    }
+
+    #[test]
+    fn it_prints_correctly() {
+        let instructions = vec![
+            make(Opconstant, vec![1]),
+            make(Opconstant, vec![2]),
+            make(Opconstant, vec![65534]),
+        ];
+
+        let expected = r#"0000 OpConstant 1
+            0003 OpConstant 2
+            0006 OpConstant 65534
+        "#;
+        let concattenated = instructions.iter().flatten().collect::<Instructions>();
+        if concattenated.to_string() != expected {
+            panic!("wrong length");
         }
     }
 }

@@ -48,5 +48,5 @@ two chapters into the book.  Much of the code is influenced by [monkey-wasm](htt
 
 
 TODO: 
-- Continue on with compiler work 
+- Work on implementing read_operands and understand make
 

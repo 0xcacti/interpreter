@@ -48,6 +48,8 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     instructions
 }
 
+pub fn read_operands() {}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -65,6 +67,34 @@ mod test {
         let tests = vec![(Opcode::Constant, vec![65534], vec![0, 255, 254])];
         for (opcode, operands, expected) in tests {
             check(opcode, operands, expected);
+        }
+    }
+
+    #[test]
+    fn it_reads_operands_correctly() {
+        struct OperandTest {
+            opcode: Opcode,
+            operands: Vec<int>,
+            bytes_read: int,
+        }
+        let tests = vec![OperandTest {
+            opcode: Opcode::Constant,
+            operands: vec![65535],
+            bytes_read: 2,
+        }];
+
+        for test in tests {
+            let definition = lookup(test.into()).unwrap();
+            let (operands_read, n) = read_operands(definition, instruction[1:]);
+            if n != test.bytes_read {
+                panic!("n wrong");
+            }
+            for (i, want) in test.operands.iter().enumerate() {
+                if operands_read[i] != want {
+                    panic!(format!("operand wrong. Want {}, got {}", want, operands_read[i]));
+                }
+            }
+
         }
     }
 

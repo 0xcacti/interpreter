@@ -7,6 +7,11 @@ pub enum Opcode {
     Constant,
 }
 
+pub struct Definition {
+    name: &'static str,
+    operand_widths: Vec<usize>,
+}
+
 struct Instructions(Vec<u8>);
 
 impl Opcode {
@@ -21,13 +26,50 @@ impl Opcode {
             Opcode::Constant => vec![2],
         }
     }
+
+}
+
+pub fn lookup(op: u8) -> Option<Definition> {
+    match op {
+        0 => Some(Definition {
+            name: "OpConstant",
+            operand_widths: vec![2],
+        }),
+        _ => None,
+    }
+}
+
+pub fn format_instruction(def: &Definition, operands: &[usize]) -> String {
+    let operand_count = def.operand_widths.len();
+    if operands.len() != operand_count {
+        return format!({"ERROR: operand len {} does not match defined {}\n", operands.len(), operand_count}).to_string();
+    }
+    match operand_count{
+        1 => return format!("{} {}", def.name, operands[0]).to_string(),
+        _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
+    }
 }
 
 impl Display for Instructions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut i = 0;
+        while i < self.0.len() {
+            let definition = lookup(self.0[i]);
+            if definition.is_none() {
+                write!(f, "ERROR: undefined opcode {}", self.0[i])?;
+                continue;
+            }
+            let def = definition.unwrap();
+            let (operands, n) = read_operands(&def, &self.0[i+1..]);
+            write!(f, "{:04} {}\n", i, format_instruction(&def, operands));
+            i += n + 1;
+        }
+
         Ok(())
     }
 }
+
+
 
 pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     let length: usize = (op.operand_widths().iter().sum::<usize>()) + 1;
@@ -48,7 +90,24 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     instructions
 }
 
-pub fn read_operands() {}
+pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<int>, int){
+    let mut operands: Vec<usize> = Vec::with_capacity(def.operand_widths.len());
+    let mut offset = 0;
+
+    for  width in def.operand_widths.iter() {
+
+        match width {
+            2 => {
+                let bytes = instructions[offset..offset+2].to_vec();
+                operands.push(u16::from_be_bytes([bytes[0], bytes[1]]) as usize);
+            }
+            _ => panic!("invalid operand width"),
+        }
+
+        offset = offset + width
+    }
+    return (operands, offset)
+}
 
 #[cfg(test)]
 mod test {

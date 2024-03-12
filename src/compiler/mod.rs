@@ -1,4 +1,4 @@
-psub mod error;
+pub mod error;
 use crate::{code::Instructions, evaluator::object, parser::ast};
 use error::CompileError;
 
@@ -86,7 +86,6 @@ mod test {
             }
         }
     }
-
 
     #[test]
     fn it_compiles_integer_arithmetic() {

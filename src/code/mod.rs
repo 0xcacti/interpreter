@@ -205,12 +205,21 @@ mod test {
         ];
 
         let expected = r#"0000 OpConstant 1
-            0003 OpConstant 2
-            0006 OpConstant 65534
-        "#;
+0003 OpConstant 2
+0006 OpConstant 65534
+"#;
+
         let concattenated = instructions.into_iter().flatten().collect::<Instructions>();
+        println!("{}", concattenated);
+
+        println!("{}", expected);
+
         if concattenated.to_string() != expected {
-            panic!("wrong length");
+            panic!(
+                "wrong length: expected {}, got {}",
+                expected.len(),
+                concattenated.to_string().len()
+            );
         }
     }
 }

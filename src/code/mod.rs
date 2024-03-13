@@ -1,6 +1,9 @@
 pub mod error;
 use std::ops::Index;
-use std::{fmt::Display, io::Cursor};
+use std::{
+    fmt::{Debug, Display},
+    io::Cursor,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -13,7 +16,7 @@ pub struct Definition {
     operand_widths: Vec<usize>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Instructions(Vec<u8>);
 
 impl Index<usize> for Instructions {
@@ -95,6 +98,25 @@ pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
 impl Display for Instructions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut i = 0;
+        while i < self.0.len() {
+            let definition = lookup(self.0[i]);
+            if definition.is_none() {
+                write!(f, "ERROR: undefined opcode {}", self.0[i])?;
+                continue;
+            }
+            let def = definition.unwrap();
+            let (operands, n) = read_operands(&def, &self.0[i + 1..]);
+            write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
+            i += n + 1;
+        }
+        Ok(())
+    }
+}
+
+impl Debug for Instructions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut i = 0;
+        write!(f, "\n")?;
         while i < self.0.len() {
             let definition = lookup(self.0[i]);
             if definition.is_none() {

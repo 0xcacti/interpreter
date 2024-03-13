@@ -53,6 +53,7 @@ mod test {
         let mut compiler = Compiler::new();
         compiler.compile(Node::Program(program)).unwrap();
         let bytecode = compiler.bytecode();
+
         test_instructions(bytecode.instructions, actual_instructions);
         test_constants(bytecode.constants, actual_constants);
     }
@@ -67,11 +68,7 @@ mod test {
 
     fn test_instructions(expected: Instructions, actual: Vec<Instructions>) {
         let concattenated = concatenate_instructions(&actual);
-
-        assert_eq!(concattenated.len(), actual.len());
-        for (i, instruction) in concattenated.iter().enumerate() {
-            assert_eq!(expected[i], *instruction);
-        }
+        assert_eq!(expected, concattenated);
     }
 
     fn test_constants(expected: Vec<object::Object>, actual: Vec<object::Object>) {

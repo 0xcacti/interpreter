@@ -24,9 +24,9 @@ impl Index<usize> for Instructions {
     }
 }
 
-impl From<Vec<u8>> for Instructions {
-    fn from(v: Vec<u8>) -> Self {
-        Instructions(v)
+impl FromIterator<u8> for Instructions {
+    fn from_iter<I: IntoIterator<Item = u8>>(iter: I) -> Self {
+        Instructions(iter.into_iter().collect())
     }
 }
 
@@ -208,7 +208,7 @@ mod test {
             0003 OpConstant 2
             0006 OpConstant 65534
         "#;
-        let concattenated = instructions.iter().flatten().collect::<Instructions>();
+        let concattenated = instructions.into_iter().flatten().collect::<Instructions>();
         if concattenated.to_string() != expected {
             panic!("wrong length");
         }

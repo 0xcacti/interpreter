@@ -15,7 +15,7 @@ pub struct Bytecode {
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
-            instructions: Instructions::new(),
+            instructions: Instructions::new(vec![]),
             constants: vec![],
         }
     }
@@ -58,7 +58,7 @@ mod test {
     }
 
     fn concatenate_instructions(instructions: &Vec<Instructions>) -> Instructions {
-        let mut concattenated: Instructions = Instructions::new();
+        let mut concattenated: Instructions = Instructions::new(vec![]);
         for instruction in instructions {
             concattenated.extend(instruction.clone());
         }
@@ -92,8 +92,8 @@ mod test {
         test_compilation(
             "1 + 2",
             vec![
-                make(Opcode::Constant, Instructions::new(vec![0])),
-                make(Opcode::Constant, Instructions::new(vec![1])),
+                Instructions::new(make(Opcode::Constant, vec![0])),
+                Instructions::new(make(Opcode::Constant, vec![1])),
             ],
             vec![object::Object::Integer(1), object::Object::Integer(2)],
         );

@@ -1,4 +1,5 @@
 pub mod error;
+use std::ops::Index;
 use std::{fmt::Display, io::Cursor};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -12,7 +13,44 @@ pub struct Definition {
     operand_widths: Vec<usize>,
 }
 
-struct Instructions(Vec<u8>);
+#[derive(Debug, Clone)]
+pub struct Instructions(Vec<u8>);
+
+impl Index<usize> for Instructions {
+    type Output = u8;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl From<Vec<u8>> for Instructions {
+    fn from(v: Vec<u8>) -> Self {
+        Instructions(v)
+    }
+}
+
+impl Instructions {
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Instructions(bytes)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<u8> {
+        self.0.iter()
+    }
+
+    pub fn write(&mut self, bytes: Vec<u8>) {
+        self.0.extend(bytes);
+    }
+
+    pub fn extend(&mut self, instructions: Instructions) {
+        self.0.extend(instructions.0);
+    }
+}
 
 impl Opcode {
     pub fn name(&self) -> &str {
@@ -26,7 +64,6 @@ impl Opcode {
             Opcode::Constant => vec![2],
         }
     }
-
 }
 
 pub fn lookup(op: u8) -> Option<Definition> {
@@ -39,12 +76,17 @@ pub fn lookup(op: u8) -> Option<Definition> {
     }
 }
 
-pub fn format_instruction(def: &Definition, operands: &[usize]) -> String {
+pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
     let operand_count = def.operand_widths.len();
     if operands.len() != operand_count {
-        return format!({"ERROR: operand len {} does not match defined {}\n", operands.len(), operand_count}).to_string();
+        return format!(
+            "ERROR: operand len {} does not match defined {}\n",
+            operands.len(),
+            operand_count
+        )
+        .to_string();
     }
-    match operand_count{
+    match operand_count {
         1 => return format!("{} {}", def.name, operands[0]).to_string(),
         _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
     }
@@ -60,16 +102,13 @@ impl Display for Instructions {
                 continue;
             }
             let def = definition.unwrap();
-            let (operands, n) = read_operands(&def, &self.0[i+1..]);
-            write!(f, "{:04} {}\n", i, format_instruction(&def, operands));
+            let (operands, n) = read_operands(&def, &self.0[i + 1..]);
+            write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
             i += n + 1;
         }
-
         Ok(())
     }
 }
-
-
 
 pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     let length: usize = (op.operand_widths().iter().sum::<usize>()) + 1;
@@ -90,15 +129,14 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     instructions
 }
 
-pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<int>, int){
+pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<usize>, usize) {
     let mut operands: Vec<usize> = Vec::with_capacity(def.operand_widths.len());
     let mut offset = 0;
 
-    for  width in def.operand_widths.iter() {
-
+    for width in def.operand_widths.iter() {
         match width {
             2 => {
-                let bytes = instructions[offset..offset+2].to_vec();
+                let bytes = instructions[offset..offset + 2].to_vec();
                 operands.push(u16::from_be_bytes([bytes[0], bytes[1]]) as usize);
             }
             _ => panic!("invalid operand width"),
@@ -106,7 +144,7 @@ pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<int>, int){
 
         offset = offset + width
     }
-    return (operands, offset)
+    return (operands, offset);
 }
 
 #[cfg(test)]
@@ -133,8 +171,8 @@ mod test {
     fn it_reads_operands_correctly() {
         struct OperandTest {
             opcode: Opcode,
-            operands: Vec<int>,
-            bytes_read: int,
+            operands: Vec<usize>,
+            bytes_read: usize,
         }
         let tests = vec![OperandTest {
             opcode: Opcode::Constant,
@@ -143,26 +181,27 @@ mod test {
         }];
 
         for test in tests {
-            let definition = lookup(test.into()).unwrap();
-            let (operands_read, n) = read_operands(definition, instruction[1:]);
+            let instruction = make(test.opcode, test.operands.clone());
+            let definition = lookup(test.opcode as u8).unwrap();
+            let (operands_read, n) = read_operands(&definition, &instruction[1..]);
+
             if n != test.bytes_read {
                 panic!("n wrong");
             }
             for (i, want) in test.operands.iter().enumerate() {
-                if operands_read[i] != want {
-                    panic!(format!("operand wrong. Want {}, got {}", want, operands_read[i]));
+                if operands_read[i] != *want {
+                    panic!("operand wrong. Want {}, got {}", want, operands_read[i]);
                 }
             }
-
         }
     }
 
     #[test]
     fn it_prints_correctly() {
         let instructions = vec![
-            make(Opconstant, vec![1]),
-            make(Opconstant, vec![2]),
-            make(Opconstant, vec![65534]),
+            make(Opcode::Constant, vec![1]),
+            make(Opcode::Constant, vec![2]),
+            make(Opcode::Constant, vec![65534]),
         ];
 
         let expected = r#"0000 OpConstant 1

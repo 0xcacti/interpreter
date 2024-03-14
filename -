@@ -1,8 +1,8 @@
 pub mod error;
 use crate::{
-    code::{self, Instructions, Opcode},
+    code::Instructions,
     evaluator::object,
-    parser::ast::{Expression, Literal, Node, Statement},
+    parser::ast::{Expression, Node, Statement},
 };
 use error::CompileError;
 
@@ -32,8 +32,8 @@ impl Compiler {
                 }
             }
             Node::Statement(statement) => match statement {
-                Statement::Expression(expression) => {
-                    self.compile(Node::Expression(expression))?;
+                Statement::ExpressionStatement(expression) => {
+                    self.compile(Node::Expression(expression.expression))?;
                 }
                 _ => {
                     panic!("not implemented")
@@ -45,16 +45,9 @@ impl Compiler {
                     self.compile(Node::Expression(*left))?;
                     self.compile(Node::Expression(*right))?;
                 }
-                Expression::Literal(literal) => match literal {
-                    Literal::Integer(value) => {
-                        let integer = object::Object::Integer(value);
-                        let position = self.add_constant(integer);
-                        self.emit(Opcode::Constant, vec![position]);
-                    }
-                    _ => {
-                        panic!("not implemented")
-                    }
-                },
+                Expression::IntegerLiteral(value) => {
+                    let integer = object::Object::Integer(value);
+                }
                 _ => {
                     panic!("not implemented")
                 }
@@ -70,22 +63,9 @@ impl Compiler {
         }
     }
 
-    pub fn add_constant(&mut self, object: object::Object) -> usize {
-        self.constants.push(object);
-
+    pub fn add_constant(&self, object: object::Object) -> usize {
+        self.constants.extend(object);
         self.constants.len() - 1
-    }
-
-    pub fn emit(&mut self, opcode: Opcode, operands: Vec<usize>) -> usize {
-        let ins = code::make(opcode, operands);
-        let pos = self.add_instructions(ins);
-        pos
-    }
-
-    pub fn add_instructions(&mut self, instructions: Vec<u8>) -> usize {
-        let position_new = self.instructions.len();
-        self.instructions.extend(Instructions::new(instructions));
-        position_new
     }
 }
 

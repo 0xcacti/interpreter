@@ -6,4 +6,5 @@ pub mod monkey;
 pub mod parser;
 pub mod token;
 pub mod utils;
+pub mod vm;
 pub mod wasm;

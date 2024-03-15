@@ -1,9 +1,13 @@
 pub mod error;
 use std::ops::Index;
+use byteorder::{BigEndian, ReadBytesExt};
+
 use std::{
     fmt::{Debug, Display},
     io::Cursor,
 };
+
+use byteorder::BigEndian;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -167,6 +171,11 @@ pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<usize>, usiz
         offset = offset + width
     }
     return (operands, offset);
+}
+
+pub fn read_u16(instructions: Instructions) -> u16 {
+    let mut cursor = Cursor::new(instructions.0);
+    cursor.read_u16::<BigEndian>.unwrap() // TODO: handle error
 }
 
 #[cfg(test)]

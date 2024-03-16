@@ -1,6 +1,6 @@
 pub mod error;
 use error::VmError;
-use crate::{code, compiler, evaluator::object};
+use crate::{code::{self, Instructions}, compiler, evaluator::object};
 
 
 const STACK_SIZE: usize = 2048;
@@ -36,7 +36,7 @@ impl VM {
 
             match opcode {
                 opcode::Constant => {
-                    constant_index = code::read_u16(&self.instructions[ip+1..]);
+                    constant_index = code::read_u16(Instructions(self.instructions.slice(ip+1, instructions.len()));
                     ip = ip + 2;
 
                 }

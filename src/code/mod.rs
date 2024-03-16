@@ -57,6 +57,14 @@ impl Instructions {
     pub fn extend(&mut self, instructions: Instructions) {
         self.0.extend(instructions.0);
     }
+
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
+    }
+
+    pub fn slice(&self, start: usize, end: usize) -> Vec<u8> {
+       self.0[start..end].to_vec()
+    }
 }
 
 impl Opcode {

@@ -36,8 +36,10 @@ impl VM {
 
             match opcode {
                 opcode::Constant => {
-                    constant_index = code::read_u16(Instructions(self.instructions.slice(ip+1, instructions.len()));
+                    constant_index = code::read_u16(Instructions(self.instructions.slice(ip+1, instructions.len())));
                     ip = ip + 2;
+                    vm.push(vm.constants[constand_index as usize].clone())?;
+
 
                 }
             }
@@ -45,6 +47,16 @@ impl VM {
 
         }
         Ok(())
+    }
+
+    pub fn (&mut self, obj: object::Object) -> Result<(), VmError> {
+        if self.sp >= STACK_SIZE {
+            return VmError::new("- Stack overflow -");
+        }
+        self.stack[self.sp] = obj;
+        self.sp += 1;
+        Ok(())
+
     }
 }
 

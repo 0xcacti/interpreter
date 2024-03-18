@@ -49,9 +49,9 @@ impl VM {
         Ok(())
     }
 
-    pub fn (&mut self, obj: object::Object) -> Result<(), VmError> {
+    pub fn push(&mut self, obj: object::Object) -> Result<(), VmError> {
         if self.sp >= STACK_SIZE {
-            return VmError::new("- Stack overflow -");
+            return Err(VmError::new("Stack overflow"));
         }
         self.stack[self.sp] = obj;
         self.sp += 1;

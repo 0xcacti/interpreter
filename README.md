@@ -48,5 +48,32 @@ two chapters into the book.  Much of the code is influenced by [monkey-wasm](htt
 
 
 TODO: 
-- Work on implementing read_operands and understand make
+- Work on fixing the VM mutable borrow issue
+- Figure out what you actually need to be implementing the tests to switch on - 
+    - Right now you give both args as options, the example says to do something like 
+    ```go 
+    func testExpectedObject(
+        t *testing.T,
+        expected interface{},
+        actual object.Object,
+    ) {
+        t.Helper()
+        switch expected := expected.(type) {
+        case int:
+            err := testIntegerObject(int64(expected), actual)
+            if err != nil {
+                t.Errorf("testIntegerObject failed: %s", err)
+            }
+        }
+    }
+    ```
 
+    - I simply use 
+    ```rust 
+        fn test_expected_object(expected: object::Object, actual: object::Object) {
+            match expected {
+                object::Object::Integer(expected) => validate_integer_object(actual, expected),
+                _ => panic!("branch not covered"),
+            }
+        }
+    ```

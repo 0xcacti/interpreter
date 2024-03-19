@@ -2,11 +2,11 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
 #[error("{msg}")]
-pub struct VmError {
-    pub msg: &str,
+pub struct VmError<'a> {
+    pub msg: &'a str,
 }
 
-impl VmError {
+impl<'a> VmError<'a> {
     pub fn new(msg: &str) -> VmError {
         VmError { msg }
     }

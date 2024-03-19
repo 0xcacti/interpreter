@@ -1,18 +1,24 @@
 pub mod error;
-use std::ops::Index;
 use byteorder::{BigEndian, ReadBytesExt};
+use std::ops::Index;
 
 use std::{
     fmt::{Debug, Display},
     io::Cursor,
 };
 
-use byteorder::BigEndian;
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Opcode {
     Constant,
+}
+impl From<u8> for Opcode {
+    fn from(op: u8) -> Opcode {
+        match op {
+            0 => Opcode::Constant,
+            _ => panic!("unknown opcode"),
+        }
+    }
 }
 
 pub struct Definition {
@@ -21,7 +27,7 @@ pub struct Definition {
 }
 
 #[derive(Clone, PartialEq)]
-pub struct Instructions(Vec<u8>);
+pub struct Instructions(pub Vec<u8>);
 
 impl Index<usize> for Instructions {
     type Output = u8;
@@ -63,7 +69,7 @@ impl Instructions {
     }
 
     pub fn slice(&self, start: usize, end: usize) -> Vec<u8> {
-       self.0[start..end].to_vec()
+        self.0[start..end].to_vec()
     }
 }
 
@@ -183,7 +189,7 @@ pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<usize>, usiz
 
 pub fn read_u16(instructions: Instructions) -> u16 {
     let mut cursor = Cursor::new(instructions.0);
-    cursor.read_u16::<BigEndian>.unwrap() // TODO: handle error
+    cursor.read_u16::<BigEndian>().unwrap()
 }
 
 #[cfg(test)]

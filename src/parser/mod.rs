@@ -347,7 +347,6 @@ impl Parser {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::lexer::Lexer;
 
     #[test]
     fn it_pareses_let_statements() {

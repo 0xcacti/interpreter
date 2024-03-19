@@ -39,11 +39,17 @@ impl VM {
 
             match opcode {
                 Opcode::Constant => {
-                    let constant_index = code::read_u16(Instructions(
-                        self.instructions.slice(ip + 1, self.instructions.len()),
-                    ));
+                    let constant_index =
+                        code::read_u16(Instructions(self.instructions.slice(ip + 1, ip + 3)))
+                            as usize;
                     ip = ip + 2;
-                    self.push(self.constants[constant_index as usize].clone())?;
+                    let constant = self
+                        .constants
+                        .get(constant_index)
+                        .ok_or_else(|| VmError::new("Constant index out of bounds"))?
+                        .clone();
+
+                    self.push(constant)?;
                 }
             }
         }

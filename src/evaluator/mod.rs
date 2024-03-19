@@ -5,7 +5,6 @@ pub mod object;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::convert;
 use std::rc::Rc;
 
 use self::builtin::Builtin;
@@ -469,8 +468,7 @@ fn extend_macro_env(
     macro_object: Rc<Object>,
     arguments: Vec<Object>,
 ) -> Result<Env, EvaluatorError> {
-    if let Object::Macro(macro_args, body, env) = &*macro_object {
-        //
+    if let Object::Macro(macro_args, _, env) = &*macro_object {
         if arguments.iter().all(|arg| matches!(arg, Object::Quote(_))) {
             let mut extended_env = Environment::new_enclosed_environment(Rc::clone(env));
             for (i, macro_arg) in macro_args.iter().enumerate() {
@@ -493,8 +491,6 @@ fn extend_macro_env(
 
 #[cfg(test)]
 mod test {
-
-    use std::cell::RefCell;
 
     use super::*;
     use crate::lexer::Lexer;

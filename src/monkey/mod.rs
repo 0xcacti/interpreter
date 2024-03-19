@@ -3,7 +3,6 @@ use anyhow::Result;
 use crate::evaluator::environment::Environment;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
 use crate::utils;
-use wasm_bindgen::prelude::*;
 
 use crate::lexer::Lexer;
 use crate::parser::ast::Node;

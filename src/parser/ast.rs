@@ -307,7 +307,6 @@ where
                 ))
             }
         },
-        _ => node,
     };
     modifier(new_node)
 }

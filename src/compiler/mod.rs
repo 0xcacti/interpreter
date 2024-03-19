@@ -41,7 +41,7 @@ impl Compiler {
             },
 
             Node::Expression(expression) => match expression {
-                Expression::Infix(left, operator, right) => {
+                Expression::Infix(left, _, right) => {
                     self.compile(Node::Expression(*left))?;
                     self.compile(Node::Expression(*right))?;
                 }
@@ -91,11 +91,7 @@ impl Compiler {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        code::{make, Opcode},
-        lexer::Lexer,
-        parser::{ast::Node, Parser},
-    };
+    use crate::{code::make, lexer::Lexer, parser::Parser};
 
     use super::*;
 

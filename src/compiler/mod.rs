@@ -1,19 +1,21 @@
 pub mod error;
 use crate::{
     code::{self, Instructions, Opcode},
-    evaluator::object,
+    evaluator::object::{self, Object},
     parser::ast::{Expression, Literal, Node, Statement},
 };
 use error::CompileError;
 
+use std::rc::Rc;
+
 pub struct Compiler {
     pub instructions: Instructions,
-    pub constants: Vec<object::Object>,
+    pub constants: Vec<Rc<Object>>,
 }
 
 pub struct Bytecode {
     pub instructions: Instructions,
-    pub constants: Vec<object::Object>,
+    pub constants: Vec<Rc<Object>>,
 }
 
 impl Compiler {
@@ -47,7 +49,7 @@ impl Compiler {
                 }
                 Expression::Literal(literal) => match literal {
                     Literal::Integer(value) => {
-                        let integer = object::Object::Integer(value);
+                        let integer = Rc::new(Object::Integer(value));
                         let position = self.add_constant(integer);
                         self.emit(Opcode::Constant, vec![position]);
                     }
@@ -70,7 +72,7 @@ impl Compiler {
         }
     }
 
-    pub fn add_constant(&mut self, object: object::Object) -> usize {
+    pub fn add_constant(&mut self, object: Rc<Object>) -> usize {
         self.constants.push(object);
 
         self.constants.len() - 1
@@ -98,7 +100,7 @@ mod test {
     fn test_compilation(
         input: &str,
         actual_instructions: Vec<Instructions>,
-        actual_constants: Vec<object::Object>,
+        actual_constants: Vec<Rc<Object>>,
     ) {
         let lexer = Lexer::new(input.into());
         let mut parser = Parser::new(lexer);
@@ -124,12 +126,12 @@ mod test {
         assert_eq!(expected, concattenated);
     }
 
-    fn test_constants(expected: Vec<object::Object>, actual: Vec<object::Object>) {
+    fn test_constants(expected: Vec<Rc<Object>>, actual: Vec<Rc<Object>>) {
         assert_eq!(expected.len(), actual.len());
         for (i, constant) in expected.iter().enumerate() {
-            match constant {
-                object::Object::Integer(expected) => match actual[i] {
-                    object::Object::Integer(actual) => assert_eq!(expected, &actual),
+            match &**constant {
+                object::Object::Integer(expected) => match &*actual[i] {
+                    object::Object::Integer(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not integer"),
                 },
                 _ => panic!("constant not integer"),
@@ -145,7 +147,10 @@ mod test {
                 Instructions::new(make(Opcode::Constant, vec![0])),
                 Instructions::new(make(Opcode::Constant, vec![1])),
             ],
-            vec![object::Object::Integer(1), object::Object::Integer(2)],
+            vec![
+                Rc::new(object::Object::Integer(1)),
+                Rc::new(object::Object::Integer(2)),
+            ],
         );
     }
 }

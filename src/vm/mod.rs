@@ -1,17 +1,20 @@
 pub mod error;
+
 use crate::{
     code::{self, Instructions, Opcode},
     compiler,
-    evaluator::object,
+    evaluator::object::{self, Object},
 };
 use error::VmError;
+
+use std::rc::Rc;
 
 const STACK_SIZE: usize = 2048;
 
 pub struct VM {
-    pub constants: Vec<object::Object>,
+    pub constants: Vec<Rc<Object>>,
     pub instructions: code::Instructions,
-    pub stack: Vec<object::Object>,
+    pub stack: Vec<Rc<Object>>,
     pub sp: usize,
 }
 
@@ -34,29 +37,31 @@ impl VM {
 
     pub fn run(&mut self) -> Result<(), VmError> {
         let mut ip = 0;
-        while ip < self.instructions.len() {
+        let instructions_len = self.instructions.len();
+
+        while ip < instructions_len {
             let opcode = self.instructions[ip].into();
 
             match opcode {
                 Opcode::Constant => {
-                    let constant_index =
-                        code::read_u16(Instructions(self.instructions.slice(ip + 1, ip + 3)))
-                            as usize;
-                    ip = ip + 2;
-                    let constant = self
-                        .constants
-                        .get(constant_index)
-                        .ok_or_else(|| VmError::new("Constant index out of bounds"))?
-                        .clone();
+                    let constant_index = code::read_u16(Instructions(
+                        self.instructions.slice(ip + 1, self.instructions.len()),
+                    )) as usize;
 
-                    self.push(constant)?;
+                    ip = ip + 2;
+                    if constant_index < self.constants.len() {
+                        let constant = Rc::clone(&self.constants[constant_index]);
+                        self.push(constant)?;
+                    } else {
+                        return Err(VmError::new("Invalid constant index"));
+                    }
                 }
             }
         }
         Ok(())
     }
 
-    pub fn push(&mut self, obj: object::Object) -> Result<(), VmError> {
+    pub fn push(&mut self, obj: Rc<Object>) -> Result<(), VmError> {
         if self.sp >= STACK_SIZE {
             return Err(VmError::new("Stack overflow"));
         }

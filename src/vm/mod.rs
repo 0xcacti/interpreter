@@ -40,7 +40,7 @@ impl VM {
         let instructions_len = self.instructions.len();
 
         while ip < instructions_len {
-            let opcode = self.instructions[ip].into();
+            let opcode = self.instructions[ip];
 
             match opcode {
                 Opcode::Constant => {

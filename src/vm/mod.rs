@@ -42,11 +42,11 @@ impl VM {
         while ip < instructions_len {
             let opcode = self.instructions[ip];
 
-            match opcode {
+            match opcode.into() {
                 Opcode::Constant => {
                     let constant_index = code::read_u16(Instructions(
-                        self.instructions.slice(ip + 1, self.instructions.len()),
-                    )) as usize;
+                        self.instructions[ip + 1..self.instructions.len()].to_vec(),
+                    ));
 
                     ip = ip + 2;
                     if constant_index < self.constants.len() {

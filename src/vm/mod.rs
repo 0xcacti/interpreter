@@ -37,16 +37,16 @@ impl VM {
 
     pub fn run(&mut self) -> Result<(), VmError> {
         let mut ip = 0;
-        let instructions_len = self.instructions.len();
 
-        while ip < instructions_len {
-            let opcode = self.instructions[ip];
+        let instructions = self.instructions.clone();
 
-            match opcode.into() {
+        while ip < instructions.len() {
+            let opcode = instructions[ip].into();
+
+            match opcode {
                 Opcode::Constant => {
-                    let constant_index = code::read_u16(Instructions(
-                        self.instructions[ip + 1..self.instructions.len()].to_vec(),
-                    ));
+                    let amount = instructions.slice_from(ip + 1, instructions.len());
+                    let constant_index = code::read_u16(Instructions(amount)) as usize;
 
                     ip = ip + 2;
                     if constant_index < self.constants.len() {

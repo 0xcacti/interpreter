@@ -71,6 +71,10 @@ impl Instructions {
     pub fn slice(&self, start: usize, end: usize) -> Vec<u8> {
         self.0[start..end].to_vec()
     }
+
+    pub fn slice_from(&self, start: usize, end: usize) -> Vec<u8> {
+        self.0[start..end].to_vec()
+    }
 }
 
 impl Opcode {

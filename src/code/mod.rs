@@ -191,9 +191,8 @@ pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<usize>, usiz
     return (operands, offset);
 }
 
-pub fn read_u16(instructions: Instructions) -> u16 {
-    let mut cursor = Cursor::new(instructions.0);
-    cursor.read_u16::<BigEndian>().unwrap()
+pub fn read_u16(instructions: &Instructions, start: usize) -> u16 {
+    u16::from_be_bytes([instructions[start], instructions[start + 1]])
 }
 
 #[cfg(test)]

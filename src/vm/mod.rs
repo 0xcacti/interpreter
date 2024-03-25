@@ -28,35 +28,37 @@ impl VM {
         };
     }
 
-    pub fn stack_top(&self) -> Option<&object::Object> {
+    pub fn stack_top(&self) -> Option<Rc<object::Object>> {
+        println!("stack: {:?}", self.stack);
+        println!("sp: {}", self.sp);
         if self.sp == 0 {
             return None;
         }
-        Some(&self.stack[self.sp - 1])
+        Some(Rc::clone(&self.stack[self.sp - 1]))
     }
 
     pub fn run(&mut self) -> Result<(), VmError> {
         let mut ip = 0;
+        let instructions_len = self.instructions.len();
 
-        let instructions = self.instructions.clone();
+        while ip < instructions_len {
+            let opcode = self.instructions[ip];
 
-        while ip < instructions.len() {
-            let opcode = instructions[ip].into();
-
-            match opcode {
+            match opcode.into() {
                 Opcode::Constant => {
-                    let amount = instructions.slice_from(ip + 1, instructions.len());
-                    let constant_index = code::read_u16(Instructions(amount)) as usize;
+                    let constant_index = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip += 2;
 
-                    ip = ip + 2;
                     if constant_index < self.constants.len() {
                         let constant = Rc::clone(&self.constants[constant_index]);
-                        self.push(constant)?;
+                        println!("pushing to stack");
+                        let ret = self.push(constant);
                     } else {
                         return Err(VmError::new("Invalid constant index"));
                     }
                 }
             }
+            ip += 1;
         }
         Ok(())
     }
@@ -67,12 +69,17 @@ impl VM {
         }
         self.stack[self.sp] = obj;
         self.sp += 1;
+        println!("pushed to stack");
+        println!("stack: {:?}", self.stack);
+        println!("sp: {}", self.sp);
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::ops::Deref;
+
     use super::*;
     use crate::{
         compiler::Compiler,
@@ -100,8 +107,11 @@ mod test {
             let mut vm = VM::new(comp.bytecode());
             vm.run().unwrap();
 
-            let top_of_stack = vm.stack_top().unwrap().clone();
-            test_expected_object(test.expected, top_of_stack);
+            println!("input: {}", test.input);
+            println!("stack: {:?}", vm.stack);
+            let top_of_stack = vm.stack_top().unwrap();
+            println!("top of stack: {:?}", top_of_stack);
+            test_expected_object(test.expected, top_of_stack.clone().deref().clone());
         }
     }
 

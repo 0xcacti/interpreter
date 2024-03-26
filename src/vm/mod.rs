@@ -29,8 +29,6 @@ impl VM {
     }
 
     pub fn stack_top(&self) -> Option<Rc<object::Object>> {
-        println!("stack: {:?}", self.stack);
-        println!("sp: {}", self.sp);
         if self.sp == 0 {
             return None;
         }
@@ -49,13 +47,12 @@ impl VM {
                     let constant_index = code::read_u16(&self.instructions, ip + 1) as usize;
                     ip += 2;
 
-                    if constant_index < self.constants.len() {
-                        let constant = Rc::clone(&self.constants[constant_index]);
-                        println!("pushing to stack");
-                        let ret = self.push(constant);
-                    } else {
+                    if constant_index > self.constants.len() {
                         return Err(VmError::new("Invalid constant index"));
                     }
+                    let constant = Rc::clone(&self.constants[constant_index]);
+
+                    self.push(constant);
                 }
             }
             ip += 1;
@@ -63,16 +60,12 @@ impl VM {
         Ok(())
     }
 
-    pub fn push(&mut self, obj: Rc<Object>) -> Result<(), VmError> {
+    pub fn push(&mut self, obj: Rc<Object>) {
         if self.sp >= STACK_SIZE {
-            return Err(VmError::new("Stack overflow"));
+            panic!("stack overflow");
         }
-        self.stack[self.sp] = obj;
+        self.stack.push(obj);
         self.sp += 1;
-        println!("pushed to stack");
-        println!("stack: {:?}", self.stack);
-        println!("sp: {}", self.sp);
-        Ok(())
     }
 }
 
@@ -107,10 +100,7 @@ mod test {
             let mut vm = VM::new(comp.bytecode());
             vm.run().unwrap();
 
-            println!("input: {}", test.input);
-            println!("stack: {:?}", vm.stack);
             let top_of_stack = vm.stack_top().unwrap();
-            println!("top of stack: {:?}", top_of_stack);
             test_expected_object(test.expected, top_of_stack.clone().deref().clone());
         }
     }

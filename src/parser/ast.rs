@@ -325,33 +325,6 @@ fn unwrap_node_to_statements(node: Node) -> Vec<Statement> {
     }
 }
 
-fn unwrap_node_to_statement(node: Node) -> Statement {
-    match node {
-        Node::Statement(statement) => statement,
-        _ => panic!("Expected Node::Statement!"),
-    }
-}
-
-// type ModifierFunc = fn(Node) -> Node;
-// pub fn modify_with_function<M>(node: Node, modifier: ModifierFunc) -> Node
-// where
-//     M: Fn(Node) -> Node + Clone,
-// {
-//     let new_node = match node {
-//         Node::Program(statements) => {
-//             let modified_statements: Vec<Statement> = statements.iter().map(|s| modify(Node::Statement(s), modifier.clone())).collect();
-//             Node::Program(modified_statements)
-//         }
-//         Node::Expression(expression) => {
-//             let modified_expression = modify(expression, modifier);
-//
-//         }
-//         _ => node,
-//     }
-//     modifier(new_node)
-//
-// }
-
 #[cfg(test)]
 mod test {
 

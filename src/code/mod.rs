@@ -11,6 +11,7 @@ use std::{
 #[repr(u8)]
 pub enum Opcode {
     Constant,
+    Add,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -81,12 +82,14 @@ impl Opcode {
     pub fn name(&self) -> &str {
         match self {
             Opcode::Constant => "OpConstant",
+            Opcode::Add => "OpAdd",
         }
     }
 
     pub fn operand_widths(&self) -> Vec<usize> {
         match self {
             Opcode::Constant => vec![2],
+            Opcode::Add => vec![],
         }
     }
 }
@@ -96,6 +99,10 @@ pub fn lookup(op: u8) -> Option<Definition> {
         0 => Some(Definition {
             name: "OpConstant",
             operand_widths: vec![2],
+        }),
+        1 => Some(Definition {
+            name: "OpAdd",
+            operand_widths: vec![],
         }),
         _ => None,
     }
@@ -209,7 +216,10 @@ mod test {
 
     #[test]
     fn it_makes_correctly() {
-        let tests = vec![(Opcode::Constant, vec![65534], vec![0, 255, 254])];
+        let tests = vec![
+            (Opcode::Constant, vec![65534], vec![0, 255, 254]),
+            (Opcode::Add, vec![], vec![Opcode::Add as u8]),
+        ];
         for (opcode, operands, expected) in tests {
             check(opcode, operands, expected);
         }

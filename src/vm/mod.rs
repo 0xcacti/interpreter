@@ -54,6 +54,9 @@ impl VM {
 
                     self.push(constant);
                 }
+                _ => {
+                    return Err(VmError::new("Unknown opcode"));
+                }
             }
             ip += 1;
         }

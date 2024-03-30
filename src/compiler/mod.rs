@@ -3,6 +3,7 @@ use crate::{
     code::{self, Instructions, Opcode},
     evaluator::object::{self, Object},
     parser::ast::{Expression, Literal, Node, Statement},
+    token::Token,
 };
 use error::CompileError;
 
@@ -43,9 +44,17 @@ impl Compiler {
             },
 
             Node::Expression(expression) => match expression {
-                Expression::Infix(left, _, right) => {
+                Expression::Infix(left, operator, right) => {
                     self.compile(Node::Expression(*left))?;
                     self.compile(Node::Expression(*right))?;
+                    match operator {
+                        Token::Plus => {
+                            self.emit(Opcode::Add, vec![]);
+                        }
+                        _ => {
+                            panic!("not implemented")
+                        }
+                    }
                 }
                 Expression::Literal(literal) => match literal {
                     Literal::Integer(value) => {
@@ -144,8 +153,9 @@ mod test {
         test_compilation(
             "1 + 2",
             vec![
-                Instructions::new(make(Opcode::Constant, vec![0])),
-                Instructions::new(make(Opcode::Constant, vec![1])),
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Add, vec![]).into(),
             ],
             vec![
                 Rc::new(object::Object::Integer(1)),

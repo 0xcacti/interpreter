@@ -54,6 +54,21 @@ impl VM {
 
                     self.push(constant);
                 }
+
+                Opcode::Add => {
+                    let right = self.pop();
+                    let left = self.pop();
+
+                    match (&*left, &*right) {
+                        (Object::Integer(left), Object::Integer(right)) => {
+                            let result = left + right;
+                            self.push(Rc::new(Object::Integer(result)));
+                        }
+                        _ => {
+                            return Err(VmError::new("Unsupported types for addition"));
+                        }
+                    }
+                }
                 _ => {
                     return Err(VmError::new("Unknown opcode"));
                 }
@@ -69,6 +84,15 @@ impl VM {
         }
         self.stack.push(obj);
         self.sp += 1;
+    }
+
+    pub fn pop(&mut self) -> Rc<Object> {
+        if self.sp == 0 {
+            panic!("stack underflow");
+        }
+        let obj = self.stack.pop().unwrap();
+        self.sp -= 1;
+        obj
     }
 }
 
@@ -135,7 +159,7 @@ mod test {
             },
             VmTest {
                 input: "1 + 2".to_string(),
-                expected: object::Object::Integer(2),
+                expected: object::Object::Integer(3),
             },
         ];
         run_vm_tests(tests);

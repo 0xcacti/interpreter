@@ -2,10 +2,7 @@ pub mod error;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::ops::Index;
 
-use std::{
-    fmt::{Debug, Display},
-    io::Cursor,
-};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
@@ -20,6 +17,12 @@ impl From<u8> for Opcode {
             1 => Opcode::Add,
             _ => panic!("unknown opcode"),
         }
+    }
+}
+
+impl Into<Instructions> for Vec<u8> {
+    fn into(self) -> Instructions {
+        Instructions::new(self)
     }
 }
 

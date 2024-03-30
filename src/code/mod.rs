@@ -120,6 +120,7 @@ pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
         .to_string();
     }
     match operand_count {
+        0 => return def.name.to_string(),
         1 => return format!("{} {}", def.name, operands[0]).to_string(),
         _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
     }
@@ -258,14 +259,14 @@ mod test {
     #[test]
     fn it_prints_correctly() {
         let instructions = vec![
-            make(Opcode::Constant, vec![1]),
+            make(Opcode::Add, vec![]),
             make(Opcode::Constant, vec![2]),
             make(Opcode::Constant, vec![65534]),
         ];
 
-        let expected = r#"0000 OpConstant 1
-0003 OpConstant 2
-0006 OpConstant 65534
+        let expected = r#"0000 OpAdd
+0001 OpConstant 2
+0004 OpConstant 65534
 "#;
 
         let concattenated = instructions.into_iter().flatten().collect::<Instructions>();

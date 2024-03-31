@@ -72,6 +72,14 @@ impl Compiler {
                         let position = self.add_constant(integer);
                         self.emit(Opcode::Constant, vec![position]);
                     }
+
+                    Literal::Boolean(value) => {
+                        if value {
+                            self.emit(Opcode::True, vec![]);
+                        } else {
+                            self.emit(Opcode::False, vec![]);
+                        }
+                    }
                     _ => {
                         panic!("not implemented")
                     }
@@ -216,6 +224,27 @@ mod test {
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
+        );
+    }
+
+    #[test]
+    fn it_compiles_boolean_expressions() {
+        test_compilation(
+            "true",
+            vec![
+                make(Opcode::True, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
+
+        test_compilation(
+            "false",
+            vec![
+                make(Opcode::False, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
         );
     }
 }

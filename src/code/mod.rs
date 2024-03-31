@@ -12,6 +12,8 @@ pub enum Opcode {
     Sub,
     Mul,
     Div,
+    True,
+    False,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -22,6 +24,8 @@ impl From<u8> for Opcode {
             3 => Opcode::Sub,
             4 => Opcode::Mul,
             5 => Opcode::Div,
+            6 => Opcode::True,
+            7 => Opcode::False,
             _ => panic!("unknown opcode"),
         }
     }
@@ -98,6 +102,8 @@ impl Opcode {
             Opcode::Sub => "OpSub",
             Opcode::Mul => "OpMul",
             Opcode::Div => "OpDiv",
+            Opcode::True => "OpTrue",
+            Opcode::False => "OpFalse",
         }
     }
 
@@ -109,6 +115,8 @@ impl Opcode {
             Opcode::Sub => vec![],
             Opcode::Mul => vec![],
             Opcode::Div => vec![],
+            Opcode::True => vec![],
+            Opcode::False => vec![],
         }
     }
 }
@@ -142,6 +150,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         5 => Some(Definition {
             name: "OpDiv",
+            operand_widths: vec![],
+        }),
+
+        6 => Some(Definition {
+            name: "OpTrue",
+            operand_widths: vec![],
+        }),
+
+        7 => Some(Definition {
+            name: "OpFalse",
             operand_widths: vec![],
         }),
         _ => None,

@@ -61,6 +61,17 @@ impl VM {
                 Opcode::Pop => {
                     self.pop();
                 }
+
+                Opcode::True => {
+                    self.push(Rc::new(Object::Boolean(true)));
+                }
+
+                Opcode::False => {
+                    self.push(Rc::new(Object::Boolean(false)));
+                }
+                _ => {
+                    return Err(VmError::new("Invalid opcode".to_string()));
+                }
             }
             ip += 1;
         }
@@ -152,15 +163,23 @@ mod test {
 
     fn validate_integer_object(obj: object::Object, expected: i64) {
         match obj {
-            object::Object::Integer(value) => assert_eq!(value, expected),
+            Object::Integer(value) => assert_eq!(value, expected),
             _ => panic!("object not integer"),
+        }
+    }
+
+    fn validate_boolean_object(obj: object::Object, expected: bool) {
+        match obj {
+            Object::Boolean(value) => assert_eq!(value, expected),
+            _ => panic!("object not boolean"),
         }
     }
 
     fn test_expected_object(expected: object::Object, actual: object::Object) {
         match expected {
-            object::Object::Integer(expected) => validate_integer_object(actual, expected),
-            _ => panic!("branch not covered"),
+            Object::Integer(expected) => validate_integer_object(actual, expected),
+            Object::Boolean(expected) => validate_boolean_object(actual, expected),
+            _ => panic!("unsupported object type"),
         }
     }
 
@@ -197,6 +216,21 @@ mod test {
             input: "4 / 2".to_string(),
             expected: object::Object::Integer(2),
         }];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_pushes_bools() {
+        let tests = vec![
+            VmTest {
+                input: "true".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "false".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+        ];
         run_vm_tests(tests);
     }
 }

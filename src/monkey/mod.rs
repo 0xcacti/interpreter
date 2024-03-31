@@ -72,7 +72,7 @@ pub fn interpret_chunk(
     }
 }
 
-pub fn interpret_vm(
+pub fn interpret_raw(
     contents: String,
     env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
@@ -98,7 +98,7 @@ pub fn interpret_vm(
     Ok(())
 }
 
-pub fn interpret_raw(
+pub fn interpret_vm(
     contents: String,
     _env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
@@ -110,27 +110,30 @@ pub fn interpret_raw(
     let mut parser = Parser::new(lexer.into());
     let program = parser.parse_program();
 
-    if let Ok(mut program) = program {
-        define_macros(&mut program, Rc::clone(&macro_env));
-        let expanded =
-            expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
-        let mut compiler = Compiler::new();
-        compiler.compile(expanded)?;
-        {
-            let mut machine = VM::new(compiler.bytecode().clone());
+    match program {
+        Ok(program) => {
+            define_macros(&mut program.clone(), Rc::clone(&macro_env));
+            let expanded = expand_macros(Node::Program(program), Rc::clone(&macro_env)).unwrap();
+            let mut compiler = Compiler::new();
+            compiler.compile(expanded)?;
+            let mut machine = VM::new(compiler.bytecode());
             machine.run()?;
+            let top = machine.stack_top();
+            match top {
+                Some(top) => {
+                    println!("{}", top);
+                }
+                None => {
+                    println!("No value on top of the stack");
+                }
+            }
         }
-        // let top = machine.stack_top();
-        // match top {
-        //     Some(top) => println!("stack top: {}", top)
-        //     None => println!("stack top: None"),
-        // }
-        // println!("stack top: {:?}", top);
-    } else if let Err(err) = &program {
-        println!("Woops! We ran into some monkey business here!");
-        println!("parser errors:");
-        for e in err {
-            eprintln!("\t{}", e);
+        Err(err) => {
+            println!("Woops! We ran into some monkey business here!");
+            println!("parser errors:");
+            for e in err {
+                eprintln!("\t{}", e);
+            }
         }
     }
     Ok(())

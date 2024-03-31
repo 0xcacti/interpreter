@@ -48,7 +48,7 @@ impl VM {
                     ip += 2;
 
                     if constant_index > self.constants.len() {
-                        return Err(VmError::new("Invalid constant index"));
+                        return Err(VmError::new("Invalid constant index".to_string()));
                     }
                     let constant = Rc::clone(&self.constants[constant_index]);
 
@@ -65,12 +65,12 @@ impl VM {
                             self.push(Rc::new(Object::Integer(result)));
                         }
                         _ => {
-                            return Err(VmError::new("Unsupported types for addition"));
+                            return Err(VmError::new("Unsupported types for addition".to_string()));
                         }
                     }
                 }
                 _ => {
-                    return Err(VmError::new("Unknown opcode"));
+                    return Err(VmError::new("Unknown opcode".to_string()));
                 }
             }
             ip += 1;

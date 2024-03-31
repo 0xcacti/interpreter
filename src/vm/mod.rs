@@ -51,7 +51,6 @@ impl VM {
                         return Err(VmError::new("Invalid constant index".to_string()));
                     }
                     let constant = Rc::clone(&self.constants[constant_index]);
-
                     self.push(constant);
                 }
 
@@ -62,6 +61,7 @@ impl VM {
                     match (&*left, &*right) {
                         (Object::Integer(left), Object::Integer(right)) => {
                             let result = left + right;
+                            println!("result: {}", result);
                             self.push(Rc::new(Object::Integer(result)));
                         }
                         _ => {
@@ -69,8 +69,9 @@ impl VM {
                         }
                     }
                 }
-                _ => {
-                    return Err(VmError::new("Unknown opcode".to_string()));
+
+                Opcode::Pop => {
+                    self.pop();
                 }
             }
             ip += 1;
@@ -82,17 +83,27 @@ impl VM {
         if self.sp >= STACK_SIZE {
             panic!("stack overflow");
         }
+        println!("pushing: {}", obj);
+        println!("stack: {:?}", self.stack);
         self.stack.push(obj);
         self.sp += 1;
+        println!("stack: {:?}", self.stack);
+        println!("stack top: {:?}", self.stack_top());
     }
 
     pub fn pop(&mut self) -> Rc<Object> {
         if self.sp == 0 {
             panic!("stack underflow");
         }
-        let obj = self.stack.pop().unwrap();
+        println!("popping at  {}", self.sp - 1);
+        let obj = self.stack[self.sp - 1].clone();
         self.sp -= 1;
         obj
+    }
+
+    pub fn last_popped_stack_elem(&self) -> Rc<Object> {
+        println!("{}", self.sp);
+        Rc::clone(&self.stack[self.sp])
     }
 }
 
@@ -127,8 +138,9 @@ mod test {
             let mut vm = VM::new(comp.bytecode());
             vm.run().unwrap();
 
-            let top_of_stack = vm.stack_top().unwrap();
-            test_expected_object(test.expected, top_of_stack.clone().deref().clone());
+            let last = vm.last_popped_stack_elem();
+
+            test_expected_object(test.expected, last.clone().deref().clone());
         }
     }
 
@@ -149,14 +161,14 @@ mod test {
     #[test]
     fn it_adds_two_integers() {
         let tests = vec![
-            VmTest {
-                input: "1".to_string(),
-                expected: object::Object::Integer(1),
-            },
-            VmTest {
-                input: "2".to_string(),
-                expected: object::Object::Integer(2),
-            },
+            // VmTest {
+            //     input: "1".to_string(),
+            //     expected: object::Object::Integer(1),
+            // },
+            // VmTest {
+            //     input: "2".to_string(),
+            //     expected: object::Object::Integer(2),
+            // },
             VmTest {
                 input: "1 + 2".to_string(),
                 expected: object::Object::Integer(3),

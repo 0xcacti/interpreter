@@ -73,6 +73,15 @@ impl VM {
                 Opcode::Equal | Opcode::NotEqual | Opcode::GreaterThan => {
                     self.execute_comparison(opcode.into())?;
                 }
+
+                Opcode::Bang => {
+                    self.execute_bang_operator()?;
+                }
+
+                Opcode::Minus => {
+                    self.execute_minus_operator()?;
+                }
+
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -169,6 +178,35 @@ impl VM {
             }
         };
         self.push(Rc::new(Object::Boolean(result)));
+        Ok(())
+    }
+
+    pub fn execute_bang_operator(&mut self) -> Result<(), VmError> {
+        let operand = self.pop();
+        match &*operand {
+            Object::Boolean(value) => {
+                let result = Rc::new(Object::Boolean(!value));
+                self.push(result);
+            }
+            _ => {
+                let result = Rc::new(Object::Boolean(false));
+                self.push(result);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn execute_minus_operator(&mut self) -> Result<(), VmError> {
+        let operand = self.pop();
+        match &*operand {
+            Object::Integer(value) => {
+                let result = Rc::new(Object::Integer(-value));
+                self.push(result);
+            }
+            _ => {
+                return Err(VmError::new("Unsupported type for negation".to_string()));
+            }
+        }
         Ok(())
     }
 }
@@ -348,6 +386,62 @@ mod test {
             VmTest {
                 input: "(1 > 2) == true".to_string(),
                 expected: object::Object::Boolean(false),
+            },
+        ];
+
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_boolean_prefix_expressions() {
+        let tests = vec![
+            VmTest {
+                input: "!true".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "!false".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "!!true".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "!!false".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "!5".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "!!5".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+        ];
+
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_integer_prefix_expresssions() {
+        let tests = vec![
+            VmTest {
+                input: "-5".to_string(),
+                expected: object::Object::Integer(-5),
+            },
+            VmTest {
+                input: "-10".to_string(),
+                expected: object::Object::Integer(-10),
+            },
+            VmTest {
+                input: "-50 + 100 + -50".to_string(),
+                expected: object::Object::Integer(0),
+            },
+            VmTest {
+                input: "(5 + 10 * 2 + 15 / 3) * 2 + -10".to_string(),
+                expected: object::Object::Integer(50),
             },
         ];
 

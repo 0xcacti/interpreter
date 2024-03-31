@@ -69,6 +69,10 @@ impl VM {
                 Opcode::False => {
                     self.push(Rc::new(Object::Boolean(false)));
                 }
+
+                Opcode::OpEqual | Opcode::OpNotEqual | Opcode::OpGreaterThan => {
+                    self.execute_comparison(opcode.into())?;
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -120,6 +124,51 @@ impl VM {
                 ));
             }
         }
+        Ok(())
+    }
+
+    pub fn execute_comparison(&mut self, opcode: Opcode) -> Result<(), VmError> {
+        let right = self.pop();
+        let left = self.pop();
+        match (&*left, &*right) {
+            (Object::Integer(left), Object::Integer(right)) => {
+                return self.execute_integer_comparison(opcode, *left, *right);
+            }
+            _ => match opcode {
+                Opcode::OpEqual => {
+                    let result = Rc::new(Object::Boolean(left == right));
+                    self.push(result);
+                }
+                Opcode::OpNotEqual => {
+                    let result = Rc::new(Object::Boolean(left != right));
+                    self.push(result);
+                }
+                _ => {
+                    return Err(VmError::new(
+                        "Unsupported comparison operation for type".to_string(),
+                    ));
+                }
+            },
+        }
+
+        Ok(())
+    }
+
+    pub fn execute_integer_comparison(
+        &mut self,
+        opcode: Opcode,
+        left: i64,
+        right: i64,
+    ) -> Result<(), VmError> {
+        let result = match opcode {
+            Opcode::OpEqual => left == right,
+            Opcode::OpNotEqual => left != right,
+            Opcode::OpGreaterThan => left > right,
+            _ => {
+                return Err(VmError::new("Invalid opcode".to_string()));
+            }
+        };
+        self.push(Rc::new(Object::Boolean(result)));
         Ok(())
     }
 }
@@ -231,6 +280,77 @@ mod test {
                 expected: object::Object::Boolean(false),
             },
         ];
+        run_vm_tests(tests);
+    }
+    #[test]
+    fn it_compares() {
+        let tests = vec![
+            VmTest {
+                input: "1 < 2".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "1 > 2".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "1 < 1".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "1 > 1".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "1 == 1".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "1 != 1".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "1 == 2".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "1 != 2".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "true == true".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "false == false".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "true == false".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "true != false".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "false != true".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "(1 < 2) == true".to_string(),
+                expected: object::Object::Boolean(true),
+            },
+            VmTest {
+                input: "(1 < 2) == false".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+            VmTest {
+                input: "(1 > 2) == true".to_string(),
+                expected: object::Object::Boolean(false),
+            },
+        ];
+
         run_vm_tests(tests);
     }
 }

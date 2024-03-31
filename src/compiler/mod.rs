@@ -46,6 +46,13 @@ impl Compiler {
 
             Node::Expression(expression) => match expression {
                 Expression::Infix(left, operator, right) => {
+                    if operator == Token::Lt {
+                        self.compile(Node::Expression(*right))?;
+                        self.compile(Node::Expression(*left))?;
+                        self.emit(Opcode::OpGreaterThan, vec![]);
+                        return Ok(());
+                    }
+
                     self.compile(Node::Expression(*left))?;
                     self.compile(Node::Expression(*right))?;
                     match operator {
@@ -61,6 +68,22 @@ impl Compiler {
                         Token::Slash => {
                             self.emit(Opcode::Div, vec![]);
                         }
+
+                        Token::Gt | Token::Eq | Token::NotEq => {
+                            self.emit(
+                                match operator {
+                                    Token::Lt => Opcode::OpGreaterThan,
+                                    Token::Gt => Opcode::OpGreaterThan,
+                                    Token::Eq => Opcode::OpEqual,
+                                    Token::NotEq => Opcode::OpNotEqual,
+                                    _ => {
+                                        panic!("not implemented")
+                                    }
+                                },
+                                vec![],
+                            );
+                        }
+
                         _ => {
                             panic!("not implemented")
                         }
@@ -246,5 +269,80 @@ mod test {
             ],
             vec![],
         );
+    }
+
+    #[test]
+    fn it_compiles_comparison_operations() {
+        test_compilation(
+            "1 == 1",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::OpEqual, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(1))],
+        );
+
+        test_compilation(
+            "1 != 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::OpNotEqual, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+        );
+
+        test_compilation(
+            "1 > 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::OpGreaterThan, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+        );
+
+        test_compilation(
+            "1 < 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::OpGreaterThan, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
+        );
+
+        // test_compilation(
+        //     "true == false",
+        //     vec![
+        //         make(Opcode::True, vec![]).into(),
+        //         make(Opcode::False, vec![]).into(),
+        //         make(Opcode::OpEqual, vec![]).into(),
+        //         make(Opcode::Pop, vec![]).into(),
+        //     ],
+        //     vec![
+        //         Rc::new(Object::Boolean(true)),
+        //         Rc::new(Object::Boolean(false)),
+        //     ],
+        // );
+
+        // test_compilation(
+        //     "true != false",
+        //     vec![
+        //         make(Opcode::True, vec![]).into(),
+        //         make(Opcode::False, vec![]).into(),
+        //         make(Opcode::OpNotEqual, vec![]).into(),
+        //         make(Opcode::Pop, vec![]).into(),
+        //     ],
+        //     vec![
+        //         Rc::new(Object::Boolean(true)),
+        //         Rc::new(Object::Boolean(false)),
+        //     ],
+        // );
     }
 }

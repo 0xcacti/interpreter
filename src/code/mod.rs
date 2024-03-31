@@ -14,6 +14,9 @@ pub enum Opcode {
     Div,
     True,
     False,
+    OpEqual,
+    OpNotEqual,
+    OpGreaterThan,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -26,6 +29,9 @@ impl From<u8> for Opcode {
             5 => Opcode::Div,
             6 => Opcode::True,
             7 => Opcode::False,
+            8 => Opcode::OpEqual,
+            9 => Opcode::OpNotEqual,
+            10 => Opcode::OpGreaterThan,
             _ => panic!("unknown opcode"),
         }
     }
@@ -104,6 +110,9 @@ impl Opcode {
             Opcode::Div => "OpDiv",
             Opcode::True => "OpTrue",
             Opcode::False => "OpFalse",
+            Opcode::OpEqual => "OpEqual",
+            Opcode::OpNotEqual => "OpNotEqual",
+            Opcode::OpGreaterThan => "OpGreaterThan",
         }
     }
 
@@ -117,6 +126,9 @@ impl Opcode {
             Opcode::Div => vec![],
             Opcode::True => vec![],
             Opcode::False => vec![],
+            Opcode::OpEqual => vec![],
+            Opcode::OpNotEqual => vec![],
+            Opcode::OpGreaterThan => vec![],
         }
     }
 }
@@ -162,6 +174,22 @@ pub fn lookup(op: u8) -> Option<Definition> {
             name: "OpFalse",
             operand_widths: vec![],
         }),
+
+        8 => Some(Definition {
+            name: "OpEqual",
+            operand_widths: vec![],
+        }),
+
+        9 => Some(Definition {
+            name: "OpNotEqual",
+            operand_widths: vec![],
+        }),
+
+        10 => Some(Definition {
+            name: "OpGreaterThan",
+            operand_widths: vec![],
+        }),
+
         _ => None,
     }
 }

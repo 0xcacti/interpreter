@@ -52,6 +52,15 @@ impl Compiler {
                         Token::Plus => {
                             self.emit(Opcode::Add, vec![]);
                         }
+                        Token::Dash => {
+                            self.emit(Opcode::Sub, vec![]);
+                        }
+                        Token::Asterisk => {
+                            self.emit(Opcode::Mul, vec![]);
+                        }
+                        Token::Slash => {
+                            self.emit(Opcode::Div, vec![]);
+                        }
                         _ => {
                             panic!("not implemented")
                         }
@@ -150,6 +159,23 @@ mod test {
     }
 
     #[test]
+    fn it_pops_expressions() {
+        test_compilation(
+            "1; 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(object::Object::Integer(1)),
+                Rc::new(object::Object::Integer(2)),
+            ],
+        );
+    }
+
+    #[test]
     fn it_compiles_integer_arithmetic() {
         test_compilation(
             "1 + 2",
@@ -166,16 +192,44 @@ mod test {
         );
 
         test_compilation(
-            "1; 2",
+            "1 - 2",
             vec![
                 make(Opcode::Constant, vec![0]).into(),
-                make(Opcode::Pop, vec![]).into(),
+                make(Opcode::Sub, vec![]).into(),
                 make(Opcode::Constant, vec![1]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
                 Rc::new(object::Object::Integer(1)),
                 Rc::new(object::Object::Integer(2)),
+            ],
+        );
+
+        test_compilation(
+            "1 * 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Mul, vec![]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(object::Object::Integer(1)),
+                Rc::new(object::Object::Integer(2)),
+            ],
+        );
+
+        test_compilation(
+            "2 / 1",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Div, vec![]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(object::Object::Integer(2)),
+                Rc::new(object::Object::Integer(1)),
             ],
         );
     }

@@ -122,15 +122,8 @@ pub fn interpret_vm(
             compiler.compile(expanded)?;
             let mut machine = VM::new(compiler.bytecode());
             machine.run()?;
-            let top = machine.stack_top();
-            match top {
-                Some(top) => {
-                    println!("{}", top);
-                }
-                None => {
-                    println!("No value on top of the stack");
-                }
-            }
+            let last_elem = machine.last_popped_stack_elem();
+            println!("{}", last_elem);
         }
         Err(err) => {
             println!("Woops! We ran into some monkey business here!");

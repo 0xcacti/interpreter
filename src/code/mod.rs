@@ -9,6 +9,9 @@ pub enum Opcode {
     Constant,
     Add,
     Pop,
+    Sub,
+    Mul,
+    Div,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -16,6 +19,9 @@ impl From<u8> for Opcode {
             0 => Opcode::Constant,
             1 => Opcode::Add,
             2 => Opcode::Pop,
+            3 => Opcode::Sub,
+            4 => Opcode::Mul,
+            5 => Opcode::Div,
             _ => panic!("unknown opcode"),
         }
     }
@@ -89,6 +95,9 @@ impl Opcode {
             Opcode::Constant => "OpConstant",
             Opcode::Add => "OpAdd",
             Opcode::Pop => "OpPop",
+            Opcode::Sub => "OpSub",
+            Opcode::Mul => "OpMul",
+            Opcode::Div => "OpDiv",
         }
     }
 
@@ -97,6 +106,9 @@ impl Opcode {
             Opcode::Constant => vec![2],
             Opcode::Add => vec![],
             Opcode::Pop => vec![],
+            Opcode::Sub => vec![],
+            Opcode::Mul => vec![],
+            Opcode::Div => vec![],
         }
     }
 }
@@ -107,6 +119,7 @@ pub fn lookup(op: u8) -> Option<Definition> {
             name: "OpConstant",
             operand_widths: vec![2],
         }),
+
         1 => Some(Definition {
             name: "OpAdd",
             operand_widths: vec![],
@@ -114,6 +127,21 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         2 => Some(Definition {
             name: "OpPop",
+            operand_widths: vec![],
+        }),
+
+        3 => Some(Definition {
+            name: "OpSub",
+            operand_widths: vec![],
+        }),
+
+        4 => Some(Definition {
+            name: "OpMul",
+            operand_widths: vec![],
+        }),
+
+        5 => Some(Definition {
+            name: "OpDiv",
             operand_widths: vec![],
         }),
         _ => None,
@@ -133,7 +161,6 @@ pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
     match operand_count {
         0 => return def.name.to_string(),
         1 => return format!("{} {}", def.name, operands[0]).to_string(),
-        2 => return def.name.to_string(),
         _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
     }
 }

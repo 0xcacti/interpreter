@@ -1,14 +1,9 @@
+use ::monkey::monkey::ExecMode;
 use ::monkey::utils;
 use clap::arg;
 use clap::crate_version;
 use clap::Parser;
 use monkey::monkey;
-
-// #[derive(Debug)]
-// enum ExecMode {
-//     VM,
-//     Raw,
-// }
 
 /// monkey is the binary for executing the monkey programming language
 #[derive(Debug, Parser)]
@@ -18,8 +13,14 @@ struct MonkeyCmd {
     #[arg(required = false, global = true)]
     path: Option<String>,
     /// Execution mode (vm or raw)
-    #[arg(short = 'm', long = "mode", required = false, global = true)]
-    mode: Option<String>,
+    #[arg(
+        short = 'm',
+        long = "mode",
+        default_value = "vm",
+        required = false,
+        global = true
+    )]
+    mode: Option<ExecMode>,
 
     /// Enter interactive mode after executing 'script'
     #[arg(short = 'i', long = "interactive", required = false, global = true)]
@@ -31,7 +32,8 @@ fn main() {
 
     match args.path {
         Some(path) => match utils::load_monkey(path) {
-            Ok(contents) => match monkey::interpret_chunk(contents, None, None) {
+            Ok(contents) => match monkey::interpret_chunk(args.mode.unwrap(), contents, None, None)
+            {
                 Ok(_) => return,
                 Err(e) => {
                     eprintln!("Error: {}", e);
@@ -48,11 +50,11 @@ fn main() {
 
     // repl mode
     match args.script {
-        Some(path) => match monkey::repl(Some(path)) {
+        Some(path) => match monkey::repl(Some(path), args.mode.unwrap()) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },
-        None => match monkey::repl(None) {
+        None => match monkey::repl(None, args.mode.unwrap()) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },

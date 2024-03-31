@@ -23,7 +23,7 @@ impl VM {
         return VM {
             instructions: bytecode.instructions,
             constants: bytecode.constants,
-            stack: Vec::with_capacity(STACK_SIZE),
+            stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
         };
     }
@@ -61,7 +61,6 @@ impl VM {
                     match (&*left, &*right) {
                         (Object::Integer(left), Object::Integer(right)) => {
                             let result = left + right;
-                            println!("result: {}", result);
                             self.push(Rc::new(Object::Integer(result)));
                         }
                         _ => {
@@ -83,26 +82,20 @@ impl VM {
         if self.sp >= STACK_SIZE {
             panic!("stack overflow");
         }
-        println!("pushing: {}", obj);
-        println!("stack: {:?}", self.stack);
-        self.stack.push(obj);
+        self.stack[self.sp] = obj;
         self.sp += 1;
-        println!("stack: {:?}", self.stack);
-        println!("stack top: {:?}", self.stack_top());
     }
 
     pub fn pop(&mut self) -> Rc<Object> {
         if self.sp == 0 {
             panic!("stack underflow");
         }
-        println!("popping at  {}", self.sp - 1);
         let obj = self.stack[self.sp - 1].clone();
         self.sp -= 1;
         obj
     }
 
     pub fn last_popped_stack_elem(&self) -> Rc<Object> {
-        println!("{}", self.sp);
         Rc::clone(&self.stack[self.sp])
     }
 }

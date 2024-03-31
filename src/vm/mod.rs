@@ -54,19 +54,8 @@ impl VM {
                     self.push(constant);
                 }
 
-                Opcode::Add => {
-                    let right = self.pop();
-                    let left = self.pop();
-
-                    match (&*left, &*right) {
-                        (Object::Integer(left), Object::Integer(right)) => {
-                            let result = left + right;
-                            self.push(Rc::new(Object::Integer(result)));
-                        }
-                        _ => {
-                            return Err(VmError::new("Unsupported types for addition".to_string()));
-                        }
-                    }
+                Opcode::Add | Opcode::Sub | Opcode::Mul | Opcode::Div => {
+                    self.execute_binary_instruction(opcode.into())?;
                 }
 
                 Opcode::Pop => {
@@ -97,6 +86,30 @@ impl VM {
 
     pub fn last_popped_stack_elem(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.sp])
+    }
+
+    pub fn execute_binary_instruction(&mut self, opcode: Opcode) -> Result<(), VmError> {
+        let right = self.pop();
+        let left = self.pop();
+
+        match (&*left, &*right) {
+            (Object::Integer(left), Object::Integer(right)) => {
+                let result = match opcode {
+                    Opcode::Add => left + right,
+                    Opcode::Sub => left - right,
+                    Opcode::Mul => left * right,
+                    Opcode::Div => left / right,
+                    _ => return Err(VmError::new("Invalid opcode".to_string())),
+                };
+                self.push(Rc::new(Object::Integer(result)));
+            }
+            _ => {
+                return Err(VmError::new(
+                    "Unsupported types for binary operation".to_string(),
+                ));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -153,20 +166,37 @@ mod test {
 
     #[test]
     fn it_adds_two_integers() {
-        let tests = vec![
-            // VmTest {
-            //     input: "1".to_string(),
-            //     expected: object::Object::Integer(1),
-            // },
-            // VmTest {
-            //     input: "2".to_string(),
-            //     expected: object::Object::Integer(2),
-            // },
-            VmTest {
-                input: "1 + 2".to_string(),
-                expected: object::Object::Integer(3),
-            },
-        ];
+        let tests = vec![VmTest {
+            input: "1 + 2".to_string(),
+            expected: object::Object::Integer(3),
+        }];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_subtracts_two_integers() {
+        let tests = vec![VmTest {
+            input: "2 - 1".to_string(),
+            expected: object::Object::Integer(1),
+        }];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_multiplies_two_integers() {
+        let tests = vec![VmTest {
+            input: "2 * 2".to_string(),
+            expected: object::Object::Integer(4),
+        }];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_divides_two_integers() {
+        let tests = vec![VmTest {
+            input: "4 / 2".to_string(),
+            expected: object::Object::Integer(2),
+        }];
         run_vm_tests(tests);
     }
 }

@@ -1,7 +1,7 @@
 pub mod error;
 use crate::{
     code::{self, Instructions, Opcode},
-    evaluator::object::{self, Object},
+    evaluator::object::Object,
     parser::ast::{Expression, Literal, Node, Statement},
     token::Token,
 };
@@ -149,8 +149,8 @@ mod test {
         assert_eq!(expected.len(), actual.len());
         for (i, constant) in expected.iter().enumerate() {
             match &**constant {
-                object::Object::Integer(expected) => match &*actual[i] {
-                    object::Object::Integer(actual) => assert_eq!(expected, actual),
+                Object::Integer(expected) => match &*actual[i] {
+                    Object::Integer(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not integer"),
                 },
                 _ => panic!("constant not integer"),
@@ -168,10 +168,7 @@ mod test {
                 make(Opcode::Constant, vec![1]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![
-                Rc::new(object::Object::Integer(1)),
-                Rc::new(object::Object::Integer(2)),
-            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
         );
     }
 
@@ -185,52 +182,40 @@ mod test {
                 make(Opcode::Add, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![
-                Rc::new(object::Object::Integer(1)),
-                Rc::new(object::Object::Integer(2)),
-            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
         );
 
         test_compilation(
             "1 - 2",
             vec![
                 make(Opcode::Constant, vec![0]).into(),
-                make(Opcode::Sub, vec![]).into(),
                 make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Sub, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![
-                Rc::new(object::Object::Integer(1)),
-                Rc::new(object::Object::Integer(2)),
-            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
         );
 
         test_compilation(
             "1 * 2",
             vec![
                 make(Opcode::Constant, vec![0]).into(),
-                make(Opcode::Mul, vec![]).into(),
                 make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Mul, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![
-                Rc::new(object::Object::Integer(1)),
-                Rc::new(object::Object::Integer(2)),
-            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
         );
 
         test_compilation(
             "2 / 1",
             vec![
                 make(Opcode::Constant, vec![0]).into(),
-                make(Opcode::Div, vec![]).into(),
                 make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Div, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![
-                Rc::new(object::Object::Integer(2)),
-                Rc::new(object::Object::Integer(1)),
-            ],
+            vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
         );
     }
 }

@@ -317,32 +317,26 @@ mod test {
             vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
         );
 
-        // test_compilation(
-        //     "true == false",
-        //     vec![
-        //         make(Opcode::True, vec![]).into(),
-        //         make(Opcode::False, vec![]).into(),
-        //         make(Opcode::OpEqual, vec![]).into(),
-        //         make(Opcode::Pop, vec![]).into(),
-        //     ],
-        //     vec![
-        //         Rc::new(Object::Boolean(true)),
-        //         Rc::new(Object::Boolean(false)),
-        //     ],
-        // );
+        test_compilation(
+            "true == false",
+            vec![
+                make(Opcode::True, vec![]).into(),
+                make(Opcode::False, vec![]).into(),
+                make(Opcode::OpEqual, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
 
-        // test_compilation(
-        //     "true != false",
-        //     vec![
-        //         make(Opcode::True, vec![]).into(),
-        //         make(Opcode::False, vec![]).into(),
-        //         make(Opcode::OpNotEqual, vec![]).into(),
-        //         make(Opcode::Pop, vec![]).into(),
-        //     ],
-        //     vec![
-        //         Rc::new(Object::Boolean(true)),
-        //         Rc::new(Object::Boolean(false)),
-        //     ],
-        // );
+        test_compilation(
+            "true != false",
+            vec![
+                make(Opcode::True, vec![]).into(),
+                make(Opcode::False, vec![]).into(),
+                make(Opcode::OpNotEqual, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
     }
 }

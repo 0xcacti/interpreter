@@ -37,6 +37,7 @@ impl Compiler {
             Node::Statement(statement) => match statement {
                 Statement::Expression(expression) => {
                     self.compile(Node::Expression(expression))?;
+                    self.emit(Opcode::Pop, vec![]);
                 }
                 _ => {
                     panic!("not implemented")
@@ -156,6 +157,21 @@ mod test {
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
                 make(Opcode::Add, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(object::Object::Integer(1)),
+                Rc::new(object::Object::Integer(2)),
+            ],
+        );
+
+        test_compilation(
+            "1; 2",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
             ],
             vec![
                 Rc::new(object::Object::Integer(1)),

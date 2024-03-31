@@ -1,5 +1,4 @@
 pub mod error;
-use byteorder::{BigEndian, ReadBytesExt};
 use std::ops::Index;
 
 use std::fmt::{Debug, Display};
@@ -9,12 +8,14 @@ use std::fmt::{Debug, Display};
 pub enum Opcode {
     Constant,
     Add,
+    Pop,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
         match op {
             0 => Opcode::Constant,
             1 => Opcode::Add,
+            2 => Opcode::Pop,
             _ => panic!("unknown opcode"),
         }
     }
@@ -87,6 +88,7 @@ impl Opcode {
         match self {
             Opcode::Constant => "OpConstant",
             Opcode::Add => "OpAdd",
+            Opcode::Pop => "OpPop",
         }
     }
 
@@ -94,6 +96,7 @@ impl Opcode {
         match self {
             Opcode::Constant => vec![2],
             Opcode::Add => vec![],
+            Opcode::Pop => vec![],
         }
     }
 }
@@ -106,6 +109,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
         }),
         1 => Some(Definition {
             name: "OpAdd",
+            operand_widths: vec![],
+        }),
+
+        2 => Some(Definition {
+            name: "OpPop",
             operand_widths: vec![],
         }),
         _ => None,
@@ -125,6 +133,7 @@ pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
     match operand_count {
         0 => return def.name.to_string(),
         1 => return format!("{} {}", def.name, operands[0]).to_string(),
+        2 => return def.name.to_string(),
         _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
     }
 }

@@ -51,12 +51,16 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
             std::process::exit(0);
         }
 
-        interpret_chunk(
+        let chunk = interpret_chunk(
             mode.clone(),
             line,
             Some(Rc::clone(&env)),
             Some(Rc::clone(&macro_env)),
-        )?;
+        );
+
+        if let Err(err) = chunk {
+            eprintln!("{}", err);
+        }
     }
 }
 

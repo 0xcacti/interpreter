@@ -14,9 +14,11 @@ pub enum Opcode {
     Div,
     True,
     False,
-    OpEqual,
-    OpNotEqual,
-    OpGreaterThan,
+    Equal,
+    NotEqual,
+    GreaterThan,
+    Minus,
+    Bang,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -29,9 +31,11 @@ impl From<u8> for Opcode {
             5 => Opcode::Div,
             6 => Opcode::True,
             7 => Opcode::False,
-            8 => Opcode::OpEqual,
-            9 => Opcode::OpNotEqual,
-            10 => Opcode::OpGreaterThan,
+            8 => Opcode::Equal,
+            9 => Opcode::NotEqual,
+            10 => Opcode::GreaterThan,
+            11 => Opcode::Minus,
+            12 => Opcode::Bang,
             _ => panic!("unknown opcode"),
         }
     }
@@ -110,9 +114,11 @@ impl Opcode {
             Opcode::Div => "OpDiv",
             Opcode::True => "OpTrue",
             Opcode::False => "OpFalse",
-            Opcode::OpEqual => "OpEqual",
-            Opcode::OpNotEqual => "OpNotEqual",
-            Opcode::OpGreaterThan => "OpGreaterThan",
+            Opcode::Equal => "OpEqual",
+            Opcode::NotEqual => "OpNotEqual",
+            Opcode::GreaterThan => "OpGreaterThan",
+            Opcode::Minus => "OpMinus",
+            Opcode::Bang => "OpBang",
         }
     }
 
@@ -126,9 +132,11 @@ impl Opcode {
             Opcode::Div => vec![],
             Opcode::True => vec![],
             Opcode::False => vec![],
-            Opcode::OpEqual => vec![],
-            Opcode::OpNotEqual => vec![],
-            Opcode::OpGreaterThan => vec![],
+            Opcode::Equal => vec![],
+            Opcode::NotEqual => vec![],
+            Opcode::GreaterThan => vec![],
+            Opcode::Minus => vec![],
+            Opcode::Bang => vec![],
         }
     }
 }
@@ -190,6 +198,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
             operand_widths: vec![],
         }),
 
+        11 => Some(Definition {
+            name: "OpMinus",
+            operand_widths: vec![],
+        }),
+
+        12 => Some(Definition {
+            name: "OpBang",
+            operand_widths: vec![],
+        }),
+
         _ => None,
     }
 }
@@ -222,7 +240,7 @@ impl Display for Instructions {
             }
             let def = definition.unwrap();
             let (operands, n) = read_operands(&def, &self.0[i + 1..]);
-            write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
+            let _ = write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
             i += n + 1;
         }
         Ok(())
@@ -241,7 +259,7 @@ impl Debug for Instructions {
             }
             let def = definition.unwrap();
             let (operands, n) = read_operands(&def, &self.0[i + 1..]);
-            write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
+            let _ = write!(f, "{:04} {}\n", i, format_instruction(&def, &operands));
             i += n + 1;
         }
         Ok(())

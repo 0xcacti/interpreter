@@ -70,7 +70,7 @@ impl VM {
                     self.push(Rc::new(Object::Boolean(false)));
                 }
 
-                Opcode::OpEqual | Opcode::OpNotEqual | Opcode::OpGreaterThan => {
+                Opcode::Equal | Opcode::NotEqual | Opcode::GreaterThan => {
                     self.execute_comparison(opcode.into())?;
                 }
                 _ => {
@@ -135,11 +135,11 @@ impl VM {
                 return self.execute_integer_comparison(opcode, *left, *right);
             }
             _ => match opcode {
-                Opcode::OpEqual => {
+                Opcode::Equal => {
                     let result = Rc::new(Object::Boolean(left == right));
                     self.push(result);
                 }
-                Opcode::OpNotEqual => {
+                Opcode::NotEqual => {
                     let result = Rc::new(Object::Boolean(left != right));
                     self.push(result);
                 }
@@ -161,9 +161,9 @@ impl VM {
         right: i64,
     ) -> Result<(), VmError> {
         let result = match opcode {
-            Opcode::OpEqual => left == right,
-            Opcode::OpNotEqual => left != right,
-            Opcode::OpGreaterThan => left > right,
+            Opcode::Equal => left == right,
+            Opcode::NotEqual => left != right,
+            Opcode::GreaterThan => left > right,
             _ => {
                 return Err(VmError::new("Invalid opcode".to_string()));
             }

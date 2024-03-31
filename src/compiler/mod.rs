@@ -49,7 +49,7 @@ impl Compiler {
                     if operator == Token::Lt {
                         self.compile(Node::Expression(*right))?;
                         self.compile(Node::Expression(*left))?;
-                        self.emit(Opcode::OpGreaterThan, vec![]);
+                        self.emit(Opcode::GreaterThan, vec![]);
                         return Ok(());
                     }
 
@@ -72,10 +72,10 @@ impl Compiler {
                         Token::Gt | Token::Eq | Token::NotEq => {
                             self.emit(
                                 match operator {
-                                    Token::Lt => Opcode::OpGreaterThan,
-                                    Token::Gt => Opcode::OpGreaterThan,
-                                    Token::Eq => Opcode::OpEqual,
-                                    Token::NotEq => Opcode::OpNotEqual,
+                                    Token::Lt => Opcode::GreaterThan,
+                                    Token::Gt => Opcode::GreaterThan,
+                                    Token::Eq => Opcode::Equal,
+                                    Token::NotEq => Opcode::NotEqual,
                                     _ => {
                                         panic!("not implemented")
                                     }
@@ -84,6 +84,21 @@ impl Compiler {
                             );
                         }
 
+                        _ => {
+                            panic!("not implemented")
+                        }
+                    }
+                }
+
+                Expression::Prefix(operator, expression) => {
+                    self.compile(Node::Expression(*expression))?;
+                    match operator {
+                        Token::Bang => {
+                            self.emit(Opcode::Bang, vec![]);
+                        }
+                        Token::Dash => {
+                            self.emit(Opcode::Minus, vec![]);
+                        }
                         _ => {
                             panic!("not implemented")
                         }
@@ -278,7 +293,7 @@ mod test {
             vec![
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
-                make(Opcode::OpEqual, vec![]).into(),
+                make(Opcode::Equal, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(1))],
@@ -289,7 +304,7 @@ mod test {
             vec![
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
-                make(Opcode::OpNotEqual, vec![]).into(),
+                make(Opcode::NotEqual, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
@@ -300,7 +315,7 @@ mod test {
             vec![
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
-                make(Opcode::OpGreaterThan, vec![]).into(),
+                make(Opcode::GreaterThan, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
@@ -311,7 +326,7 @@ mod test {
             vec![
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
-                make(Opcode::OpGreaterThan, vec![]).into(),
+                make(Opcode::GreaterThan, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(2)), Rc::new(Object::Integer(1))],
@@ -322,7 +337,7 @@ mod test {
             vec![
                 make(Opcode::True, vec![]).into(),
                 make(Opcode::False, vec![]).into(),
-                make(Opcode::OpEqual, vec![]).into(),
+                make(Opcode::Equal, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![],
@@ -333,10 +348,43 @@ mod test {
             vec![
                 make(Opcode::True, vec![]).into(),
                 make(Opcode::False, vec![]).into(),
-                make(Opcode::OpNotEqual, vec![]).into(),
+                make(Opcode::NotEqual, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![],
+        );
+    }
+
+    #[test]
+    fn it_compiles_prefix_operators() {
+        test_compilation(
+            "!true",
+            vec![
+                make(Opcode::True, vec![]).into(),
+                make(Opcode::Bang, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
+
+        test_compilation(
+            "!false",
+            vec![
+                make(Opcode::False, vec![]).into(),
+                make(Opcode::Bang, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
+
+        test_compilation(
+            "-1",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Minus, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1))],
         );
     }
 }

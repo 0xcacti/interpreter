@@ -127,9 +127,9 @@ impl Compiler {
                 Expression::If(condition, consequence, alternative) => {
                     self.compile(Node::Expression(*condition))?;
                     self.emit(Opcode::JumpNotTruthy, vec![9999]);
+                    // println!("{:?}", consequence);
                     self.compile(Node::Program(consequence))?;
                 }
-
                 _ => {
                     panic!("not implemented")
                 }

@@ -19,6 +19,8 @@ pub enum Opcode {
     GreaterThan,
     Minus,
     Bang,
+    JumpNotTruthy,
+    Jump,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -36,6 +38,8 @@ impl From<u8> for Opcode {
             10 => Opcode::GreaterThan,
             11 => Opcode::Minus,
             12 => Opcode::Bang,
+            13 => Opcode::JumpNotTruthy,
+            14 => Opcode::Jump,
             _ => panic!("unknown opcode"),
         }
     }
@@ -119,6 +123,8 @@ impl Opcode {
             Opcode::GreaterThan => "OpGreaterThan",
             Opcode::Minus => "OpMinus",
             Opcode::Bang => "OpBang",
+            Opcode::JumpNotTruthy => "OpJumpNotTruthy",
+            Opcode::Jump => "OpJump",
         }
     }
 
@@ -137,6 +143,8 @@ impl Opcode {
             Opcode::GreaterThan => vec![],
             Opcode::Minus => vec![],
             Opcode::Bang => vec![],
+            Opcode::JumpNotTruthy => vec![2],
+            Opcode::Jump => vec![2],
         }
     }
 }
@@ -206,6 +214,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
         12 => Some(Definition {
             name: "OpBang",
             operand_widths: vec![],
+        }),
+
+        13 => Some(Definition {
+            name: "OpJumpNotTruthy",
+            operand_widths: vec![2],
+        }),
+
+        14 => Some(Definition {
+            name: "OpJump",
+            operand_widths: vec![2],
         }),
 
         _ => None,

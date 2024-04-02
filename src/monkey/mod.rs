@@ -4,11 +4,11 @@ use strum_macros::{Display, EnumString};
 use crate::compiler::Compiler;
 use crate::evaluator::environment::Environment;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
+use crate::utils;
 use crate::vm::VM;
-use crate::{utils, vm};
 
 use crate::lexer::Lexer;
-use crate::parser::ast::{self, Node};
+use crate::parser::ast::Node;
 use crate::parser::Parser;
 use std::{
     cell::RefCell,
@@ -20,8 +20,8 @@ use std::{
 pub enum ExecMode {
     #[strum(serialize = "vm")]
     VM,
-    #[strum(serialize = "raw")]
-    Raw,
+    #[strum(serialize = "direct")]
+    Direct,
 }
 
 const PROMPT: &str = ">> ";
@@ -72,7 +72,7 @@ pub fn interpret_chunk(
 ) -> Result<()> {
     match mode {
         ExecMode::VM => interpret_vm(contents, env, macro_env),
-        ExecMode::Raw => interpret_raw(contents, env, macro_env),
+        ExecMode::Direct => interpret_raw(contents, env, macro_env),
     }
 }
 

@@ -33,7 +33,7 @@ monkey ./main.monkey
 ```
 
 Finally, you can run any of the above commands using the more performant, 
-bytecode-compiled and vm executed version of monkey, by supplying the --mode vm
+bytecode-interpreted (rather than sourcecode interpreted) and vm executed version of monkey, by supplying the --mode vm
 
 ``` 
 monkey --move vm
@@ -46,8 +46,3 @@ Some of the code here was influenced by [ ThePrimeagen's ](https://github.com/Th
 two chapters into the book.  Much of the code is influenced by [monkey-wasm](https://github.com/shioyama18/monkey-wasm/tree/master)
 
 
-
-TODO: 
-- Work on fixing the VM mutable borrow issue
-- Figure out what you actually need to be implementing the tests to switch on - 
-- Switch everything to rc

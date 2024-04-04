@@ -141,11 +141,13 @@ impl Compiler {
 
                 Expression::If(condition, consequence, alternative) => {
                     self.compile(Node::Expression(*condition))?;
-                    self.emit(Opcode::JumpNotTruthy, vec![9999]);
+                    let jump_not_truthy_position = self.emit(Opcode::JumpNotTruthy, vec![9999]);
                     self.compile(Node::Program(consequence))?;
                     if self.last_instruction_is(Opcode::Pop) {
                         self.remove_last_instruction();
                     }
+                    // go back and change operand for jump
+                    self.change_operand(jump_not_truthy_position, self.instructions.len());
                 }
 
                 _ => {
@@ -199,6 +201,18 @@ impl Compiler {
         let position_new = self.instructions.len();
         self.instructions.extend(Instructions::new(instructions));
         position_new
+    }
+
+    fn replace_instruction(&mut self, position: usize, new_instructions: Vec<u8>) {
+        for i in 0..new_instructions.len() {
+            self.instructions[position + i] = new_instructions[i];
+        }
+    }
+
+    fn change_operand(&mut self, position: usize, operand: usize) {
+        let opcode = self.instructions[position];
+        let new_instrution = code::make(opcode.into(), vec![operand]);
+        self.replace_instruction(position, new_instrution);
     }
 }
 

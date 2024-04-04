@@ -1,5 +1,5 @@
 pub mod error;
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 use std::fmt::{Debug, Display};
 
@@ -64,6 +64,12 @@ impl Index<usize> for Instructions {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+impl IndexMut<usize> for Instructions {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
     }
 }
 

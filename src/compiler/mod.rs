@@ -53,7 +53,6 @@ impl Compiler {
             Node::Statement(statement) => match statement {
                 Statement::Expression(expression) => {
                     self.compile(Node::Expression(expression))?;
-                    println!("I shouldn't be called more than twice");
                     self.emit(Opcode::Pop, vec![]);
                 }
                 _ => {
@@ -145,7 +144,7 @@ impl Compiler {
                     self.emit(Opcode::JumpNotTruthy, vec![9999]);
                     self.compile(Node::Program(consequence))?;
                     if self.last_instruction_is(Opcode::Pop) {
-                        self.remove_last_pop();
+                        self.remove_last_instruction();
                     }
                 }
 
@@ -173,6 +172,7 @@ impl Compiler {
     pub fn emit(&mut self, opcode: Opcode, operands: Vec<usize>) -> usize {
         let ins = code::make(opcode, operands);
         let pos = self.add_instructions(ins);
+        self.set_last_instruction(opcode, pos);
         pos
     }
 
@@ -182,10 +182,14 @@ impl Compiler {
     }
 
     pub fn last_instruction_is(&self, opcode: Opcode) -> bool {
+        println!(
+            "hello we are here {}",
+            self.last_instruction.opcode == opcode
+        );
         self.last_instruction.opcode == opcode
     }
 
-    pub fn remove_last_pop(&mut self) {
+    pub fn remove_last_instruction(&mut self) {
         let last = self.last_instruction.position;
         self.instructions = self.instructions.slice(0, last).into();
         self.last_instruction = self.previous_instruction.clone();

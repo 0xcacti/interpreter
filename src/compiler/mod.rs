@@ -12,6 +12,8 @@ use std::rc::Rc;
 pub struct Compiler {
     pub instructions: Instructions,
     pub constants: Vec<Rc<Object>>,
+    pub last_instruction: EmittedInstruction,
+    pub previous_instruction: EmittedInstruction,
 }
 
 pub struct Bytecode {
@@ -19,11 +21,25 @@ pub struct Bytecode {
     pub constants: Vec<Rc<Object>>,
 }
 
+#[derive(Clone)]
+pub struct EmittedInstruction {
+    pub opcode: Opcode,
+    pub position: usize,
+}
+
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
             instructions: Instructions::new(vec![]),
             constants: vec![],
+            last_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
+            previous_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
         }
     }
 
@@ -128,6 +144,9 @@ impl Compiler {
                     self.compile(Node::Expression(*condition))?;
                     self.emit(Opcode::JumpNotTruthy, vec![9999]);
                     self.compile(Node::Program(consequence))?;
+                    if self.last_instruction_is(Opcode::Pop) {
+                        self.remove_last_pop();
+                    }
                 }
 
                 _ => {
@@ -155,6 +174,21 @@ impl Compiler {
         let ins = code::make(opcode, operands);
         let pos = self.add_instructions(ins);
         pos
+    }
+
+    pub fn set_last_instruction(&mut self, opcode: Opcode, position: usize) {
+        self.previous_instruction = self.last_instruction.clone();
+        self.last_instruction = EmittedInstruction { opcode, position };
+    }
+
+    pub fn last_instruction_is(&self, opcode: Opcode) -> bool {
+        self.last_instruction.opcode == opcode
+    }
+
+    pub fn remove_last_pop(&mut self) {
+        let last = self.last_instruction.position;
+        self.instructions = self.instructions.slice(0, last).into();
+        self.last_instruction = self.previous_instruction.clone();
     }
 
     pub fn add_instructions(&mut self, instructions: Vec<u8>) -> usize {

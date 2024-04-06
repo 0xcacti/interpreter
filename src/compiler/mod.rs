@@ -143,10 +143,14 @@ impl Compiler {
                     self.compile(Node::Expression(*condition))?;
                     let jump_not_truthy_position = self.emit(Opcode::JumpNotTruthy, vec![9999]);
                     self.compile(Node::Program(consequence))?;
-                    // go back and change operand for jump
+                    if self.last_instruction_is(Opcode::Pop) {
+                        self.remove_last_instruction();
+                    }
+
                     match alternative {
                         Some(alternative) => {
                             let jump_position = self.emit(Opcode::Jump, vec![9999]);
+
                             let after_consequence_position = self.instructions.len();
                             self.change_operand(
                                 jump_not_truthy_position,
@@ -485,23 +489,23 @@ mod test {
             vec![Rc::new(Object::Integer(10)), Rc::new(Object::Integer(3333))],
         );
 
-        // test_compilation(
-        //     "if (true) { 10 } else { 20 }; 3333;",
-        //     vec![
-        //         make(Opcode::True, vec![]).into(),
-        //         make(Opcode::JumpNotTruthy, vec![10]).into(),
-        //         make(Opcode::Constant, vec![0]).into(),
-        //         make(Opcode::Jump, vec![13]).into(),
-        //         make(Opcode::Constant, vec![1]).into(),
-        //         make(Opcode::Pop, vec![]).into(),
-        //         make(Opcode::Constant, vec![2]).into(),
-        //         make(Opcode::Pop, vec![]).into(),
-        //     ],
-        //     vec![
-        //         Rc::new(Object::Integer(10)),
-        //         Rc::new(Object::Integer(20)),
-        //         Rc::new(Object::Integer(3333)),
-        //     ],
-        // );
+        test_compilation(
+            "if (true) { 10 } else { 20 }; 3333;",
+            vec![
+                make(Opcode::True, vec![]).into(),
+                make(Opcode::JumpNotTruthy, vec![10]).into(),
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Jump, vec![13]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(10)),
+                Rc::new(Object::Integer(20)),
+                Rc::new(Object::Integer(3333)),
+            ],
+        );
     }
 }

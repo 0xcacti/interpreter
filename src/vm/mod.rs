@@ -214,6 +214,11 @@ impl VM {
                 let result = Rc::new(Object::Boolean(!value));
                 self.push(result);
             }
+
+            Object::Null => {
+                let result = Rc::new(Object::Boolean(true));
+                self.push(result);
+            }
             _ => {
                 let result = Rc::new(Object::Boolean(false));
                 self.push(result);
@@ -447,6 +452,10 @@ mod test {
             },
             VmTest {
                 input: "!!5".to_string(),
+                expected: Object::Boolean(true),
+            },
+            VmTest {
+                input: "!(if (false) { 5;} )".to_string(),
                 expected: Object::Boolean(true),
             },
         ];

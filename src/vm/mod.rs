@@ -542,5 +542,7 @@ mod test {
             input: "if ((if (false) { 10 })) { 10 } else { 20 }".to_string(),
             expected: Object::Integer(20),
         }];
+
+        run_vm_tests(tests);
     }
 }

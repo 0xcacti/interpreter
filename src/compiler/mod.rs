@@ -1,4 +1,5 @@
 pub mod error;
+pub mod symbol_table;
 use crate::{
     code::{self, Instructions, Opcode},
     evaluator::object::Object,
@@ -54,6 +55,10 @@ impl Compiler {
                 Statement::Expression(expression) => {
                     self.compile(Node::Expression(expression))?;
                     self.emit(Opcode::Pop, vec![]);
+                }
+
+                Statement::Let(name, expression) => {
+                    self.compile(Node::Expression(expression))?;
                 }
                 _ => {
                     panic!("not implemented")
@@ -501,6 +506,44 @@ mod test {
                 Rc::new(Object::Integer(20)),
                 Rc::new(Object::Integer(3333)),
             ],
+        );
+    }
+
+    #[test]
+    fn it_compiles_global_let_statements() {
+        test_compilation(
+            "let one = 1; let two = 2;",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::SetGlobal, vec![1]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2))],
+        );
+
+        test_compilation(
+            "let one = 1; one;",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1))],
+        );
+
+        test_compilation(
+            "let one = 1; let two = one; two;",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![1]).into(),
+                make(Opcode::GetGlobal, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1))],
         );
     }
 }

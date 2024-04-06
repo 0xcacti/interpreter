@@ -22,6 +22,8 @@ pub enum Opcode {
     JumpNotTruthy,
     Jump,
     Null,
+    GetGlobal,
+    SetGlobal,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -42,6 +44,8 @@ impl From<u8> for Opcode {
             13 => Opcode::JumpNotTruthy,
             14 => Opcode::Jump,
             15 => Opcode::Null,
+            16 => Opcode::GetGlobal,
+            17 => Opcode::SetGlobal,
             _ => panic!("unknown opcode"),
         }
     }
@@ -134,6 +138,8 @@ impl Opcode {
             Opcode::JumpNotTruthy => "OpJumpNotTruthy",
             Opcode::Jump => "OpJump",
             Opcode::Null => "OpNull",
+            Opcode::GetGlobal => "OpGetGlobal",
+            Opcode::SetGlobal => "OpSetGlobal",
         }
     }
 
@@ -155,6 +161,8 @@ impl Opcode {
             Opcode::JumpNotTruthy => vec![2],
             Opcode::Jump => vec![2],
             Opcode::Null => vec![],
+            Opcode::GetGlobal => vec![2],
+            Opcode::SetGlobal => vec![2],
         }
     }
 }
@@ -239,6 +247,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
         15 => Some(Definition {
             name: "OpNull",
             operand_widths: vec![],
+        }),
+
+        16 => Some(Definition {
+            name: "OpGetGlobal",
+            operand_widths: vec![2],
+        }),
+
+        17 => Some(Definition {
+            name: "OpSetGlobal",
+            operand_widths: vec![2],
         }),
 
         _ => None,

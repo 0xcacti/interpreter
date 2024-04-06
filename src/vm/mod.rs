@@ -96,6 +96,10 @@ impl VM {
                     }
                 }
 
+                Opcode::Null => {
+                    self.push(Rc::new(Object::Null));
+                }
+
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -510,17 +514,17 @@ mod test {
 
         // test false conditionals without alternatives
 
-        // let tests = vec![
-        //     VmTest {
-        //         input: "if (false) { 10 }".to_string(),
-        //         expected: Object::Null,
-        //     },
-        //     VmTest {
-        //         input: "if (1 > 2) { 10 }".to_string(),
-        //         expected: Object::Null,
-        //     },
-        // ];
+        let tests = vec![
+            VmTest {
+                input: "if (false) { 10 }".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "if (1 > 2) { 10 }".to_string(),
+                expected: Object::Null,
+            },
+        ];
 
-        // run_vm_tests(tests);
+        run_vm_tests(tests);
     }
 }

@@ -1,4 +1,3 @@
-
 <script lang="ts">
     import "../app.css";
     let wasmModule: any = null;
@@ -6,16 +5,16 @@
     let monkeyCode: string = "";
 
     // Import the WASM binary URL using the vite-plugin-wasm approach.
-    import wasmBinaryUrl from "../lib/pkg/interpreter_bg.wasm?url"; 
+    import wasmBinaryUrl from "../lib/pkg/interpreter_bg.wasm?url";
 
     import { onMount } from "svelte";
 
     onMount(async () => {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
             try {
                 const response = await fetch(wasmBinaryUrl);
                 const wasmBinary = await response.arrayBuffer();
-                
+
                 const wasm = await import("../lib/pkg/interpreter.js");
                 wasm.initSync(wasmBinary);
                 wasmModule = wasm;
@@ -27,7 +26,7 @@
 
     function handleSubmit(event: Event): void {
         event.preventDefault();
-        
+
         // Reset the result before interpreting the new input
         result = null;
 
@@ -82,4 +81,3 @@
 </div>
 <!-- This is where the content of any nested route will be rendered -->
 <slot />
-

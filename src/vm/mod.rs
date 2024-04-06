@@ -112,6 +112,7 @@ impl VM {
     fn is_truthy(&self, obj: Rc<Object>) -> bool {
         let truthy = match *obj {
             Object::Boolean(b) => b,
+            Object::Null => false,
             _ => true,
         };
         truthy
@@ -535,5 +536,11 @@ mod test {
         ];
 
         run_vm_tests(tests);
+
+        // test conditionals of conditionals
+        let tests = vec![VmTest {
+            input: "if ((if (false) { 10 })) { 10 } else { 20 }".to_string(),
+            expected: Object::Integer(20),
+        }];
     }
 }

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use signal_hook::{consts::SIGINT, iterator::Signals};
 use strum_macros::{Display, EnumString};
 
 use crate::compiler::Compiler;
@@ -10,6 +11,7 @@ use crate::vm::VM;
 use crate::lexer::Lexer;
 use crate::parser::ast::Node;
 use crate::parser::Parser;
+use std::thread;
 use std::{
     cell::RefCell,
     io::{self, Write},
@@ -30,6 +32,21 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
     let env = Rc::new(RefCell::new(Environment::new()));
     let macro_env = Rc::new(RefCell::new(Environment::new()));
     println!("Welcome to the Mokey Programming Language REPL!",);
+
+    let mut signals = Signals::new(&[SIGINT])?;
+
+    thread::spawn(move || {
+        for sig in signals.forever() {
+            match sig {
+                SIGINT => {
+                    println!("Exiting REPL");
+                    std::process::exit(0);
+                }
+                _ => {}
+            }
+        }
+    });
+
     if let Some(path) = path {
         let contents = utils::load_monkey(path)?;
         interpret_chunk(

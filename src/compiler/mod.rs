@@ -210,10 +210,7 @@ impl Compiler {
     }
 
     pub fn last_instruction_is(&self, opcode: Opcode) -> bool {
-        println!(
-            "hello we are here {}",
-            self.last_instruction.opcode == opcode
-        );
+        println!(self.last_instruction.opcode == opcode);
         self.last_instruction.opcode == opcode
     }
 

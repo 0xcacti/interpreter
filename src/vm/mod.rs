@@ -82,6 +82,20 @@ impl VM {
                     self.execute_minus_operator()?;
                 }
 
+                Opcode::Jump => {
+                    let position = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip = position - 1;
+                }
+
+                Opcode::JumpNotTruthy => {
+                    let maybe_jump_position = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip = ip + 2;
+                    let condition = self.pop();
+                    if !self.is_truthy(condition) {
+                        ip = maybe_jump_position - 1;
+                    }
+                }
+
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -89,6 +103,14 @@ impl VM {
             ip += 1;
         }
         Ok(())
+    }
+
+    fn is_truthy(&self, obj: Rc<object::Object>) -> bool {
+        let truthy = match *obj {
+            Object::Boolean(b) => b,
+            _ => true,
+        };
+        truthy
     }
 
     pub fn push(&mut self, obj: Rc<Object>) {
@@ -445,6 +467,41 @@ mod test {
             },
         ];
 
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_conditionals() {
+        let tests = vec![
+            VmTest {
+                input: "if (true) { 10 }".to_string(),
+                expected: object::Object::Integer(10),
+            },
+            VmTest {
+                input: "if (true) { 10 } else { 20 }".to_string(),
+                expected: object::Object::Integer(10),
+            },
+            VmTest {
+                input: "if (false) { 10 } else { 20 }".to_string(),
+                expected: object::Object::Integer(20),
+            },
+            VmTest {
+                input: "if (1) { 10 }".to_string(),
+                expected: object::Object::Integer(10),
+            },
+            VmTest {
+                input: "if (1 < 2) { 10 }".to_string(),
+                expected: object::Object::Integer(10),
+            },
+            VmTest {
+                input: "if (1 < 2) { 10 } else { 20 }".to_string(),
+                expected: object::Object::Integer(10),
+            },
+            VmTest {
+                input: "if (1 > 2) { 10 } else { 20 }".to_string(),
+                expected: object::Object::Integer(20),
+            },
+        ];
         run_vm_tests(tests);
     }
 }

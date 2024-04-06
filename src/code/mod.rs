@@ -21,6 +21,7 @@ pub enum Opcode {
     Bang,
     JumpNotTruthy,
     Jump,
+    Null,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -40,6 +41,7 @@ impl From<u8> for Opcode {
             12 => Opcode::Bang,
             13 => Opcode::JumpNotTruthy,
             14 => Opcode::Jump,
+            15 => Opcode::Null,
             _ => panic!("unknown opcode"),
         }
     }
@@ -131,6 +133,7 @@ impl Opcode {
             Opcode::Bang => "OpBang",
             Opcode::JumpNotTruthy => "OpJumpNotTruthy",
             Opcode::Jump => "OpJump",
+            Opcode::Null => "OpNull",
         }
     }
 
@@ -151,6 +154,7 @@ impl Opcode {
             Opcode::Bang => vec![],
             Opcode::JumpNotTruthy => vec![2],
             Opcode::Jump => vec![2],
+            Opcode::Null => vec![],
         }
     }
 }
@@ -230,6 +234,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
         14 => Some(Definition {
             name: "OpJump",
             operand_widths: vec![2],
+        }),
+
+        15 => Some(Definition {
+            name: "OpNull",
+            operand_widths: vec![],
         }),
 
         _ => None,

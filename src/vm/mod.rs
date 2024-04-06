@@ -28,7 +28,7 @@ impl VM {
         };
     }
 
-    pub fn stack_top(&self) -> Option<Rc<object::Object>> {
+    pub fn stack_top(&self) -> Option<Rc<Object>> {
         if self.sp == 0 {
             return None;
         }
@@ -105,7 +105,7 @@ impl VM {
         Ok(())
     }
 
-    fn is_truthy(&self, obj: Rc<object::Object>) -> bool {
+    fn is_truthy(&self, obj: Rc<Object>) -> bool {
         let truthy = match *obj {
             Object::Boolean(b) => b,
             _ => true,
@@ -246,7 +246,7 @@ mod test {
 
     struct VmTest {
         input: String,
-        expected: object::Object,
+        expected: Object,
     }
 
     fn parse(input: &str) -> ast::Node {
@@ -270,24 +270,28 @@ mod test {
         }
     }
 
-    fn validate_integer_object(obj: object::Object, expected: i64) {
+    fn validate_integer_object(obj: Object, expected: i64) {
         match obj {
             Object::Integer(value) => assert_eq!(value, expected),
             _ => panic!("object not integer"),
         }
     }
 
-    fn validate_boolean_object(obj: object::Object, expected: bool) {
+    fn validate_boolean_object(obj: Object, expected: bool) {
         match obj {
             Object::Boolean(value) => assert_eq!(value, expected),
             _ => panic!("object not boolean"),
         }
     }
 
-    fn test_expected_object(expected: object::Object, actual: object::Object) {
+    fn test_expected_object(expected: Object, actual: object::Object) {
         match expected {
             Object::Integer(expected) => validate_integer_object(actual, expected),
             Object::Boolean(expected) => validate_boolean_object(actual, expected),
+            Object::Null => match actual {
+                Object::Null => {}
+                _ => panic!("object not null"),
+            },
             _ => panic!("unsupported object type"),
         }
     }
@@ -296,7 +300,7 @@ mod test {
     fn it_adds_two_integers() {
         let tests = vec![VmTest {
             input: "1 + 2".to_string(),
-            expected: object::Object::Integer(3),
+            expected: Object::Integer(3),
         }];
         run_vm_tests(tests);
     }
@@ -305,7 +309,7 @@ mod test {
     fn it_subtracts_two_integers() {
         let tests = vec![VmTest {
             input: "2 - 1".to_string(),
-            expected: object::Object::Integer(1),
+            expected: Object::Integer(1),
         }];
         run_vm_tests(tests);
     }
@@ -314,7 +318,7 @@ mod test {
     fn it_multiplies_two_integers() {
         let tests = vec![VmTest {
             input: "2 * 2".to_string(),
-            expected: object::Object::Integer(4),
+            expected: Object::Integer(4),
         }];
         run_vm_tests(tests);
     }
@@ -323,7 +327,7 @@ mod test {
     fn it_divides_two_integers() {
         let tests = vec![VmTest {
             input: "4 / 2".to_string(),
-            expected: object::Object::Integer(2),
+            expected: Object::Integer(2),
         }];
         run_vm_tests(tests);
     }
@@ -333,11 +337,11 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "true".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "false".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
         ];
         run_vm_tests(tests);
@@ -347,67 +351,67 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "1 < 2".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "1 > 2".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "1 < 1".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "1 > 1".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "1 == 1".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "1 != 1".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "1 == 2".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "1 != 2".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "true == true".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "false == false".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "true == false".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "true != false".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "false != true".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "(1 < 2) == true".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "(1 < 2) == false".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "(1 > 2) == true".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
         ];
 
@@ -419,27 +423,27 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "!true".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "!false".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "!!true".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
             VmTest {
                 input: "!!false".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "!5".to_string(),
-                expected: object::Object::Boolean(false),
+                expected: Object::Boolean(false),
             },
             VmTest {
                 input: "!!5".to_string(),
-                expected: object::Object::Boolean(true),
+                expected: Object::Boolean(true),
             },
         ];
 
@@ -451,19 +455,19 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "-5".to_string(),
-                expected: object::Object::Integer(-5),
+                expected: Object::Integer(-5),
             },
             VmTest {
                 input: "-10".to_string(),
-                expected: object::Object::Integer(-10),
+                expected: Object::Integer(-10),
             },
             VmTest {
                 input: "-50 + 100 + -50".to_string(),
-                expected: object::Object::Integer(0),
+                expected: Object::Integer(0),
             },
             VmTest {
                 input: "(5 + 10 * 2 + 15 / 3) * 2 + -10".to_string(),
-                expected: object::Object::Integer(50),
+                expected: Object::Integer(50),
             },
         ];
 
@@ -475,33 +479,48 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "if (true) { 10 }".to_string(),
-                expected: object::Object::Integer(10),
+                expected: Object::Integer(10),
             },
             VmTest {
                 input: "if (true) { 10 } else { 20 }".to_string(),
-                expected: object::Object::Integer(10),
+                expected: Object::Integer(10),
             },
             VmTest {
                 input: "if (false) { 10 } else { 20 }".to_string(),
-                expected: object::Object::Integer(20),
+                expected: Object::Integer(20),
             },
             VmTest {
                 input: "if (1) { 10 }".to_string(),
-                expected: object::Object::Integer(10),
+                expected: Object::Integer(10),
             },
             VmTest {
                 input: "if (1 < 2) { 10 }".to_string(),
-                expected: object::Object::Integer(10),
+                expected: Object::Integer(10),
             },
             VmTest {
                 input: "if (1 < 2) { 10 } else { 20 }".to_string(),
-                expected: object::Object::Integer(10),
+                expected: Object::Integer(10),
             },
             VmTest {
                 input: "if (1 > 2) { 10 } else { 20 }".to_string(),
-                expected: object::Object::Integer(20),
+                expected: Object::Integer(20),
             },
         ];
         run_vm_tests(tests);
+
+        // test false conditionals without alternatives
+
+        // let tests = vec![
+        //     VmTest {
+        //         input: "if (false) { 10 }".to_string(),
+        //         expected: Object::Null,
+        //     },
+        //     VmTest {
+        //         input: "if (1 > 2) { 10 }".to_string(),
+        //         expected: Object::Null,
+        //     },
+        // ];
+
+        // run_vm_tests(tests);
     }
 }

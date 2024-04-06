@@ -141,39 +141,36 @@ impl Compiler {
 
                 Expression::If(condition, consequence, alternative) => {
                     self.compile(Node::Expression(*condition))?;
+
                     let jump_not_truthy_position = self.emit(Opcode::JumpNotTruthy, vec![9999]);
+
                     self.compile(Node::Program(consequence))?;
+
+                    // leave last element of consequence on the stack
                     if self.last_instruction_is(Opcode::Pop) {
                         self.remove_last_instruction();
                     }
 
+                    let jump_position = self.emit(Opcode::Jump, vec![9999]);
+
+                    let after_consequence_position = self.instructions.len();
+                    self.change_operand(jump_not_truthy_position, after_consequence_position);
+
                     match alternative {
                         Some(alternative) => {
-                            let jump_position = self.emit(Opcode::Jump, vec![9999]);
-
-                            let after_consequence_position = self.instructions.len();
-                            self.change_operand(
-                                jump_not_truthy_position,
-                                after_consequence_position,
-                            );
-
                             self.compile(Node::Program(alternative))?;
 
                             if self.last_instruction_is(Opcode::Pop) {
                                 self.remove_last_instruction();
                             }
-
-                            let after_alternative_position = self.instructions.len();
-                            self.change_operand(jump_position, after_alternative_position);
                         }
                         None => {
-                            let after_consequence_position = self.instructions.len();
-                            self.change_operand(
-                                jump_not_truthy_position,
-                                after_consequence_position,
-                            );
+                            self.emit(Opcode::Null, vec![]);
                         }
                     }
+
+                    let after_alternative_position = self.instructions.len();
+                    self.change_operand(jump_position, after_alternative_position);
                 }
 
                 _ => {
@@ -210,7 +207,6 @@ impl Compiler {
     }
 
     pub fn last_instruction_is(&self, opcode: Opcode) -> bool {
-        println!(self.last_instruction.opcode == opcode);
         self.last_instruction.opcode == opcode
     }
 
@@ -477,8 +473,10 @@ mod test {
             "if (true) { 10 }; 3333;",
             vec![
                 make(Opcode::True, vec![]).into(),
-                make(Opcode::JumpNotTruthy, vec![7]).into(),
+                make(Opcode::JumpNotTruthy, vec![10]).into(),
                 make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Jump, vec![11]).into(),
+                make(Opcode::Null, vec![]).into(),
                 make(Opcode::Pop, vec![]).into(),
                 make(Opcode::Constant, vec![1]).into(),
                 make(Opcode::Pop, vec![]).into(),

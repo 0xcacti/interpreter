@@ -35,9 +35,18 @@ impl SymbolTable {
             scope,
             value,
         };
-        self.symbols.insert(name, Symbol { name, scope, value });
+        self.symbols
+            .insert(name.clone(), Symbol { name, scope, value });
         self.num_definitions += 1;
         symbol.clone()
+    }
+
+    pub fn resolve(&self, name: &str) -> Option<Symbol> {
+        let object = self.symbols.get(name);
+        match object {
+            Some(symbol) => Some(symbol.clone()),
+            None => None,
+        }
     }
 }
 
@@ -48,26 +57,30 @@ mod tests {
     #[test]
     fn it_defines_symbols() {
         let mut symbol_table = SymbolTable::new();
+
+        let expected = vec![
+            Symbol {
+                name: "a".to_string(),
+                scope: Scope::Global,
+                value: 0,
+            },
+            Symbol {
+                name: "b".to_string(),
+                scope: Scope::Global,
+                value: 1,
+            },
+        ];
+
         let a = symbol_table.define("a".to_string(), Scope::Global, 0);
         let b = symbol_table.define("b".to_string(), Scope::Global, 1);
 
         assert_eq!(symbol_table.num_definitions, 2);
-        assert_eq!(
-            a,
-            Symbol {
-                name: "a".to_string(),
-                scope: Scope::Global,
-                value: 0
-            }
-        );
+        assert_eq!(a, expected[0],);
+        assert_eq!(b, expected[1],);
 
-        assert_eq!(
-            b,
-            Symbol {
-                name: "b".to_string(),
-                scope: Scope::Global,
-                value: 1
-            }
-        );
+        for symbol in expected {
+            let result = symbol_table.resolve(&symbol.name).unwrap();
+            assert_eq!(result, symbol);
+        }
     }
 }

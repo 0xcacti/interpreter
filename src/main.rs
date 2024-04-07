@@ -12,7 +12,7 @@ struct MonkeyCmd {
     /// Path
     #[arg(required = false, global = true)]
     path: Option<String>,
-    /// Execution mode (vm or raw)
+    /// Execution mode (vm or direct)
     #[arg(
         short = 'm',
         long = "mode",

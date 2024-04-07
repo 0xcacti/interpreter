@@ -1,23 +1,23 @@
 pub mod error;
 
 use crate::{
-    code::{self, Instructions, Opcode},
+    code::{self, Opcode},
     compiler,
-    evaluator::object::{self, Object},
+    evaluator::object::Object,
 };
 use error::VmError;
 
 use std::rc::Rc;
 
-const STACK_SIZE: usize = 2048;
-const GLOBAL_SIZE: usize = 65536;
+pub const STACK_SIZE: usize = 2048;
+pub const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM {
     pub constants: Vec<Rc<Object>>,
     pub instructions: code::Instructions,
     pub stack: Vec<Rc<Object>>,
     pub sp: usize,
-    pub globals: Vec<Rc<Object>>,
+    pub globals: Box<Vec<Rc<Object>>>,
 }
 
 impl VM {
@@ -27,7 +27,20 @@ impl VM {
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
-            globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
+            globals: Box::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]),
+        };
+    }
+
+    pub fn new_with_global_store(
+        bytecode: compiler::Bytecode,
+        globals: Box<Vec<Rc<Object>>>,
+    ) -> Self {
+        return VM {
+            instructions: bytecode.instructions,
+            constants: bytecode.constants,
+            stack: vec![Rc::new(Object::Null); STACK_SIZE],
+            sp: 0,
+            globals,
         };
     }
 
@@ -309,7 +322,7 @@ mod test {
         }
     }
 
-    fn test_expected_object(expected: Object, actual: object::Object) {
+    fn test_expected_object(expected: Object, actual: Object) {
         match expected {
             Object::Integer(expected) => validate_integer_object(actual, expected),
             Object::Boolean(expected) => validate_boolean_object(actual, expected),
@@ -577,7 +590,6 @@ mod test {
                 expected: Object::Integer(3),
             },
         ];
-
         run_vm_tests(tests);
     }
 }

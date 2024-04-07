@@ -14,10 +14,10 @@ use self::symbol_table::SymbolTable;
 
 pub struct Compiler {
     pub instructions: Instructions,
-    pub constants: Vec<Rc<Object>>,
+    pub constants: Box<Vec<Rc<Object>>>,
     pub last_instruction: EmittedInstruction,
     pub previous_instruction: EmittedInstruction,
-    pub symbol_table: SymbolTable,
+    pub symbol_table: Box<SymbolTable>,
 }
 
 pub struct Bytecode {
@@ -35,7 +35,7 @@ impl Compiler {
     pub fn new() -> Self {
         Compiler {
             instructions: Instructions::new(vec![]),
-            constants: vec![],
+            constants: Box::new(vec![]),
             last_instruction: EmittedInstruction {
                 opcode: Opcode::Constant,
                 position: 0,
@@ -44,7 +44,23 @@ impl Compiler {
                 opcode: Opcode::Constant,
                 position: 0,
             },
-            symbol_table: SymbolTable::new(),
+            symbol_table: Box::new(SymbolTable::new()),
+        }
+    }
+
+    pub fn new_with_state(symbol_table: Box<SymbolTable>, constants: Box<Vec<Rc<Object>>>) -> Self {
+        Compiler {
+            instructions: Instructions::new(vec![]),
+            constants,
+            last_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
+            previous_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
+            symbol_table,
         }
     }
 

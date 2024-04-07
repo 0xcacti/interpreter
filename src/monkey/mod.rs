@@ -2,11 +2,13 @@ use anyhow::Result;
 use signal_hook::{consts::SIGINT, iterator::Signals};
 use strum_macros::{Display, EnumString};
 
+use crate::compiler::symbol_table::SymbolTable;
 use crate::compiler::Compiler;
 use crate::evaluator::environment::Environment;
+use crate::evaluator::object::Object;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
 use crate::utils;
-use crate::vm::VM;
+use crate::vm::{GLOBAL_SIZE, VM};
 
 use crate::lexer::Lexer;
 use crate::parser::ast::Node;
@@ -47,14 +49,30 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
         }
     });
 
+    let constants = Box::new(vec![]);
+    let symbol_table = Box::new(SymbolTable::new());
+    let globals = Box::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]);
+
     if let Some(path) = path {
         let contents = utils::load_monkey(path)?;
-        interpret_chunk(
-            mode.clone(),
-            contents,
-            Some(Rc::clone(&env)),
-            Some(Rc::clone(&macro_env)),
-        )?;
+
+        let result = match mode {
+            ExecMode::Direct => {
+                interpret_direct(contents, Some(Rc::clone(&env)), Some(Rc::clone(&macro_env)))
+            }
+            ExecMode::VM => interpret_vm(
+                contents,
+                Some(Rc::clone(&env)),
+                Some(Rc::clone(&macro_env)),
+                symbol_table,
+                constants,
+                globals,
+            ),
+        };
+
+        if let Err(err) = result {
+            eprintln!("{}", err);
+        }
     }
 
     loop {
@@ -68,32 +86,27 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
             std::process::exit(0);
         }
 
-        let chunk = interpret_chunk(
-            mode.clone(),
-            line,
-            Some(Rc::clone(&env)),
-            Some(Rc::clone(&macro_env)),
-        );
+        let result = match mode {
+            ExecMode::Direct => {
+                interpret_direct(line, Some(Rc::clone(&env)), Some(Rc::clone(&macro_env)))
+            }
+            ExecMode::VM => interpret_vm(
+                line,
+                Some(Rc::clone(&env)),
+                Some(Rc::clone(&macro_env)),
+                symbol_table,
+                constants,
+                globals,
+            ),
+        };
 
-        if let Err(err) = chunk {
+        if let Err(err) = result {
             eprintln!("{}", err);
         }
     }
 }
 
-pub fn interpret_chunk(
-    mode: ExecMode,
-    contents: String,
-    env: Option<Rc<RefCell<Environment>>>,
-    macro_env: Option<Rc<RefCell<Environment>>>,
-) -> Result<()> {
-    match mode {
-        ExecMode::VM => interpret_vm(contents, env, macro_env),
-        ExecMode::Direct => interpret_raw(contents, env, macro_env),
-    }
-}
-
-pub fn interpret_raw(
+pub fn interpret_direct(
     contents: String,
     env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
@@ -123,6 +136,9 @@ pub fn interpret_vm(
     contents: String,
     _env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
+    symbol_table: Box<SymbolTable>,
+    constants: Box<Vec<Rc<Object>>>,
+    globals: Box<Vec<Rc<Object>>>,
 ) -> Result<()> {
     // let env = env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));
     let macro_env = macro_env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));
@@ -133,11 +149,17 @@ pub fn interpret_vm(
 
     match program {
         Ok(program) => {
+            // expand macros
             define_macros(&mut program.clone(), Rc::clone(&macro_env));
             let expanded = expand_macros(Node::Program(program), Rc::clone(&macro_env)).unwrap();
-            let mut compiler = Compiler::new();
+
+            // compile
+            let mut compiler = Compiler::new_with_state(symbol_table, constants);
             compiler.compile(expanded)?;
-            let mut machine = VM::new(compiler.bytecode());
+
+            let code = compiler.bytecode();
+
+            let mut machine = VM::new_with_global_store(code, globals);
             machine.run()?;
             let last_elem = machine.last_popped_stack_elem();
             println!("{}", last_elem);

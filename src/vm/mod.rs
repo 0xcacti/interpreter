@@ -10,12 +10,14 @@ use error::VmError;
 use std::rc::Rc;
 
 const STACK_SIZE: usize = 2048;
+const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM {
     pub constants: Vec<Rc<Object>>,
     pub instructions: code::Instructions,
     pub stack: Vec<Rc<Object>>,
     pub sp: usize,
+    pub globals: Vec<Rc<Object>>,
 }
 
 impl VM {
@@ -25,6 +27,7 @@ impl VM {
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
+            globals: vec![Rc::new(Object::Null); GLOBAL_SIZE],
         };
     }
 
@@ -98,6 +101,18 @@ impl VM {
 
                 Opcode::Null => {
                     self.push(Rc::new(Object::Null));
+                }
+
+                Opcode::SetGlobal => {
+                    let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip = ip + 2;
+                    self.globals[symbol_index] = self.pop();
+                }
+
+                Opcode::GetGlobal => {
+                    let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip = ip + 2;
+                    self.push(self.globals[symbol_index].clone());
                 }
 
                 _ => {
@@ -542,6 +557,26 @@ mod test {
             input: "if ((if (false) { 10 })) { 10 } else { 20 }".to_string(),
             expected: Object::Integer(20),
         }];
+
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_global_lets_and_gets() {
+        let tests = vec![
+            VmTest {
+                input: "let one = 1; one".to_string(),
+                expected: Object::Integer(1),
+            },
+            VmTest {
+                input: "let one = 1; let two = 2; one + two".to_string(),
+                expected: Object::Integer(3),
+            },
+            VmTest {
+                input: "let one = 1; let two = one + one; one + two".to_string(),
+                expected: Object::Integer(3),
+            },
+        ];
 
         run_vm_tests(tests);
     }

@@ -10,11 +10,14 @@ use error::CompileError;
 
 use std::rc::Rc;
 
+use self::symbol_table::SymbolTable;
+
 pub struct Compiler {
     pub instructions: Instructions,
     pub constants: Vec<Rc<Object>>,
     pub last_instruction: EmittedInstruction,
     pub previous_instruction: EmittedInstruction,
+    pub symbol_table: SymbolTable,
 }
 
 pub struct Bytecode {
@@ -41,6 +44,7 @@ impl Compiler {
                 opcode: Opcode::Constant,
                 position: 0,
             },
+            symbol_table: SymbolTable::new(),
         }
     }
 
@@ -59,6 +63,8 @@ impl Compiler {
 
                 Statement::Let(name, expression) => {
                     self.compile(Node::Expression(expression))?;
+                    let symbol = self.symbol_table.define(name);
+                    self.emit(Opcode::SetGlobal, vec![symbol.index]);
                 }
                 _ => {
                     panic!("not implemented")
@@ -176,6 +182,18 @@ impl Compiler {
 
                     let after_alternative_position = self.instructions.len();
                     self.change_operand(jump_position, after_alternative_position);
+                }
+
+                Expression::Identifier(name) => {
+                    let symbol = self.symbol_table.resolve(&name);
+                    match symbol {
+                        Some(symbol) => {
+                            self.emit(Opcode::GetGlobal, vec![symbol.index]);
+                        }
+                        None => {
+                            return Err(CompileError::new(format!("undefined variable: {}", name)));
+                        }
+                    }
                 }
 
                 _ => {

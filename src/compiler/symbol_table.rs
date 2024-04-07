@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 use strum_macros::{Display, EnumString};
 
 #[derive(Debug, Clone, EnumString, Display, PartialEq, Copy)]
@@ -13,11 +13,11 @@ pub enum Scope {
 pub struct Symbol {
     pub name: String,
     pub scope: Scope,
-    pub value: usize,
+    pub index: usize,
 }
 
 pub struct SymbolTable {
-    pub symbols: HashMap<String, Symbol>,
+    pub symbols: HashMap<String, Rc<Symbol>>,
     pub num_definitions: usize,
 }
 
@@ -29,19 +29,18 @@ impl SymbolTable {
         }
     }
 
-    pub fn define(&mut self, name: String, scope: Scope, value: usize) -> Symbol {
-        let symbol = Symbol {
+    pub fn define(&mut self, name: String) -> Rc<Symbol> {
+        let symbol = Rc::new(Symbol {
             name: name.clone(),
-            scope,
-            value,
-        };
-        self.symbols
-            .insert(name.clone(), Symbol { name, scope, value });
+            scope: Scope::Global,
+            index: self.num_definitions,
+        });
+        self.symbols.insert(name.clone(), symbol.clone());
         self.num_definitions += 1;
-        symbol.clone()
+        symbol
     }
 
-    pub fn resolve(&self, name: &str) -> Option<Symbol> {
+    pub fn resolve(&self, name: &str) -> Option<Rc<Symbol>> {
         let object = self.symbols.get(name);
         match object {
             Some(symbol) => Some(symbol.clone()),
@@ -62,25 +61,25 @@ mod tests {
             Symbol {
                 name: "a".to_string(),
                 scope: Scope::Global,
-                value: 0,
+                index: 0,
             },
             Symbol {
                 name: "b".to_string(),
                 scope: Scope::Global,
-                value: 1,
+                index: 1,
             },
         ];
 
-        let a = symbol_table.define("a".to_string(), Scope::Global, 0);
-        let b = symbol_table.define("b".to_string(), Scope::Global, 1);
+        let a = symbol_table.define("a".to_string());
+        let b = symbol_table.define("b".to_string());
 
         assert_eq!(symbol_table.num_definitions, 2);
-        assert_eq!(a, expected[0],);
-        assert_eq!(b, expected[1],);
+        assert_eq!(*a, expected[0]);
+        assert_eq!(*b, expected[1]);
 
         for symbol in expected {
             let result = symbol_table.resolve(&symbol.name).unwrap();
-            assert_eq!(result, symbol);
+            assert_eq!(*result, symbol);
         }
     }
 }

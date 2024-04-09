@@ -49,9 +49,9 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
         }
     });
 
-    let constants = Box::new(vec![]);
-    let symbol_table = Box::new(SymbolTable::new());
-    let globals = Box::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]);
+    let constants = Rc::new(RefCell::new(vec![]));
+    let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+    let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
 
     if let Some(path) = path {
         let contents = utils::load_monkey(path)?;
@@ -64,9 +64,9 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
                 contents,
                 Some(Rc::clone(&env)),
                 Some(Rc::clone(&macro_env)),
-                symbol_table,
-                constants,
-                globals,
+                symbol_table.clone(),
+                constants.clone(),
+                globals.clone(),
             ),
         };
 
@@ -94,9 +94,9 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
                 line,
                 Some(Rc::clone(&env)),
                 Some(Rc::clone(&macro_env)),
-                symbol_table,
-                constants,
-                globals,
+                symbol_table.clone(),
+                constants.clone(),
+                globals.clone(),
             ),
         };
 
@@ -136,9 +136,9 @@ pub fn interpret_vm(
     contents: String,
     _env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
-    symbol_table: Box<SymbolTable>,
-    constants: Box<Vec<Rc<Object>>>,
-    globals: Box<Vec<Rc<Object>>>,
+    symbol_table: Rc<RefCell<SymbolTable>>,
+    constants: Rc<RefCell<Vec<Rc<Object>>>>,
+    globals: Rc<RefCell<Vec<Rc<Object>>>>,
 ) -> Result<()> {
     // let env = env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));
     let macro_env = macro_env.unwrap_or_else(|| Rc::new(RefCell::new(Environment::new())));

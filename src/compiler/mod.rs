@@ -8,21 +8,21 @@ use crate::{
 };
 use error::CompileError;
 
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use self::symbol_table::SymbolTable;
 
 pub struct Compiler {
     pub instructions: Instructions,
-    pub constants: Box<Vec<Rc<Object>>>,
+    pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
     pub last_instruction: EmittedInstruction,
     pub previous_instruction: EmittedInstruction,
-    pub symbol_table: Box<SymbolTable>,
+    pub symbol_table: Rc<RefCell<SymbolTable>>,
 }
 
 pub struct Bytecode {
     pub instructions: Instructions,
-    pub constants: Vec<Rc<Object>>,
+    pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
 }
 
 #[derive(Clone)]
@@ -35,7 +35,7 @@ impl Compiler {
     pub fn new() -> Self {
         Compiler {
             instructions: Instructions::new(vec![]),
-            constants: Box::new(vec![]),
+            constants: Rc::new(RefCell::new(vec![])),
             last_instruction: EmittedInstruction {
                 opcode: Opcode::Constant,
                 position: 0,
@@ -44,11 +44,14 @@ impl Compiler {
                 opcode: Opcode::Constant,
                 position: 0,
             },
-            symbol_table: Box::new(SymbolTable::new()),
+            symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
         }
     }
 
-    pub fn new_with_state(symbol_table: Box<SymbolTable>, constants: Box<Vec<Rc<Object>>>) -> Self {
+    pub fn new_with_state(
+        symbol_table: Rc<RefCell<SymbolTable>>,
+        constants: Rc<RefCell<Vec<Rc<Object>>>>,
+    ) -> Self {
         Compiler {
             instructions: Instructions::new(vec![]),
             constants,
@@ -79,7 +82,7 @@ impl Compiler {
 
                 Statement::Let(name, expression) => {
                     self.compile(Node::Expression(expression))?;
-                    let symbol = self.symbol_table.define(name);
+                    let symbol = self.symbol_table.borrow_mut().define(name);
                     self.emit(Opcode::SetGlobal, vec![symbol.index]);
                 }
                 _ => {
@@ -201,7 +204,7 @@ impl Compiler {
                 }
 
                 Expression::Identifier(name) => {
-                    let symbol = self.symbol_table.resolve(&name);
+                    let symbol = self.symbol_table.borrow_mut().resolve(&name);
                     match symbol {
                         Some(symbol) => {
                             self.emit(Opcode::GetGlobal, vec![symbol.index]);
@@ -228,9 +231,9 @@ impl Compiler {
     }
 
     pub fn add_constant(&mut self, object: Rc<Object>) -> usize {
-        self.constants.push(object);
+        self.constants.borrow_mut().push(object);
 
-        self.constants.len() - 1
+        self.constants.borrow_mut().len() - 1
     }
 
     pub fn emit(&mut self, opcode: Opcode, operands: Vec<usize>) -> usize {

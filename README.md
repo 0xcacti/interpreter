@@ -43,6 +43,7 @@ monkey --mode vm ./main.monkey
 ```
 
 Some of the code here was influenced by [ ThePrimeagen's ](https://github.com/ThePrimeagen) version which he abandoned 
-two chapters into the book.  Much of the code is influenced by [monkey-wasm](https://github.com/shioyama18/monkey-wasm/tree/master)
+two chapters into the book.  Much of the code is influenced by [monkey-wasm](https://github.com/shioyama18/monkey-wasm/tree/master).
+Additionally, for the compiler implementation, I occasionally referenced [cymbal](https://github.com/shuhei/cymbal)
 
 

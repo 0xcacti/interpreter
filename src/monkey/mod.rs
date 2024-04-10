@@ -106,6 +106,35 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
     }
 }
 
+pub fn interpret_chunk(mode: ExecMode, contents: String) -> Result<()> {
+    let env = Rc::new(RefCell::new(Environment::new()));
+    let macro_env = Rc::new(RefCell::new(Environment::new()));
+
+    let constants = Rc::new(RefCell::new(vec![]));
+    let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+    let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
+
+    let result = match mode {
+        ExecMode::Direct => {
+            interpret_direct(contents, Some(Rc::clone(&env)), Some(Rc::clone(&macro_env)))
+        }
+        ExecMode::VM => interpret_vm(
+            contents,
+            Some(Rc::clone(&env)),
+            Some(Rc::clone(&macro_env)),
+            symbol_table.clone(),
+            constants.clone(),
+            globals.clone(),
+        ),
+    };
+
+    if let Err(err) = result {
+        eprintln!("{}", err);
+    }
+
+    Ok(())
+}
+
 pub fn interpret_direct(
     contents: String,
     env: Option<Rc<RefCell<Environment>>>,

@@ -7,17 +7,17 @@ use crate::{
 };
 use error::VmError;
 
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 pub const STACK_SIZE: usize = 2048;
 pub const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM {
-    pub constants: Vec<Rc<Object>>,
+    pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
     pub instructions: code::Instructions,
     pub stack: Vec<Rc<Object>>,
     pub sp: usize,
-    pub globals: Box<Vec<Rc<Object>>>,
+    pub globals: Rc<RefCell<Vec<Rc<Object>>>>,
 }
 
 impl VM {
@@ -27,13 +27,13 @@ impl VM {
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
-            globals: Box::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]),
+            globals: Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE])),
         };
     }
 
     pub fn new_with_global_store(
         bytecode: compiler::Bytecode,
-        globals: Box<Vec<Rc<Object>>>,
+        globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
         return VM {
             instructions: bytecode.instructions,
@@ -62,11 +62,12 @@ impl VM {
                 Opcode::Constant => {
                     let constant_index = code::read_u16(&self.instructions, ip + 1) as usize;
                     ip += 2;
+                    let constants = self.constants.borrow().clone();
 
-                    if constant_index > self.constants.len() {
+                    if constant_index > constants.len() {
                         return Err(VmError::new("Invalid constant index".to_string()));
                     }
-                    let constant = Rc::clone(&self.constants[constant_index]);
+                    let constant = Rc::clone(&constants[constant_index]);
                     self.push(constant);
                 }
 
@@ -119,15 +120,25 @@ impl VM {
                 Opcode::SetGlobal => {
                     let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
                     ip = ip + 2;
-                    self.globals[symbol_index] = self.pop();
+                    self.globals.borrow_mut()[symbol_index] = self.pop();
                 }
 
                 Opcode::GetGlobal => {
                     let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip = ip + 2;
-                    self.push(self.globals[symbol_index].clone());
-                }
+                    ip += 2;
 
+                    // Clone the global variable before borrowing mutably
+                    let global = self.globals.borrow().get(symbol_index).cloned();
+
+                    // Check if the global variable exists at the given index
+                    if let Some(global) = global {
+                        // Push the cloned global variable onto the stack
+                        self.push(global);
+                    } else {
+                        // Handle the case when the global variable doesn't exist
+                        return Err(VmError::new("Global variable not found".to_string()));
+                    }
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }

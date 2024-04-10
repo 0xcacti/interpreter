@@ -20,7 +20,7 @@ struct MonkeyCmd {
         required = false,
         global = true
     )]
-    mode: Option<ExecMode>,
+    mode: ExecMode,
 
     /// Enter interactive mode after executing 'script'
     #[arg(short = 'i', long = "interactive", required = false, global = true)]
@@ -32,8 +32,7 @@ fn main() {
 
     match args.path {
         Some(path) => match utils::load_monkey(path) {
-            Ok(contents) => match monkey::interpret_chunk(args.mode.unwrap(), contents, None, None)
-            {
+            Ok(contents) => match monkey::interpret_chunk(args.mode, contents) {
                 Ok(_) => return,
                 Err(e) => {
                     eprintln!("Error: {}", e);
@@ -50,11 +49,11 @@ fn main() {
 
     // repl mode
     match args.script {
-        Some(path) => match monkey::repl(Some(path), args.mode.unwrap()) {
+        Some(path) => match monkey::repl(Some(path), args.mode) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },
-        None => match monkey::repl(None, args.mode.unwrap()) {
+        None => match monkey::repl(None, args.mode) {
             Ok(_) => {}
             Err(e) => eprintln!("Error: {}", e),
         },

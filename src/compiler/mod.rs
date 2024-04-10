@@ -312,9 +312,9 @@ mod test {
         assert_eq!(expected, concattenated);
     }
 
-    fn test_constants(expected: Vec<Rc<Object>>, actual: Vec<Rc<Object>>) {
-        assert_eq!(expected.len(), actual.len());
-        for (i, constant) in expected.iter().enumerate() {
+    fn test_constants(expected: Rc<RefCell<Vec<Rc<Object>>>>, actual: Vec<Rc<Object>>) {
+        assert_eq!(expected.borrow().len(), actual.len());
+        for (i, constant) in expected.borrow().iter().enumerate() {
             match &**constant {
                 Object::Integer(expected) => match &*actual[i] {
                     Object::Integer(actual) => assert_eq!(expected, actual),

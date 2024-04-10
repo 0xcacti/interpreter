@@ -164,6 +164,12 @@ impl Compiler {
                             self.emit(Opcode::False, vec![]);
                         }
                     }
+
+                    Literal::String(value) => {
+                        let string = Rc::new(Object::String(value));
+                        let position = self.add_constant(string);
+                        _ = self.emit(Opcode::Constant, vec![position]);
+                    }
                     _ => {
                         panic!("not implemented")
                     }
@@ -319,6 +325,10 @@ mod test {
                 Object::Integer(expected) => match &*actual[i] {
                     Object::Integer(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not integer"),
+                },
+                Object::String(expected) => match &*actual[i] {
+                    Object::String(actual) => assert_eq!(expected, actual),
+                    _ => panic!("constant not string"),
                 },
                 _ => panic!("constant not integer"),
             }
@@ -581,6 +591,32 @@ mod test {
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::Integer(1))],
+        );
+    }
+
+    #[test]
+    fn it_compiles_string_expressions() {
+        test_compilation(
+            r#""monkey""#,
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::String("monkey".to_string()))],
+        );
+
+        test_compilation(
+            r#""mon" + "key""#,
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Add, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::String("mon".to_string())),
+                Rc::new(Object::String("key".to_string())),
+            ],
         );
     }
 }

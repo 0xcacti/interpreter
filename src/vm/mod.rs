@@ -193,6 +193,15 @@ impl VM {
                 };
                 self.push(Rc::new(Object::Integer(result)));
             }
+            (Object::String(left), Object::String(right)) => {
+                let result = match opcode {
+                    Opcode::Add => format!("{}{}", left, right),
+                    _ => {
+                        return Err(VmError::new("Unsupported operation for string".to_string()));
+                    }
+                };
+                self.push(Rc::new(Object::String(result)));
+            }
             _ => {
                 return Err(VmError::new(
                     "Unsupported types for binary operation".to_string(),

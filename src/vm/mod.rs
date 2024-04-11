@@ -342,10 +342,18 @@ mod test {
         }
     }
 
+    fn validate_string_object(obj: Object, expected: &str) {
+        match obj {
+            Object::String(value) => assert_eq!(value, expected),
+            _ => panic!("object not string"),
+        }
+    }
+
     fn test_expected_object(expected: Object, actual: Object) {
         match expected {
             Object::Integer(expected) => validate_integer_object(actual, expected),
             Object::Boolean(expected) => validate_boolean_object(actual, expected),
+            Object::String(expected) => validate_string_object(actual, &expected),
             Object::Null => match actual {
                 Object::Null => {}
                 _ => panic!("object not null"),
@@ -609,6 +617,25 @@ mod test {
                 input: "let one = 1; let two = one + one; one + two".to_string(),
                 expected: Object::Integer(3),
             },
+        ];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_string_expressions() {
+        let tests = vec![
+            VmTest {
+                input: r#""monkey""#.to_string(),
+                expected: Object::String("monkey".to_string()),
+            },
+            // VmTest {
+            //     input: "\"mon\" + \"key\"".to_string(),
+            //     expected: Object::String("monkey".to_string()),
+            // },
+            // VmTest {
+            //     input: "\"mon\" + \"key\" + \"banana\"".to_string(),
+            //     expected: Object::String("monkeybanana".to_string()),
+            // },
         ];
         run_vm_tests(tests);
     }

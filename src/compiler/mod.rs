@@ -170,6 +170,13 @@ impl Compiler {
                         let position = self.add_constant(string);
                         _ = self.emit(Opcode::Constant, vec![position]);
                     }
+
+                    Literal::Array(elements) => {
+                        for element in elements {
+                            self.compile(Node::Expression(element.clone()))?;
+                        }
+                        self.emit(Opcode::Array, vec![elements.len()]);
+                    }
                     _ => {
                         panic!("not implemented")
                     }
@@ -616,6 +623,59 @@ mod test {
             vec![
                 Rc::new(Object::String("mon".to_string())),
                 Rc::new(Object::String("key".to_string())),
+            ],
+        );
+    }
+
+    #[test]
+    fn it_compiles_arrays() {
+        test_compilation(
+            "[]",
+            vec![
+                make(Opcode::Array, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![],
+        );
+
+        test_compilation(
+            "[1, 2, 3]",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Array, vec![3]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::Integer(2)),
+                Rc::new(Object::Integer(3)),
+            ],
+        );
+
+        test_compilation(
+            "[1 + 2, 3 - 4, 5 * 6]",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Add, vec![]).into(),
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Constant, vec![3]).into(),
+                make(Opcode::Sub, vec![]).into(),
+                make(Opcode::Constant, vec![4]).into(),
+                make(Opcode::Constant, vec![5]).into(),
+                make(Opcode::Mul, vec![]).into(),
+                make(Opcode::Array, vec![3]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::Integer(2)),
+                Rc::new(Object::Integer(3)),
+                Rc::new(Object::Integer(4)),
+                Rc::new(Object::Integer(5)),
+                Rc::new(Object::Integer(6)),
             ],
         );
     }

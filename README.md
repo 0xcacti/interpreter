@@ -8,7 +8,7 @@ bytecode compiled + vm implementation.  As a treat, you can also run this projec
 in the browser using wasm. 
 
 I used this project to learn rust, and I imagine it isn't the most idiomatic rust code.
-Please feel free to rip into it.
+Please feel free to rip my implementation to shreds.
 
 ### Instructions
 
@@ -45,5 +45,4 @@ monkey --mode vm ./main.monkey
 Some of the code here was influenced by [ ThePrimeagen's ](https://github.com/ThePrimeagen) version which he abandoned 
 two chapters into the book.  Much of the code is influenced by [monkey-wasm](https://github.com/shioyama18/monkey-wasm/tree/master).
 Additionally, for the compiler implementation, I occasionally referenced [cymbal](https://github.com/shuhei/cymbal)
-
 

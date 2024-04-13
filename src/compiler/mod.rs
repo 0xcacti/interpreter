@@ -173,7 +173,7 @@ impl Compiler {
 
                     Literal::Array(elements) => {
                         for element in elements {
-                            self.compile(Node::Expression(element.clone()))?;
+                            self.compile(Node::Expression(element))?;
                         }
                         self.emit(Opcode::Array, vec![elements.len()]);
                     }

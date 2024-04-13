@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter, Result};
+use std::rc::Rc;
 
 use crate::token::Token;
 
@@ -7,7 +8,7 @@ pub enum Literal {
     Integer(i64),
     Boolean(bool),
     String(String),
-    Array(Vec<Expression>),
+    Array(Rc<Vec<Expression>>),
     Hash(Vec<(Expression, Expression)>),
 }
 

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::token::Token;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Literal {
     Integer(i64),
     Boolean(bool),
@@ -42,7 +42,7 @@ impl Display for Literal {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Expression {
     Identifier(String),
     Literal(Literal),
@@ -120,7 +120,7 @@ impl Display for Expression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Statement {
     Let(String, Expression),
     Return(Expression),

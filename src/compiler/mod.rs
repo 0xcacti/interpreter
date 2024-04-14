@@ -178,7 +178,22 @@ impl Compiler {
                         self.emit(Opcode::Array, vec![elements.len()]);
                     }
 
-                    Literal::Hash(pairs) => {}
+                    Literal::Hash(pairs) => {
+                        let mut key_value_pairs = vec![];
+
+                        for k in &pairs {
+                            key_value_pairs.push(k);
+                        }
+
+                        key_value_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+
+                        for k in key_value_pairs {
+                            self.compile(Node::Expression(k.0.clone()))?;
+                            self.compile(Node::Expression(k.1.clone()))?;
+                        }
+
+                        self.emit(Opcode::Hash, vec![pairs.len() * 2]);
+                    }
                     _ => {
                         panic!("not implemented")
                     }

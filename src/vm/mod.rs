@@ -139,6 +139,14 @@ impl VM {
                         return Err(VmError::new("Global variable not found".to_string()));
                     }
                 }
+
+                Opcode::Array => {
+                    let num_elements = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip += 2;
+                    let array = self.build_array(self.sp - num_elements, self.sp);
+                    self.sp = self.sp - num_elements;
+                    self.push(Rc::new(array));
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -201,6 +209,19 @@ impl VM {
                     }
                 };
                 self.push(Rc::new(Object::String(result)));
+            }
+            (Object::Array(left), Object::Array(right)) => {
+                let result = match opcode {
+                    Opcode::Add => {
+                        let mut new_array = left.clone();
+                        new_array.extend(right.clone());
+                        new_array
+                    }
+                    _ => {
+                        return Err(VmError::new("Unsupported operation for array".to_string()));
+                    }
+                };
+                self.push(Rc::new(Object::Array(result)));
             }
             _ => {
                 return Err(VmError::new(
@@ -289,6 +310,14 @@ impl VM {
         }
         Ok(())
     }
+
+    fn build_array(&mut self, start_index: usize, end_index: usize) -> Object {
+        let mut elements = vec![Rc::new(Object::Null); end_index - start_index];
+        for i in start_index..end_index {
+            elements[i - start_index] = self.stack[i].clone();
+        }
+        Object::Array(elements)
+    }
 }
 
 #[cfg(test)]
@@ -349,11 +378,26 @@ mod test {
         }
     }
 
+    fn validate_array_object(obj: Object, expected: Vec<Rc<Object>>) {
+        match obj {
+            Object::Array(value) => {
+                for (i, v) in value.iter().enumerate() {
+                    test_expected_object(
+                        expected[i].clone().deref().clone(),
+                        v.clone().deref().clone(),
+                    );
+                }
+            }
+            _ => panic!("object not array"),
+        }
+    }
+
     fn test_expected_object(expected: Object, actual: Object) {
         match expected {
             Object::Integer(expected) => validate_integer_object(actual, expected),
             Object::Boolean(expected) => validate_boolean_object(actual, expected),
             Object::String(expected) => validate_string_object(actual, &expected),
+            Object::Array(expected) => validate_array_object(actual, expected),
             Object::Null => match actual {
                 Object::Null => {}
                 _ => panic!("object not null"),
@@ -628,15 +672,43 @@ mod test {
                 input: r#""monkey""#.to_string(),
                 expected: Object::String("monkey".to_string()),
             },
-            // VmTest {
-            //     input: "\"mon\" + \"key\"".to_string(),
-            //     expected: Object::String("monkey".to_string()),
-            // },
-            // VmTest {
-            //     input: "\"mon\" + \"key\" + \"banana\"".to_string(),
-            //     expected: Object::String("monkeybanana".to_string()),
-            // },
+            VmTest {
+                input: "\"mon\" + \"key\"".to_string(),
+                expected: Object::String("monkey".to_string()),
+            },
+            VmTest {
+                input: "\"mon\" + \"key\" + \"banana\"".to_string(),
+                expected: Object::String("monkeybanana".to_string()),
+            },
         ];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_array_expressions() {
+        let tests = vec![
+            VmTest {
+                input: "[]".to_string(),
+                expected: Object::Array(vec![]),
+            },
+            VmTest {
+                input: "[1, 2, 3]".to_string(),
+                expected: Object::Array(vec![
+                    Rc::new(Object::Integer(1)),
+                    Rc::new(Object::Integer(2)),
+                    Rc::new(Object::Integer(3)),
+                ]),
+            },
+            VmTest {
+                input: "[1 + 2, 3 * 4, 5 + 6]".to_string(),
+                expected: Object::Array(vec![
+                    Rc::new(Object::Integer(3)),
+                    Rc::new(Object::Integer(12)),
+                    Rc::new(Object::Integer(11)),
+                ]),
+            },
+        ];
+
         run_vm_tests(tests);
     }
 }

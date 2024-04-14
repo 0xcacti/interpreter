@@ -7,7 +7,7 @@ use crate::{
 };
 use error::VmError;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub const STACK_SIZE: usize = 2048;
 pub const GLOBAL_SIZE: usize = 65536;
@@ -327,11 +327,14 @@ impl VM {
         Object::Array(elements)
     }
 
-    fn build_hash(&mut self, start_index: usize, end_index: usize} -> Object {
-        let pairs = HashMap::new();
+    fn build_hash(&mut self, start_index: usize, end_index: usize) -> Object {
+        let mut pairs = HashMap::new();
         for i in start_index..end_index {
-
+            let key = self.stack[i].clone();
+            let value = self.stack[i + 1].clone();
+            pairs.insert(key, value);
         }
+        Object::Hash(pairs)
     }
 }
 
@@ -410,19 +413,30 @@ mod test {
     fn validate_hash_object(obj: Object, expected: HashMap<Rc<Object>, Rc<Object>>) {
         match obj {
             Object::Hash(value) => {
-                for (k, v) in value.iter() {
-                    test_expected_object(
-                        k.clone().deref().clone(),
-                        expected.get_key_value(k).unwrap().0.clone().deref().clone(),
-                    );
-                    test_expected_object(
-                        v.clone().deref().clone(),
-                        expected.get_key_value(k).unwrap().1.clone().deref().clone(),
-                    );
-                }
+                // copy to comparable type
+                let actual_hm = deref_hashmaps_by_copy(&expected);
+                let expected_hm = deref_hashmaps_by_copy(&value);
+                actual_hm.
+
+                assert!(actual_hm.eq(&expected_hm));
+                // for (k, v) in expected_hm.iter() {
+                //     let ak = actual_hm.get_key_value(k).unwrap().0;
+                //     let av = actual_hm.get_key_value(k).unwrap().1;
+
+                //     test_expected_object(k.clone(), ak.clone());
+                //     test_expected_object(v.clone(), av.clone());
+                // }
             }
             _ => panic!("object not hash"),
         }
+    }
+
+    fn deref_hashmaps_by_copy(hm: &HashMap<Rc<Object>, Rc<Object>>) -> HashMap<Object, Object> {
+        let mut object_hm = HashMap::new();
+        for (k, v) in hm.iter() {
+            object_hm.insert(k.clone().deref().clone(), v.clone().deref().clone());
+        }
+        object_hm
     }
 
     fn test_expected_object(expected: Object, actual: Object) {

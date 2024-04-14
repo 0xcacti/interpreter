@@ -25,6 +25,7 @@ pub enum Opcode {
     GetGlobal,
     SetGlobal,
     Array,
+    Hash,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -48,6 +49,7 @@ impl From<u8> for Opcode {
             16 => Opcode::GetGlobal,
             17 => Opcode::SetGlobal,
             18 => Opcode::Array,
+            19 => Opcode::Hash,
             _ => panic!("unknown opcode"),
         }
     }
@@ -143,6 +145,7 @@ impl Opcode {
             Opcode::GetGlobal => "OpGetGlobal",
             Opcode::SetGlobal => "OpSetGlobal",
             Opcode::Array => "OpArray",
+            Opcode::Hash => "OpHash",
         }
     }
 
@@ -167,6 +170,7 @@ impl Opcode {
             Opcode::GetGlobal => vec![2],
             Opcode::SetGlobal => vec![2],
             Opcode::Array => vec![2],
+            Opcode::Hash => vec![2],
         }
     }
 }
@@ -265,6 +269,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         18 => Some(Definition {
             name: "OpArray",
+            operand_widths: vec![2],
+        }),
+
+        19 => Some(Definition {
+            name: "OpHash",
             operand_widths: vec![2],
         }),
 

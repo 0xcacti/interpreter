@@ -245,6 +245,12 @@ impl Compiler {
                     }
                 }
 
+                Expression::Index(indexable, index) => {
+                    self.compile(Node::Expression(*indexable))?;
+                    self.compile(Node::Expression(*index))?;
+                    self.emit(Opcode::Index, vec![]);
+                }
+
                 _ => {
                     panic!("not implemented")
                 }
@@ -751,6 +757,31 @@ mod test {
                 Rc::new(Object::Integer(4)),
                 Rc::new(Object::Integer(5)),
                 Rc::new(Object::Integer(6)),
+            ],
+        );
+    }
+
+    #[test]
+    fn it_compiles_indexing_operations() {
+        test_compilation(
+            "[1, 2, 3][1 + 1]",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Array, vec![3]).into(),
+                make(Opcode::Constant, vec![3]).into(),
+                make(Opcode::Constant, vec![4]).into(),
+                make(Opcode::Add, vec![]).into(),
+                make(Opcode::Index, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::Integer(2)),
+                Rc::new(Object::Integer(3)),
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::Integer(1)),
             ],
         );
     }

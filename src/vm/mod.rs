@@ -147,6 +147,14 @@ impl VM {
                     self.sp = self.sp - num_elements;
                     self.push(Rc::new(array));
                 }
+
+                Opcode::Hash => {
+                    let num_elements = code::read_u16(&self.instructions, ip + 1) as usize;
+                    ip += 2;
+                    let hash = self.build_hash(self.sp - num_elements, self.sp);
+                    self.sp = self.sp - num_elements;
+                    self.push(Rc::new(hash));
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -318,11 +326,18 @@ impl VM {
         }
         Object::Array(elements)
     }
+
+    fn build_hash(&mut self, start_index: usize, end_index: usize} -> Object {
+        let pairs = HashMap::new();
+        for i in start_index..end_index {
+
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::ops::Deref;
+    use std::{collections::HashMap, ops::Deref};
 
     use super::*;
     use crate::{
@@ -392,12 +407,31 @@ mod test {
         }
     }
 
+    fn validate_hash_object(obj: Object, expected: HashMap<Rc<Object>, Rc<Object>>) {
+        match obj {
+            Object::Hash(value) => {
+                for (k, v) in value.iter() {
+                    test_expected_object(
+                        k.clone().deref().clone(),
+                        expected.get_key_value(k).unwrap().0.clone().deref().clone(),
+                    );
+                    test_expected_object(
+                        v.clone().deref().clone(),
+                        expected.get_key_value(k).unwrap().1.clone().deref().clone(),
+                    );
+                }
+            }
+            _ => panic!("object not hash"),
+        }
+    }
+
     fn test_expected_object(expected: Object, actual: Object) {
         match expected {
             Object::Integer(expected) => validate_integer_object(actual, expected),
             Object::Boolean(expected) => validate_boolean_object(actual, expected),
             Object::String(expected) => validate_string_object(actual, &expected),
             Object::Array(expected) => validate_array_object(actual, expected),
+            Object::Hash(expected) => validate_hash_object(actual, expected),
             Object::Null => match actual {
                 Object::Null => {}
                 _ => panic!("object not null"),
@@ -717,6 +751,40 @@ mod test {
                     Rc::new(Object::String("f".to_string())),
                     Rc::new(Object::String("g".to_string())),
                 ]),
+            },
+        ];
+
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_compiles_hash_expressions() {
+        let tests = vec![
+            VmTest {
+                input: "{}".to_string(),
+                expected: Object::Hash(HashMap::new()),
+            },
+            VmTest {
+                input: "{1: 2, 2: 3}".to_string(),
+                expected: {
+                    let mut expected_hashmap = HashMap::new();
+                    expected_hashmap
+                        .insert(Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2)));
+                    expected_hashmap
+                        .insert(Rc::new(Object::Integer(2)), Rc::new(Object::Integer(3)));
+                    Object::Hash(expected_hashmap)
+                },
+            },
+            VmTest {
+                input: "{1+1: 2*2, 3+3: 4*4}".to_string(),
+                expected: {
+                    let mut expected_hashmap = HashMap::new();
+                    expected_hashmap
+                        .insert(Rc::new(Object::Integer(2)), Rc::new(Object::Integer(4)));
+                    expected_hashmap
+                        .insert(Rc::new(Object::Integer(6)), Rc::new(Object::Integer(16)));
+                    Object::Hash(expected_hashmap)
+                },
             },
         ];
 

@@ -374,7 +374,6 @@ impl VM {
         while start_index <= i && i < end_index {
             let key = self.stack[i].clone();
             let value = self.stack[i + 1].clone();
-            println!("inserting - {:?} : {:?}", key, value);
             pairs.insert(key, value);
             i += 2;
         }

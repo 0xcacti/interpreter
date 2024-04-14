@@ -254,14 +254,18 @@ where
             Expression::Literal(literal) => {
                 let modified_literal = match literal {
                     Literal::Array(expressions) => {
-                        let modified_expressions: Vec<Expression> = expressions
-                            .iter()
-                            .map(|expression| {
-                                let modified_expression =
-                                    modify(Node::Expression(expression.clone()), modifier.clone());
-                                unwrap_node_to_expression(modified_expression)
-                            })
-                            .collect();
+                        let modified_expressions: Rc<Vec<Expression>> = Rc::new(
+                            expressions
+                                .iter()
+                                .map(|expression| {
+                                    let modified_expression = modify(
+                                        Node::Expression(expression.clone()),
+                                        modifier.clone(),
+                                    );
+                                    unwrap_node_to_expression(modified_expression)
+                                })
+                                .collect(),
+                        );
                         Literal::Array(modified_expressions)
                     }
                     Literal::Hash(pairs) => {
@@ -529,14 +533,14 @@ mod test {
     fn it_modifies_array_literals() {
         let (one, two, turn_one_into_two) = get_closures();
         let tests = vec![(
-            Node::Expression(Expression::Literal(Literal::Array(vec![
+            Node::Expression(Expression::Literal(Literal::Array(Rc::new(vec![
                 unwrap_node_to_expression(one()),
                 unwrap_node_to_expression(one()),
-            ]))),
-            Node::Expression(Expression::Literal(Literal::Array(vec![
+            ])))),
+            Node::Expression(Expression::Literal(Literal::Array(Rc::new(vec![
                 unwrap_node_to_expression(two()),
                 unwrap_node_to_expression(two()),
-            ]))),
+            ])))),
         )];
 
         for (input, expected) in tests {

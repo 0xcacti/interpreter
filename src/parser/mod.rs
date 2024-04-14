@@ -10,6 +10,7 @@ use crate::lexer::Lexer;
 use crate::token::Token;
 
 use anyhow::Result;
+use std::rc::Rc;
 
 pub struct Parser {
     lexer: Lexer,
@@ -212,7 +213,7 @@ impl Parser {
 
     fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
         let elements = self.parse_expression_list(&Token::RBracket)?;
-        Ok(Expression::Literal(Literal::Array(elements)))
+        Ok(Expression::Literal(Literal::Array(Rc::new(elements))))
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<String>, ParserError> {
@@ -853,7 +854,7 @@ mod test {
         assert_eq!(program.len(), 3);
         check_expression_statement(
             &program[0],
-            &Expression::Literal(Literal::Array(vec![
+            &Expression::Literal(Literal::Array(Rc::new(vec![
                 Expression::Literal(Literal::Integer(1)),
                 Expression::Infix(
                     Box::new(Expression::Literal(Literal::Integer(2))),
@@ -865,17 +866,20 @@ mod test {
                     Token::Plus,
                     Box::new(Expression::Literal(Literal::Integer(3))),
                 ),
-            ])),
+            ]))),
         );
         check_expression_statement(
             &program[1],
-            &Expression::Literal(Literal::Array(vec![
+            &Expression::Literal(Literal::Array(Rc::new(vec![
                 Expression::Literal(Literal::Integer(1)),
                 Expression::Literal(Literal::Integer(2)),
                 Expression::Literal(Literal::Integer(3)),
-            ])),
+            ]))),
         );
-        check_expression_statement(&program[2], &Expression::Literal(Literal::Array(vec![])));
+        check_expression_statement(
+            &program[2],
+            &Expression::Literal(Literal::Array(Rc::new(vec![]))),
+        );
     }
 
     #[test]

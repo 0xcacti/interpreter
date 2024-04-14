@@ -155,6 +155,13 @@ impl VM {
                     self.sp = self.sp - num_elements;
                     self.push(Rc::new(hash));
                 }
+
+                Opcode::Index => {
+                    let index = self.pop();
+                    let indexable = self.pop();
+
+                    self.execute_index_expression(indexable, index)?;
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -192,6 +199,40 @@ impl VM {
 
     pub fn last_popped_stack_elem(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.sp])
+    }
+
+    fn execute_index_expression(
+        &mut self,
+        indexable: Rc<Object>,
+        index: Rc<Object>,
+    ) -> Result<(), VmError> {
+        match &*indexable {
+            Object::Array(arr) => match &*index {
+                Object::Integer(real_index) => {
+                    let max = arr.len() as i64;
+                    if *real_index < 0 || *real_index >= max {
+                        self.push(Rc::new(Object::Null));
+                    } else {
+                        self.push(arr[*real_index as usize].clone());
+                    }
+                    Ok(())
+                }
+                _ => return Err(VmError::new("Unsupported index type for array".to_string())),
+            },
+            Object::Hash(hash) => {
+                match hash.get(&index) {
+                    Some(obj) => self.push(obj.clone()),
+                    None => self.push(Rc::new(Object::Null)),
+                }
+                Ok(())
+            }
+
+            _ => {
+                return Err(VmError::new(
+                    "Unsupported operation index for type".to_string(),
+                ))
+            }
+        }
     }
 
     pub fn execute_binary_instruction(&mut self, opcode: Opcode) -> Result<(), VmError> {
@@ -823,6 +864,54 @@ mod test {
                     );
                     Object::Hash(expected_hashmap)
                 },
+            },
+        ];
+
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn test_index_expressions() {
+        let tests = vec![
+            VmTest {
+                input: "[1, 2, 3][1]".to_string(),
+                expected: Object::Integer(2),
+            },
+            VmTest {
+                input: "[1, 2, 3][0 + 2]".to_string(),
+                expected: Object::Integer(3),
+            },
+            VmTest {
+                input: "[[1, 2, 3]][0][0]".to_string(),
+                expected: Object::Integer(1),
+            },
+            VmTest {
+                input: "[][0]".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "[1, 2, 3][99]".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "[1, 2, 3][-1]".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "{1: 1, 2: 2}[1]".to_string(),
+                expected: Object::Integer(1),
+            },
+            VmTest {
+                input: "{1: 1, 2: 2}[2]".to_string(),
+                expected: Object::Integer(2),
+            },
+            VmTest {
+                input: "{1: 1}[0]".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "{}[0]".to_string(),
+                expected: Object::Null,
             },
         ];
 

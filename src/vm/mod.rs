@@ -707,6 +707,17 @@ mod test {
                     Rc::new(Object::Integer(11)),
                 ]),
             },
+            VmTest {
+                input: r#"["a", "b", "c"] + ["e", "f", "g"]"#.to_string(),
+                expected: Object::Array(vec![
+                    Rc::new(Object::String("a".to_string())),
+                    Rc::new(Object::String("b".to_string())),
+                    Rc::new(Object::String("c".to_string())),
+                    Rc::new(Object::String("e".to_string())),
+                    Rc::new(Object::String("f".to_string())),
+                    Rc::new(Object::String("g".to_string())),
+                ]),
+            },
         ];
 
         run_vm_tests(tests);

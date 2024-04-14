@@ -329,10 +329,13 @@ impl VM {
 
     fn build_hash(&mut self, start_index: usize, end_index: usize) -> Object {
         let mut pairs = HashMap::new();
-        for i in start_index..end_index {
+        let mut i = start_index;
+        while start_index <= i && i < end_index {
             let key = self.stack[i].clone();
             let value = self.stack[i + 1].clone();
+            println!("inserting - {:?} : {:?}", key, value);
             pairs.insert(key, value);
+            i += 2;
         }
         Object::Hash(pairs)
     }
@@ -414,9 +417,10 @@ mod test {
         match obj {
             Object::Hash(value) => {
                 // copy to comparable type
-                let actual_hm = deref_hashmaps_by_copy(&expected);
-                let expected_hm = deref_hashmaps_by_copy(&value);
-                actual_hm.
+                let expected_hm = deref_hashmaps_by_copy(&expected);
+                let actual_hm = deref_hashmaps_by_copy(&value);
+                println!("expected: {:?}", expected_hm);
+                println!("actual: {:?}", actual_hm);
 
                 assert!(actual_hm.eq(&expected_hm));
                 // for (k, v) in expected_hm.iter() {
@@ -772,7 +776,7 @@ mod test {
     }
 
     #[test]
-    fn it_compiles_hash_expressions() {
+    fn it_executes_hash_expressions() {
         let tests = vec![
             VmTest {
                 input: "{}".to_string(),
@@ -797,6 +801,26 @@ mod test {
                         .insert(Rc::new(Object::Integer(2)), Rc::new(Object::Integer(4)));
                     expected_hashmap
                         .insert(Rc::new(Object::Integer(6)), Rc::new(Object::Integer(16)));
+                    Object::Hash(expected_hashmap)
+                },
+            },
+            VmTest {
+                input: r#"{"a": 12, "a" + "b": [1, 2, 3, "z"]}"#.to_string(),
+                expected: {
+                    let mut expected_hashmap = HashMap::new();
+                    expected_hashmap.insert(
+                        Rc::new(Object::String("a".to_string())),
+                        Rc::new(Object::Integer(12)),
+                    );
+                    expected_hashmap.insert(
+                        Rc::new(Object::String("ab".to_string())),
+                        Rc::new(Object::Array(vec![
+                            Rc::new(Object::Integer(1)),
+                            Rc::new(Object::Integer(2)),
+                            Rc::new(Object::Integer(3)),
+                            Rc::new(Object::String("z".to_string())),
+                        ])),
+                    );
                     Object::Hash(expected_hashmap)
                 },
             },

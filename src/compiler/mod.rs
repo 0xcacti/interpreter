@@ -8,7 +8,7 @@ use crate::{
 };
 use error::CompileError;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, str::MatchIndices};
 
 use self::symbol_table::SymbolTable;
 
@@ -39,9 +39,8 @@ pub struct CompilationScope {
 
 impl Compiler {
     pub fn new() -> Self {
-        Compiler {
+        let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
-            constants: Rc::new(RefCell::new(vec![])),
             last_instruction: EmittedInstruction {
                 opcode: Opcode::Constant,
                 position: 0,
@@ -50,7 +49,13 @@ impl Compiler {
                 opcode: Opcode::Constant,
                 position: 0,
             },
+        };
+
+        Compiler {
+            constants: Rc::new(RefCell::new(vec![])),
             symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
+            scopes: vec![main_scope],
+            scope_index: 0,
         }
     }
 
@@ -58,9 +63,8 @@ impl Compiler {
         symbol_table: Rc<RefCell<SymbolTable>>,
         constants: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        Compiler {
+        let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
-            constants,
             last_instruction: EmittedInstruction {
                 opcode: Opcode::Constant,
                 position: 0,
@@ -69,8 +73,18 @@ impl Compiler {
                 opcode: Opcode::Constant,
                 position: 0,
             },
+        };
+
+        Compiler {
+            constants,
             symbol_table,
+            scopes: vec![main_scope],
+            scope_index: 0,
         }
+    }
+
+    fn current_instructions(&self) -> &code::Instructions {
+        &self.scopes[self.scope_index].instructions
     }
 
     pub fn compile(&mut self, program: Node) -> Result<(), CompileError> {
@@ -219,7 +233,7 @@ impl Compiler {
 
                     let jump_position = self.emit(Opcode::Jump, vec![9999]);
 
-                    let after_consequence_position = self.instructions.len();
+                    let after_consequence_position = self.current_instructions().len();
                     self.change_operand(jump_not_truthy_position, after_consequence_position);
 
                     match alternative {
@@ -235,7 +249,7 @@ impl Compiler {
                         }
                     }
 
-                    let after_alternative_position = self.instructions.len();
+                    let after_alternative_position = self.current_instructions().len();
                     self.change_operand(jump_position, after_alternative_position);
                 }
 
@@ -267,7 +281,7 @@ impl Compiler {
 
     pub fn bytecode(&self) -> Bytecode {
         Bytecode {
-            instructions: self.instructions.clone(),
+            instructions: self.current_instructions().clone(),
             constants: self.constants.clone(),
         }
     }
@@ -286,7 +300,7 @@ impl Compiler {
     }
 
     pub fn set_last_instruction(&mut self, opcode: Opcode, position: usize) {
-        self.previous_instruction = self.last_instruction.clone();
+        self.previous_instruction = self.current_instructions().last_instruction.clone();
         self.last_instruction = EmittedInstruction { opcode, position };
     }
 

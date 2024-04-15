@@ -13,11 +13,10 @@ use std::{cell::RefCell, rc::Rc};
 use self::symbol_table::SymbolTable;
 
 pub struct Compiler {
-    pub instructions: Instructions,
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
-    pub last_instruction: EmittedInstruction,
-    pub previous_instruction: EmittedInstruction,
     pub symbol_table: Rc<RefCell<SymbolTable>>,
+    pub scopes: Vec<CompilationScope>,
+    pub scope_index: usize,
 }
 
 pub struct Bytecode {
@@ -29,6 +28,13 @@ pub struct Bytecode {
 pub struct EmittedInstruction {
     pub opcode: Opcode,
     pub position: usize,
+}
+
+#[derive(Clone)]
+pub struct CompilationScope {
+    pub instructions: Instructions,
+    pub last_instruction: EmittedInstruction,
+    pub previous_instruction: EmittedInstruction,
 }
 
 impl Compiler {
@@ -359,6 +365,10 @@ mod test {
                 Object::String(expected) => match &*actual[i] {
                     Object::String(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not string"),
+                },
+                Object::CompiledFunction(expected) => match &*actual[i] {
+                    Object::CompiledFunction(actual) => assert_eq!(expected, actual),
+                    _ => panic!("constant not a compiled function"),
                 },
                 _ => panic!("constant not integer"),
             }
@@ -782,6 +792,27 @@ mod test {
                 Rc::new(Object::Integer(3)),
                 Rc::new(Object::Integer(1)),
                 Rc::new(Object::Integer(1)),
+            ],
+        );
+    }
+
+    #[test]
+    fn it_compiles_function_literals() {
+        test_compilation(
+            "fn() { return 5 + 10 }",
+            vec![
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(5)),
+                Rc::new(Object::Integer(10)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::Constant, vec![1]).into(),
+                    make(Opcode::Add, vec![]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
             ],
         );
     }

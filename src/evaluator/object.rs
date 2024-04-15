@@ -5,8 +5,8 @@ use std::{
     rc::Rc,
 };
 
-use crate::evaluator::builtin::Builtin;
 use crate::parser::ast::{Node, Statement};
+use crate::{code, evaluator::builtin::Builtin};
 
 use super::environment::Env;
 
@@ -19,6 +19,7 @@ pub enum Object {
     Hash(HashMap<Rc<Object>, Rc<Object>>),
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
+    CompiledFunction(code::Instructions),
     Builtin(Builtin),
     Macro(Vec<String>, Vec<Statement>, Env),
     Quote(Node),
@@ -66,6 +67,10 @@ impl Display for Object {
             Object::Macro(parameters, _, _) => {
                 let params = parameters.join(", ");
                 write!(f, "macro({}) {{...}}", params)
+            }
+            Object::CompiledFunction(instructions) => {
+                // TODO: what do I display here
+                write!(f, "{}", instructions)
             }
         }
     }

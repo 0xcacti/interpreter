@@ -28,6 +28,8 @@ pub enum Opcode {
     Hash,
     Index,
     Call,
+    ReturnValue,
+    Return,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -54,6 +56,8 @@ impl From<u8> for Opcode {
             19 => Opcode::Hash,
             20 => Opcode::Index,
             21 => Opcode::Call,
+            22 => Opcode::ReturnValue,
+            23 => Opcode::Return,
             _ => panic!("unknown opcode"),
         }
     }
@@ -152,6 +156,8 @@ impl Opcode {
             Opcode::Hash => "OpHash",
             Opcode::Index => "OpIndex",
             Opcode::Call => "OpCall",
+            Opcode::ReturnValue => "OpReturnValue",
+            Opcode::Return => "OpReturn",
         }
     }
 
@@ -179,6 +185,8 @@ impl Opcode {
             Opcode::Hash => vec![2],
             Opcode::Index => vec![],
             Opcode::Call => vec![],
+            Opcode::ReturnValue => vec![],
+            Opcode::Return => vec![],
         }
     }
 }
@@ -292,6 +300,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         21 => Some(Definition {
             name: "OpCall",
+            operand_widths: vec![],
+        }),
+
+        22 => Some(Definition {
+            name: "OpReturnValue",
+            operand_widths: vec![],
+        }),
+
+        23 => Some(Definition {
+            name: "OpReturn",
             operand_widths: vec![],
         }),
 

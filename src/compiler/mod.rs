@@ -300,34 +300,42 @@ impl Compiler {
     }
 
     pub fn set_last_instruction(&mut self, opcode: Opcode, position: usize) {
-        self.previous_instruction = self.current_instructions().last_instruction.clone();
-        self.last_instruction = EmittedInstruction { opcode, position };
+        let current_scope = &mut self.scopes[self.scope_index];
+        current_scope.previous_instruction = current_scope.last_instruction.clone();
+        current_scope.last_instruction = EmittedInstruction { opcode, position };
     }
 
     pub fn last_instruction_is(&self, opcode: Opcode) -> bool {
-        self.last_instruction.opcode == opcode
+        let current_scope = &self.scopes[self.scope_index];
+        current_scope.last_instruction.opcode == opcode
     }
 
     pub fn remove_last_instruction(&mut self) {
-        let last = self.last_instruction.position;
-        self.instructions = self.instructions.slice(0, last).into();
-        self.last_instruction = self.previous_instruction.clone();
+        let current_scope = &mut self.scopes[self.scope_index];
+        let last = current_scope.last_instruction.position;
+        current_scope.instructions = current_scope.instructions.slice(0, last).into();
+        current_scope.last_instruction = current_scope.previous_instruction.clone();
     }
 
     pub fn add_instructions(&mut self, instructions: Vec<u8>) -> usize {
-        let position_new = self.instructions.len();
-        self.instructions.extend(Instructions::new(instructions));
+        let position_new = self.current_instructions().len();
+        let current_scope = &mut self.scopes[self.scope_index];
+        current_scope
+            .instructions
+            .extend(Instructions::new(instructions));
         position_new
     }
 
     fn replace_instruction(&mut self, position: usize, new_instructions: Vec<u8>) {
+        let current_scope = &mut self.scopes[self.scope_index];
         for i in 0..new_instructions.len() {
-            self.instructions[position + i] = new_instructions[i];
+            current_scope.instructions[position + i] = new_instructions[i];
         }
     }
 
     fn change_operand(&mut self, position: usize, operand: usize) {
-        let opcode = self.instructions[position];
+        let current_scope = &mut self.scopes[self.scope_index];
+        let opcode = current_scope.instructions[position];
         let new_instrution = code::make(opcode.into(), vec![operand]);
         self.replace_instruction(position, new_instrution);
     }

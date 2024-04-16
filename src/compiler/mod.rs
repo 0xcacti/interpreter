@@ -105,8 +105,11 @@ impl Compiler {
                     let symbol = self.symbol_table.borrow_mut().define(name);
                     self.emit(Opcode::SetGlobal, vec![symbol.index]);
                 }
-                _ => {
-                    panic!("not implemented")
+
+                Statement::Return(expression) => {
+                    self.compile(Node::Expression(expression))?;
+
+                    self.emit(Opcode::ReturnValue, vec![]);
                 }
             },
 
@@ -271,6 +274,19 @@ impl Compiler {
                     self.emit(Opcode::Index, vec![]);
                 }
 
+                Expression::Function(_, body) => {
+                    self.enter_scope();
+
+                    self.compile(Node::Program(body))?;
+
+                    let fn_instructions = self.leave_scope();
+
+                    let compiled_fn = Rc::new(Object::CompiledFunction(fn_instructions));
+                    let constant_index = self.add_constant(compiled_fn);
+
+                    self.emit(Opcode::Constant, vec![constant_index]);
+                }
+
                 _ => {
                     panic!("not implemented")
                 }
@@ -338,6 +354,28 @@ impl Compiler {
         let opcode = current_scope.instructions[position];
         let new_instrution = code::make(opcode.into(), vec![operand]);
         self.replace_instruction(position, new_instrution);
+    }
+
+    fn enter_scope(&mut self) {
+        self.scopes.push(CompilationScope {
+            instructions: Instructions::new(vec![]),
+            last_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
+            previous_instruction: EmittedInstruction {
+                opcode: Opcode::Constant,
+                position: 0,
+            },
+        });
+        self.scope_index += 1;
+    }
+
+    fn leave_scope(&mut self) -> Instructions {
+        let instructions = self.current_instructions().to_owned();
+        self.scopes.pop();
+        self.scope_index -= 1;
+        instructions
     }
 }
 

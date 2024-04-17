@@ -279,9 +279,22 @@ impl Compiler {
 
                     self.compile(Node::Program(body))?;
 
-                    let fn_instructions = self.leave_scope();
+                    if self.last_instruction_is(Opcode::Pop) {
+                        self.replace_instruction(
+                            self.scopes[self.scope_index].last_instruction.position,
+                            code::make(Opcode::ReturnValue, vec![]),
+                        );
+                        let current_scope = &mut self.scopes[self.scope_index];
+                        current_scope.last_instruction.opcode = Opcode::ReturnValue;
+                    }
 
+                    if !self.last_instruction_is(Opcode::ReturnValue) {
+                        self.emit(Opcode::Return, vec![]);
+                    }
+
+                    let fn_instructions = self.leave_scope();
                     let compiled_fn = Rc::new(Object::CompiledFunction(fn_instructions));
+
                     let constant_index = self.add_constant(compiled_fn);
 
                     self.emit(Opcode::Constant, vec![constant_index]);
@@ -874,6 +887,53 @@ mod test {
                     make(Opcode::ReturnValue, vec![]).into(),
                 ]))),
             ],
+        );
+
+        test_compilation(
+            "fn() { 1; 2 }",
+            vec![
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::Integer(2)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::Pop, vec![]).into(),
+                    make(Opcode::Constant, vec![1]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+
+        test_compilation(
+            "fn() { 5 + 10 }",
+            vec![
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(5)),
+                Rc::new(Object::Integer(10)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::Constant, vec![1]).into(),
+                    make(Opcode::Add, vec![]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+
+        test_compilation(
+            "fn() { }",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::CompiledFunction(concatenate_instructions(
+                &vec![make(Opcode::Return, vec![]).into()],
+            )))],
         );
     }
 }

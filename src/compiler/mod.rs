@@ -300,6 +300,11 @@ impl Compiler {
                     self.emit(Opcode::Constant, vec![constant_index]);
                 }
 
+                Expression::FunctionCall(function, _) => {
+                    self.compile(Node::Expression(*function))?;
+                    self.emit(Opcode::Call, vec![]);
+                }
+
                 _ => {
                     panic!("not implemented")
                 }
@@ -934,6 +939,43 @@ mod test {
             vec![Rc::new(Object::CompiledFunction(concatenate_instructions(
                 &vec![make(Opcode::Return, vec![]).into()],
             )))],
+        );
+    }
+
+    #[test]
+    fn it_compiles_function_calls() {
+        test_compilation(
+            "fn() { 24 }();",
+            vec![
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Call, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(24)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+
+        test_compilation(
+            "let noArg = fn() { 24 }; noArg();",
+            vec![
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Call, vec![]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(24)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
         );
     }
 }

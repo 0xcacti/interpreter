@@ -1,4 +1,5 @@
 pub mod error;
+pub mod frame;
 
 use crate::{
     code::{self, Opcode},

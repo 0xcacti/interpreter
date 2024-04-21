@@ -10,6 +10,8 @@ use error::VmError;
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use self::frame::Frame;
+
 pub const STACK_SIZE: usize = 2048;
 pub const GLOBAL_SIZE: usize = 65536;
 
@@ -19,6 +21,8 @@ pub struct VM {
     pub stack: Vec<Rc<Object>>,
     pub sp: usize,
     pub globals: Rc<RefCell<Vec<Rc<Object>>>>,
+    pub frames: Vec<Frame>,
+    pub frame_index: usize,
 }
 
 impl VM {
@@ -29,6 +33,8 @@ impl VM {
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
             globals: Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE])),
+            frames: Frame::new(),
+            frame_index: 0,
         };
     }
 

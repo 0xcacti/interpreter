@@ -10,7 +10,7 @@ use error::CompileError;
 
 use std::{cell::RefCell, rc::Rc, str::MatchIndices};
 
-use self::symbol_table::SymbolTable;
+use self::symbol_table::{Scope, SymbolTable};
 
 pub struct Compiler {
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
@@ -103,7 +103,14 @@ impl Compiler {
                 Statement::Let(name, expression) => {
                     self.compile(Node::Expression(expression))?;
                     let symbol = self.symbol_table.borrow_mut().define(name);
-                    self.emit(Opcode::SetGlobal, vec![symbol.index]);
+                    match symbol.scope {
+                        Scope::Global => {
+                            self.emit(Opcode::SetGlobal, vec![symbol.index]);
+                        }
+                        Scope::Local => {
+                            self.emit(Opcode::SetLocal, vec![symbol.index]);
+                        }
+                    }
                 }
 
                 Statement::Return(expression) => {
@@ -259,9 +266,14 @@ impl Compiler {
                 Expression::Identifier(name) => {
                     let symbol = self.symbol_table.borrow_mut().resolve(&name);
                     match symbol {
-                        Some(symbol) => {
-                            self.emit(Opcode::GetGlobal, vec![symbol.index]);
-                        }
+                        Some(symbol) => match symbol.scope {
+                            Scope::Global => {
+                                self.emit(Opcode::GetGlobal, vec![symbol.index]);
+                            }
+                            Scope::Local => {
+                                self.emit(Opcode::GetLocal, vec![symbol.index]);
+                            }
+                        },
                         None => {
                             return Err(CompileError::new(format!("undefined variable: {}", name)));
                         }

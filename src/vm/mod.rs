@@ -238,6 +238,10 @@ impl VM {
                     self.pop();
                     self.push(Rc::new(Object::Null));
                 }
+
+                Opcode::SetLocal => {}
+
+                Opcode::GetLocal => {}
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -1025,6 +1029,45 @@ mod test {
                 input: "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();".to_string(),
                 expected: Object::Null,
             }
+        ];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_functions_with_bindings() {
+        let tests = vec![
+            VmTest {
+                input: "let one = fn() { let one = 1; one }; one();".to_string(),
+                expected: Object::Integer(1),
+            },
+            VmTest {
+                input:
+                    "let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; oneAndTwo();"
+                        .to_string(),
+                expected: Object::Integer(3),
+            },
+            VmTest {
+                input: r#"let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; 
+                    let threeAndFour = fn() { let three = 3; let four = 4; three + four; }; 
+                    oneAndTwo() + threeAndFour();"#
+                    .to_string(),
+                expected: Object::Integer(10),
+            },
+            VmTest {
+                input: r#"let firstFoobar = fn() { let foobar = 50; foobar; }; 
+                    let secondFoobar = fn() { let foobar = 100; foobar; }; 
+                    firstFoobar() + secondFoobar();"#
+                    .to_string(),
+                expected: Object::Integer(150),
+            },
+            VmTest {
+                input: r#"let globalSeed = 50; 
+                    let minusOne = fn() { let num = 1; globalSeed - num; }; 
+                    let minusTwo = fn() { let num = 2; globalSeed - num; }; 
+                    minusOne() + minusTwo();"#
+                    .to_string(),
+                expected: Object::Integer(97),
+            },
         ];
         run_vm_tests(tests);
     }

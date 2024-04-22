@@ -467,11 +467,18 @@ mod test {
             operands: Vec<usize>,
             bytes_read: usize,
         }
-        let tests = vec![OperandTest {
-            opcode: Opcode::Constant,
-            operands: vec![65535],
-            bytes_read: 2,
-        }];
+        let tests = vec![
+            OperandTest {
+                opcode: Opcode::Constant,
+                operands: vec![65535],
+                bytes_read: 2,
+            },
+            OperandTest {
+                opcode: Opcode::GetLocal,
+                operands: vec![255],
+                bytes_read: 1,
+            },
+        ];
 
         for test in tests {
             let instruction = make(test.opcode, test.operands.clone());

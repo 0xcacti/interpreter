@@ -2,7 +2,7 @@ pub mod error;
 pub mod frame;
 
 use crate::{
-    code::{self, Opcode},
+    code::{self, Instructions, Opcode},
     compiler,
     evaluator::object::Object,
 };
@@ -13,6 +13,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use self::frame::Frame;
 
 pub const STACK_SIZE: usize = 2048;
+pub const MAX_FRAMES: usize = 1024;
 pub const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM {
@@ -27,14 +28,25 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
+        let main_fn = Object::CompiledFunction(bytecode.instructions.clone());
+        let main_frame = Frame::new(main_fn).unwrap();
+
+        let mut frames = vec![
+            Frame::new(Object::CompiledFunction(Instructions::new(vec![])))
+                .unwrap();
+            MAX_FRAMES
+        ];
+
+        frames[0] = main_frame;
+
         return VM {
             instructions: bytecode.instructions,
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
             globals: Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE])),
-            frames: Frame::new(),
-            frame_index: 0,
+            frames,
+            frame_index: 1,
         };
     }
 
@@ -42,13 +54,40 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
+        let main_fn = Object::CompiledFunction(bytecode.instructions.clone());
+        let main_frame = Frame::new(main_fn).unwrap();
+
+        let mut frames = vec![
+            Frame::new(Object::CompiledFunction(Instructions::new(vec![])))
+                .unwrap();
+            MAX_FRAMES
+        ];
+
+        frames[0] = main_frame;
+
         return VM {
             instructions: bytecode.instructions,
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
             globals,
+            frames,
+            frame_index: 1,
         };
+    }
+
+    pub fn current_frame(&self) -> &Frame {
+        &self.frames[self.frame_index - 1]
+    }
+
+    pub fn push_frame(&mut self, frame: Frame) {
+        self.frames.push(frame);
+        self.frame_index += 1;
+    }
+
+    pub fn pop_frame(&mut self) {
+        self.frames.pop();
+        self.frame_index -= 1;
     }
 
     pub fn stack_top(&self) -> Option<Rc<Object>> {

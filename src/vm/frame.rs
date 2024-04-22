@@ -5,6 +5,7 @@ use crate::{
 
 use super::error::VmError;
 
+#[derive(Debug, Clone)]
 pub struct Frame {
     pub function: Object,
     pub ip: usize,

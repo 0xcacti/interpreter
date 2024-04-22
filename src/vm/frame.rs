@@ -1,19 +1,17 @@
-use crate::{
-    code::Instructions,
-    evaluator::object::{self, Object},
-};
+use crate::{code::Instructions, evaluator::object::Object};
+use std::rc::Rc;
 
 use super::error::VmError;
 
 #[derive(Debug, Clone)]
 pub struct Frame {
-    pub function: Object,
+    pub function: Rc<Object>,
     pub ip: isize,
 }
 
 impl Frame {
-    pub fn new(function: object::Object) -> Result<Frame, VmError> {
-        match function {
+    pub fn new(function: Rc<Object>) -> Result<Frame, VmError> {
+        match &*function {
             Object::CompiledFunction(_) => Ok(Frame { function, ip: -1 }),
             _ => Err(VmError::new(format!(
                 "Expected CompiledFunction, got {:?}",
@@ -23,7 +21,7 @@ impl Frame {
     }
 
     pub fn instructions(&self) -> Result<Instructions, VmError> {
-        match &self.function {
+        match &*self.function {
             Object::CompiledFunction(function) => Ok(function.clone()),
             _ => Err(VmError::new(format!(
                 "Expected CompiledFunction, got {:?}",

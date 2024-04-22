@@ -27,14 +27,14 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Object::CompiledFunction(bytecode.instructions);
+        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions));
         let main_frame = Frame::new(main_fn).unwrap();
 
-        let mut frames = vec![
-            Frame::new(Object::CompiledFunction(Instructions::new(vec![])))
-                .unwrap();
-            MAX_FRAMES
-        ];
+        let mut frames =
+            vec![
+                Frame::new(Rc::new(Object::CompiledFunction(Instructions::new(vec![])))).unwrap();
+                MAX_FRAMES
+            ];
 
         frames[0] = main_frame;
 
@@ -52,14 +52,14 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Object::CompiledFunction(bytecode.instructions);
+        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions));
         let main_frame = Frame::new(main_fn).unwrap();
 
-        let mut frames = vec![
-            Frame::new(Object::CompiledFunction(Instructions::new(vec![])))
-                .unwrap();
-            MAX_FRAMES
-        ];
+        let mut frames =
+            vec![
+                Frame::new(Rc::new(Object::CompiledFunction(Instructions::new(vec![])))).unwrap();
+                MAX_FRAMES
+            ];
 
         frames[0] = main_frame;
 
@@ -211,11 +211,31 @@ impl VM {
 
                     self.execute_index_expression(indexable, index)?;
                 }
+
+                Opcode::Call => {
+                    let fun = self.stack[self.sp - 1].clone();
+                    match &*fun {
+                        Object::CompiledFunction(_) => {
+                            let frame = Frame::new(fun.clone()).unwrap();
+                            self.push_frame(frame);
+                        }
+                        _ => {
+                            return Err(VmError::new("Calling non-function".to_string()));
+                        }
+                    }
+                }
+
+                Opcode::ReturnValue => {
+                    let return_value = self.pop();
+                    self.pop_frame();
+                    // pop function
+                    self.pop();
+                    self.push(return_value);
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
             }
-            ip += 1;
         }
         Ok(())
     }
@@ -432,7 +452,7 @@ impl VM {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashMap, ops::Deref};
+    use std::ops::Deref;
 
     use super::*;
     use crate::{
@@ -963,6 +983,15 @@ mod test {
             },
         ];
 
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_function_calls() {
+        let tests = vec![VmTest {
+            input: "let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();".to_string(),
+            expected: Object::Integer(15),
+        }];
         run_vm_tests(tests);
     }
 }

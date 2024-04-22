@@ -30,6 +30,8 @@ pub enum Opcode {
     Call,
     ReturnValue,
     Return,
+    GetLocal,
+    SetLocal,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -58,6 +60,8 @@ impl From<u8> for Opcode {
             21 => Opcode::Call,
             22 => Opcode::ReturnValue,
             23 => Opcode::Return,
+            24 => Opcode::GetLocal,
+            25 => Opcode::SetLocal,
             _ => panic!("unknown opcode"),
         }
     }
@@ -158,6 +162,8 @@ impl Opcode {
             Opcode::Call => "OpCall",
             Opcode::ReturnValue => "OpReturnValue",
             Opcode::Return => "OpReturn",
+            Opcode::GetLocal => "OpGetLocal",
+            Opcode::SetLocal => "OpSetLocal",
         }
     }
 
@@ -187,6 +193,8 @@ impl Opcode {
             Opcode::Call => vec![],
             Opcode::ReturnValue => vec![],
             Opcode::Return => vec![],
+            Opcode::GetLocal => vec![1],
+            Opcode::SetLocal => vec![1],
         }
     }
 }
@@ -313,6 +321,16 @@ pub fn lookup(op: u8) -> Option<Definition> {
             operand_widths: vec![],
         }),
 
+        24 => Some(Definition {
+            name: "OpGetLocal",
+            operand_widths: vec![1],
+        }),
+
+        25 => Some(Definition {
+            name: "OpSetLocal",
+            operand_widths: vec![1],
+        }),
+
         _ => None,
     }
 }
@@ -379,6 +397,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     for (i, &o) in operands.iter().enumerate() {
         let width = op.operand_widths()[i];
         match width {
+            1 => instructions.push(o as u8),
             2 => {
                 let bytes = (o as u16).to_be_bytes();
                 instructions.push(bytes[0]);
@@ -396,6 +415,7 @@ pub fn read_operands(def: &Definition, instructions: &[u8]) -> (Vec<usize>, usiz
 
     for width in def.operand_widths.iter() {
         match width {
+            1 => operands.push(instructions[offset] as usize),
             2 => {
                 let bytes = instructions[offset..offset + 2].to_vec();
                 operands.push(u16::from_be_bytes([bytes[0], bytes[1]]) as usize);
@@ -429,6 +449,11 @@ mod test {
         let tests = vec![
             (Opcode::Constant, vec![65534], vec![0, 255, 254]),
             (Opcode::Add, vec![], vec![Opcode::Add as u8]),
+            (
+                Opcode::GetLocal,
+                vec![255],
+                vec![Opcode::GetLocal as u8, 255],
+            ),
         ];
         for (opcode, operands, expected) in tests {
             check(opcode, operands, expected);

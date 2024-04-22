@@ -232,6 +232,12 @@ impl VM {
                     self.pop();
                     self.push(return_value);
                 }
+
+                Opcode::Return => {
+                    self.pop_frame();
+                    self.pop();
+                    self.push(Rc::new(Object::Null));
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }
@@ -532,13 +538,6 @@ mod test {
                 println!("actual: {:?}", actual_hm);
 
                 assert!(actual_hm.eq(&expected_hm));
-                // for (k, v) in expected_hm.iter() {
-                //     let ak = actual_hm.get_key_value(k).unwrap().0;
-                //     let av = actual_hm.get_key_value(k).unwrap().1;
-
-                //     test_expected_object(k.clone(), ak.clone());
-                //     test_expected_object(v.clone(), av.clone());
-                // }
             }
             _ => panic!("object not hash"),
         }
@@ -987,11 +986,46 @@ mod test {
     }
 
     #[test]
-    fn it_executes_function_calls() {
-        let tests = vec![VmTest {
-            input: "let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();".to_string(),
-            expected: Object::Integer(15),
-        }];
+    fn it_executes_function_calls_without_arguments() {
+        let tests = vec![
+            VmTest {
+                input: "let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();".to_string(),
+                expected: Object::Integer(15),
+            },
+            VmTest {
+                input: "let one = fn() { 1; }; let two = fn() { 2; }; one() + two();".to_string(),
+                expected: Object::Integer(3),
+            },
+            VmTest {
+                input: "let a = fn() { 1; }; let b = fn() { a() + 1; }; let c = fn() { b() + 1; }; c();".to_string(),
+                expected: Object::Integer(3),
+            },
+
+            // With explicit return statement
+            VmTest {
+                input: "let earlyExit = fn() { return 99; 100; }; earlyExit();".to_string(),
+                expected: Object::Integer(99),
+            },
+            VmTest {
+                input: "let earlyExit = fn() { return 99; return 100; }; earlyExit();".to_string(),
+                expected: Object::Integer(99),
+            }
+        ];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_functions_without_return_value() {
+        let tests = vec![
+            VmTest{
+                input: "let noReturn = fn() { }; noReturn();".to_string(),
+                expected: Object::Null,
+            },
+            VmTest {
+                input: "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();".to_string(),
+                expected: Object::Null,
+            }
+        ];
         run_vm_tests(tests);
     }
 }

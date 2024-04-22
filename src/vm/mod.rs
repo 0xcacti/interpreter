@@ -18,7 +18,6 @@ pub const GLOBAL_SIZE: usize = 65536;
 
 pub struct VM {
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
-    pub instructions: code::Instructions,
     pub stack: Vec<Rc<Object>>,
     pub sp: usize,
     pub globals: Rc<RefCell<Vec<Rc<Object>>>>,
@@ -28,7 +27,7 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Object::CompiledFunction(bytecode.instructions.clone());
+        let main_fn = Object::CompiledFunction(bytecode.instructions);
         let main_frame = Frame::new(main_fn).unwrap();
 
         let mut frames = vec![
@@ -40,7 +39,6 @@ impl VM {
         frames[0] = main_frame;
 
         return VM {
-            instructions: bytecode.instructions,
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
@@ -54,7 +52,7 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Object::CompiledFunction(bytecode.instructions.clone());
+        let main_fn = Object::CompiledFunction(bytecode.instructions);
         let main_frame = Frame::new(main_fn).unwrap();
 
         let mut frames = vec![
@@ -66,7 +64,6 @@ impl VM {
         frames[0] = main_frame;
 
         return VM {
-            instructions: bytecode.instructions,
             constants: bytecode.constants,
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             sp: 0,
@@ -76,18 +73,18 @@ impl VM {
         };
     }
 
-    pub fn current_frame(&self) -> &Frame {
-        &self.frames[self.frame_index - 1]
+    pub fn current_frame(&mut self) -> &mut Frame {
+        &mut self.frames[self.frame_index - 1]
     }
 
     pub fn push_frame(&mut self, frame: Frame) {
-        self.frames.push(frame);
+        self.frames[self.frame_index] = frame;
         self.frame_index += 1;
     }
 
-    pub fn pop_frame(&mut self) {
-        self.frames.pop();
+    pub fn pop_frame(&mut self) -> &mut Frame {
         self.frame_index -= 1;
+        &mut self.frames[self.frame_index]
     }
 
     pub fn stack_top(&self) -> Option<Rc<Object>> {
@@ -98,16 +95,22 @@ impl VM {
     }
 
     pub fn run(&mut self) -> Result<(), VmError> {
-        let mut ip = 0;
-        let instructions_len = self.instructions.len();
+        while self.current_frame().ip < (self.current_frame().instructions()?.len() - 1) as isize {
+            self.current_frame().ip += 1;
 
-        while ip < instructions_len {
-            let opcode = self.instructions[ip];
+            let instructions = self.current_frame().instructions()?;
+            let mut ip: usize = self
+                .current_frame()
+                .ip
+                .try_into()
+                .map_err(|_| VmError::new("Invalid IP".to_string()))?;
+
+            let opcode = instructions[ip];
 
             match opcode.into() {
                 Opcode::Constant => {
-                    let constant_index = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip += 2;
+                    let constant_index = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
                     let constants = self.constants.borrow().clone();
 
                     if constant_index > constants.len() {
@@ -146,16 +149,16 @@ impl VM {
                 }
 
                 Opcode::Jump => {
-                    let position = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip = position - 1;
+                    let position = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip = (position - 1) as isize;
                 }
 
                 Opcode::JumpNotTruthy => {
-                    let maybe_jump_position = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip = ip + 2;
+                    let maybe_jump_position = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
                     let condition = self.pop();
                     if !self.is_truthy(condition) {
-                        ip = maybe_jump_position - 1;
+                        self.current_frame().ip = (maybe_jump_position - 1) as isize;
                     }
                 }
 
@@ -164,14 +167,14 @@ impl VM {
                 }
 
                 Opcode::SetGlobal => {
-                    let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip = ip + 2;
+                    let symbol_index = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
                     self.globals.borrow_mut()[symbol_index] = self.pop();
                 }
 
                 Opcode::GetGlobal => {
-                    let symbol_index = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip += 2;
+                    let symbol_index = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
 
                     // Clone the global variable before borrowing mutably
                     let global = self.globals.borrow().get(symbol_index).cloned();
@@ -187,16 +190,16 @@ impl VM {
                 }
 
                 Opcode::Array => {
-                    let num_elements = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip += 2;
+                    let num_elements = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
                     let array = self.build_array(self.sp - num_elements, self.sp);
                     self.sp = self.sp - num_elements;
                     self.push(Rc::new(array));
                 }
 
                 Opcode::Hash => {
-                    let num_elements = code::read_u16(&self.instructions, ip + 1) as usize;
-                    ip += 2;
+                    let num_elements = code::read_u16(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 2;
                     let hash = self.build_hash(self.sp - num_elements, self.sp);
                     self.sp = self.sp - num_elements;
                     self.push(Rc::new(hash));

@@ -12,9 +12,9 @@ use std::{cell::RefCell, rc::Rc, str::MatchIndices};
 
 use self::symbol_table::SymbolTable;
 
-pub struct Compiler<'a> {
+pub struct Compiler {
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
-    pub symbol_table: Rc<RefCell<SymbolTable<'a>>>,
+    pub symbol_table: Rc<RefCell<SymbolTable>>,
     pub scopes: Vec<CompilationScope>,
     pub scope_index: usize,
 }
@@ -37,7 +37,7 @@ pub struct CompilationScope {
     pub previous_instruction: EmittedInstruction,
 }
 
-impl<'a> Compiler<'a> {
+impl Compiler {
     pub fn new() -> Self {
         let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
@@ -53,14 +53,14 @@ impl<'a> Compiler<'a> {
 
         Compiler {
             constants: Rc::new(RefCell::new(vec![])),
-            symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
+            symbol_table: SymbolTable::new(),
             scopes: vec![main_scope],
             scope_index: 0,
         }
     }
 
     pub fn new_with_state(
-        symbol_table: Rc<RefCell<SymbolTable<'a>>>,
+        symbol_table: Rc<RefCell<SymbolTable>>,
         constants: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
         let main_scope = CompilationScope {
@@ -387,7 +387,8 @@ impl<'a> Compiler<'a> {
             },
         });
         self.scope_index += 1;
-        let symbol_table = SymbolTable::new_enclosed(&self.symbol_table);
+        let symbol_table = SymbolTable::new_enclosed(self.symbol_table.clone());
+        self.symbol_table = symbol_table;
     }
 
     fn leave_scope(&mut self) -> Instructions {

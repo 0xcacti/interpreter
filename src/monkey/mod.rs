@@ -50,7 +50,7 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
     });
 
     let constants = Rc::new(RefCell::new(vec![]));
-    let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+    let symbol_table = SymbolTable::new();
     let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
 
     if let Some(path) = path {
@@ -111,7 +111,7 @@ pub fn interpret_chunk(mode: ExecMode, contents: String) -> Result<()> {
     let macro_env = Rc::new(RefCell::new(Environment::new()));
 
     let constants = Rc::new(RefCell::new(vec![]));
-    let symbol_table = Rc::new(RefCell::new(SymbolTable::new()));
+    let symbol_table = SymbolTable::new();
     let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
 
     let result = match mode {

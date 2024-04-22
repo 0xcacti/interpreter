@@ -1,7 +1,7 @@
 use std::{collections::HashMap, rc::Rc};
 use strum_macros::{Display, EnumString};
 
-#[derive(Debug, Clone, EnumString, Display, PartialEq, Copy)]
+#[derive(Debug, Clone, EnumString, Display, PartialEq, Copy, Eq)]
 pub enum Scope {
     #[strum(serialize = "global")]
     Global,
@@ -9,13 +9,14 @@ pub enum Scope {
     Local,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Symbol {
     pub name: String,
     pub scope: Scope,
     pub index: usize,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct SymbolTable<'a> {
     pub outer: Option<&'a SymbolTable<'a>>,
     pub symbols: HashMap<String, Rc<Symbol>>,

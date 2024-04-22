@@ -387,6 +387,7 @@ impl<'a> Compiler<'a> {
             },
         });
         self.scope_index += 1;
+        let symbol_table = SymbolTable::new_enclosed(&self.symbol_table);
     }
 
     fn leave_scope(&mut self) -> Instructions {
@@ -977,6 +978,48 @@ mod test {
                 ]))),
             ],
         );
+    }
+
+    #[test]
+    fn it_handles_scopes_correctly() {
+        let mut compiler = Compiler::new();
+        assert_eq!(compiler.scope_index, 0);
+
+        compiler.emit(Opcode::Mul, vec![]);
+
+        compiler.enter_scope();
+
+        assert_eq!(compiler.scope_index, 1);
+
+        compiler.emit(Opcode::Sub, vec![]);
+
+        assert_eq!(compiler.scopes[compiler.scope_index].instructions.len(), 1);
+
+        let last = compiler.scopes[compiler.scope_index]
+            .last_instruction
+            .clone();
+        assert_eq!(last.opcode, Opcode::Sub);
+
+        compiler.leave_scope();
+        assert_eq!(compiler.scope_index, 0);
+
+        assert_eq!(compiler.symbol_table.borrow().outer, None);
+
+        compiler.emit(Opcode::Add, vec![]);
+
+        assert_eq!(compiler.scopes[compiler.scope_index].instructions.len(), 2);
+
+        let last = compiler.scopes[compiler.scope_index]
+            .last_instruction
+            .clone();
+
+        assert_eq!(last.opcode, Opcode::Add);
+
+        let previous = compiler.scopes[compiler.scope_index]
+            .previous_instruction
+            .clone();
+
+        assert_eq!(previous.opcode, Opcode::Mul);
     }
 
     #[test]

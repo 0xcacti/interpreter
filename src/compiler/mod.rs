@@ -12,9 +12,9 @@ use std::{cell::RefCell, rc::Rc, str::MatchIndices};
 
 use self::symbol_table::SymbolTable;
 
-pub struct Compiler {
+pub struct Compiler<'a> {
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
-    pub symbol_table: Rc<RefCell<SymbolTable>>,
+    pub symbol_table: Rc<RefCell<SymbolTable<'a>>>,
     pub scopes: Vec<CompilationScope>,
     pub scope_index: usize,
 }
@@ -37,7 +37,7 @@ pub struct CompilationScope {
     pub previous_instruction: EmittedInstruction,
 }
 
-impl Compiler {
+impl<'a> Compiler<'a> {
     pub fn new() -> Self {
         let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
@@ -60,7 +60,7 @@ impl Compiler {
     }
 
     pub fn new_with_state(
-        symbol_table: Rc<RefCell<SymbolTable>>,
+        symbol_table: Rc<RefCell<SymbolTable<'a>>>,
         constants: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
         let main_scope = CompilationScope {
@@ -973,6 +973,65 @@ mod test {
                 Rc::new(Object::Integer(24)),
                 Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
                     make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+    }
+
+    #[test]
+    fn it_compiles_with_scope() {
+        test_compilation(
+            "let num = 55; fn() { num }",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(55)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::GetGlobal, vec![0]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+
+        test_compilation(
+            "fn() { let num = 55; num }",
+            vec![
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(55)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::SetLocal, vec![0]).into(),
+                    make(Opcode::GetLocal, vec![0]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]))),
+            ],
+        );
+
+        test_compilation(
+            "fn() { let a = 55; let b = 77; a + b }",
+            vec![
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(55)),
+                Rc::new(Object::Integer(77)),
+                Rc::new(Object::CompiledFunction(concatenate_instructions(&vec![
+                    make(Opcode::Constant, vec![0]).into(),
+                    make(Opcode::SetLocal, vec![0]).into(),
+                    make(Opcode::Constant, vec![1]).into(),
+                    make(Opcode::SetLocal, vec![1]).into(),
+                    make(Opcode::GetLocal, vec![0]).into(),
+                    make(Opcode::GetLocal, vec![1]).into(),
+                    make(Opcode::Add, vec![]).into(),
                     make(Opcode::ReturnValue, vec![]).into(),
                 ]))),
             ],

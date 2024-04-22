@@ -395,6 +395,19 @@ impl Compiler {
         let instructions = self.current_instructions().to_owned();
         self.scopes.pop();
         self.scope_index -= 1;
+        let temp_symbol_table = std::mem::replace(&mut self.symbol_table, SymbolTable::new());
+
+        let outer_symbol_table = temp_symbol_table.borrow().outer.clone();
+
+        match outer_symbol_table {
+            Some(outer) => {
+                self.symbol_table = outer.clone();
+            }
+            None => {
+                panic!("tried to leave scope without outer symbol table")
+            }
+        }
+
         instructions
     }
 }
@@ -986,6 +999,7 @@ mod test {
         let mut compiler = Compiler::new();
         assert_eq!(compiler.scope_index, 0);
 
+        let global_symbol_table = compiler.symbol_table.clone();
         compiler.emit(Opcode::Mul, vec![]);
 
         compiler.enter_scope();
@@ -1001,9 +1015,19 @@ mod test {
             .clone();
         assert_eq!(last.opcode, Opcode::Sub);
 
+        assert_eq!(
+            compiler.symbol_table.borrow().outer,
+            Some(global_symbol_table.clone())
+        );
+
         compiler.leave_scope();
+
         assert_eq!(compiler.scope_index, 0);
 
+        assert_eq!(
+            *compiler.symbol_table.borrow(),
+            *global_symbol_table.borrow()
+        );
         assert_eq!(compiler.symbol_table.borrow().outer, None);
 
         compiler.emit(Opcode::Add, vec![]);

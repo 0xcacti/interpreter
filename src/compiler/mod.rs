@@ -286,8 +286,12 @@ impl Compiler {
                     self.emit(Opcode::Index, vec![]);
                 }
 
-                Expression::Function(_, body) => {
+                Expression::Function(parameters, body) => {
                     self.enter_scope();
+
+                    for parameter in parameters {
+                        self.symbol_table.borrow_mut().define(parameter);
+                    }
 
                     self.compile(Node::Program(body))?;
 
@@ -314,9 +318,13 @@ impl Compiler {
                     self.emit(Opcode::Constant, vec![constant_index]);
                 }
 
-                Expression::FunctionCall(function, _) => {
+                Expression::FunctionCall(function, arguments) => {
                     self.compile(Node::Expression(*function))?;
-                    self.emit(Opcode::Call, vec![]);
+                    let len = arguments.len();
+                    for argument in arguments {
+                        self.compile(Node::Expression(argument))?;
+                    }
+                    self.emit(Opcode::Call, vec![len]);
                 }
 
                 _ => {
@@ -990,7 +998,7 @@ mod test {
             "fn() { 24 }();",
             vec![
                 make(Opcode::Constant, vec![1]).into(),
-                make(Opcode::Call, vec![]).into(),
+                make(Opcode::Call, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1011,7 +1019,7 @@ mod test {
                 make(Opcode::Constant, vec![1]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
                 make(Opcode::GetGlobal, vec![0]).into(),
-                make(Opcode::Call, vec![]).into(),
+                make(Opcode::Call, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1023,6 +1031,58 @@ mod test {
                     ]),
                     0,
                 )),
+            ],
+        );
+
+        test_compilation(
+            "let oneArg = fn(a) { a }; oneArg(24);",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Call, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::CompiledFunction(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                )),
+                Rc::new(Object::Integer(24)),
+            ],
+        );
+
+        test_compilation(
+            "let manyArg = fn(a, b, c) { a; b; c }; manyArg(24, 25, 26);",
+            vec![
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Constant, vec![3]).into(),
+                make(Opcode::Call, vec![3]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::CompiledFunction(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Pop, vec![]).into(),
+                        make(Opcode::GetLocal, vec![1]).into(),
+                        make(Opcode::Pop, vec![]).into(),
+                        make(Opcode::GetLocal, vec![2]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    3,
+                )),
+                Rc::new(Object::Integer(24)),
+                Rc::new(Object::Integer(25)),
+                Rc::new(Object::Integer(26)),
             ],
         );
     }

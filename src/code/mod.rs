@@ -190,7 +190,7 @@ impl Opcode {
             Opcode::Array => vec![2],
             Opcode::Hash => vec![2],
             Opcode::Index => vec![],
-            Opcode::Call => vec![],
+            Opcode::Call => vec![1],
             Opcode::ReturnValue => vec![],
             Opcode::Return => vec![],
             Opcode::GetLocal => vec![1],
@@ -308,7 +308,7 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         21 => Some(Definition {
             name: "OpCall",
-            operand_widths: vec![],
+            operand_widths: vec![1],
         }),
 
         22 => Some(Definition {
@@ -391,17 +391,18 @@ impl Debug for Instructions {
 
 pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     let length: usize = (op.operand_widths().iter().sum::<usize>()) + 1;
-    let mut instructions = Vec::with_capacity(length);
-    instructions.push(op as u8);
+    let mut instructions = vec![0; length];
+    instructions[0] = op as u8;
 
+    let offset = 1;
     for (i, &o) in operands.iter().enumerate() {
         let width = op.operand_widths()[i];
         match width {
-            1 => instructions.push(o as u8),
+            1 => instructions[offset] = o as u8,
             2 => {
                 let bytes = (o as u16).to_be_bytes();
-                instructions.push(bytes[0]);
-                instructions.push(bytes[1]);
+                instructions[offset] = bytes[0];
+                instructions[offset + 1] = bytes[1];
             }
             _ => panic!("invalid operand width"),
         }

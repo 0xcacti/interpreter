@@ -225,6 +225,7 @@ impl VM {
                 }
 
                 Opcode::Call => {
+                    self.current_frame().ip += 1;
                     let fun = self.stack[self.sp - 1].clone();
                     match &*fun {
                         Object::CompiledFunction(_, num_locals) => {

@@ -225,11 +225,13 @@ impl VM {
                 }
 
                 Opcode::Call => {
+                    let num_args = code::read_u8(&instructions, ip + 1) as usize;
                     self.current_frame().ip += 1;
-                    let fun = self.stack[self.sp - 1].clone();
+
+                    let fun = self.stack[self.sp - 1 - num_args].clone();
                     match &*fun {
                         Object::CompiledFunction(_, num_locals) => {
-                            let frame = Frame::new(fun.clone(), self.sp).unwrap();
+                            let frame = Frame::new(fun.clone(), self.sp - num_args).unwrap();
                             let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
                             self.sp += base_pointer + *num_locals;
@@ -1097,5 +1099,20 @@ mod test {
             },
         ];
         run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_functions_with_arguments_and_bindings() {
+        let test = vec![
+            VmTest {
+                input: "let identity = fn(a) { a; }; identity(4);".to_string(),
+                expected: Object::Integer(4),
+            },
+            VmTest {
+                input: "let sum = fn(a, b) { a + b; }; sum(1, 2);".to_string(),
+                expected: Object::Integer(3),
+            },
+        ];
+        run_vm_tests(test);
     }
 }

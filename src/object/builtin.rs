@@ -1,8 +1,8 @@
-use crate::evaluator::error::EvaluatorError;
 use std::fmt;
 use std::rc::Rc;
 
-use super::object::Object;
+use super::error::ObjectError;
+use super::Object;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Builtin {
@@ -28,14 +28,14 @@ impl Builtin {
             _ => None,
         }
     }
-    pub fn apply(&self, args: &Vec<Rc<Object>>) -> Result<Rc<Object>, EvaluatorError> {
+    pub fn apply(&self, args: &Vec<Rc<Object>>) -> Result<Rc<Object>, ObjectError> {
         match self {
             Builtin::Len => {
                 check_argument_count(1, args.len())?;
                 match *args[0] {
                     Object::String(ref s) => Ok(Rc::new(Object::Integer(s.len() as i64))),
                     Object::Array(ref a) => Ok(Rc::new(Object::Integer(a.len() as i64))),
-                    _ => Err(EvaluatorError::new(format!(
+                    _ => Err(ObjectError::new(format!(
                         "argument to `len` not supported, got {}",
                         args[0]
                     ))),
@@ -51,7 +51,7 @@ impl Builtin {
                             Ok(Rc::new(Object::Null))
                         }
                     }
-                    _ => Err(EvaluatorError::new(format!(
+                    _ => Err(ObjectError::new(format!(
                         "argument to `first` must be ARRAY, got {}",
                         args[0]
                     ))),
@@ -68,7 +68,7 @@ impl Builtin {
                             Ok(Rc::new(Object::Null))
                         }
                     }
-                    _ => Err(EvaluatorError::new(format!(
+                    _ => Err(ObjectError::new(format!(
                         "argument to `last` must be ARRAY, got {}",
                         args[0]
                     ))),
@@ -88,7 +88,7 @@ impl Builtin {
                             Ok(Rc::new(Object::Null))
                         }
                     }
-                    _ => Err(EvaluatorError::new(format!(
+                    _ => Err(ObjectError::new(format!(
                         "argument to `rest` must be ARRAY, got {}",
                         args[0]
                     ))),
@@ -105,7 +105,7 @@ impl Builtin {
                         new_array.push(args[1].clone());
                         Ok(Rc::new(Object::Array(new_array)))
                     }
-                    _ => Err(EvaluatorError::new(format!(
+                    _ => Err(ObjectError::new(format!(
                         "argument to `push` must be ARRAY, got {}",
                         args[0]
                     ))),
@@ -129,9 +129,9 @@ impl Builtin {
     }
 }
 
-fn check_argument_count(expected: usize, actual: usize) -> Result<(), EvaluatorError> {
+fn check_argument_count(expected: usize, actual: usize) -> Result<(), ObjectError> {
     if expected != actual {
-        Err(EvaluatorError::new(format!(
+        Err(ObjectError::new(format!(
             "wrong number of arguments. expected={}, got={}",
             expected, actual
         )))

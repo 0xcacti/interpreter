@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::object::Object;
+use super::Object;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {

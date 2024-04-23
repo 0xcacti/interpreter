@@ -4,7 +4,7 @@ pub mod frame;
 use crate::{
     code::{self, Instructions, Opcode},
     compiler,
-    evaluator::object::Object,
+    object::Object,
 };
 use error::VmError;
 

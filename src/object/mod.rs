@@ -1,3 +1,7 @@
+pub mod builtin;
+pub mod environment;
+pub mod error;
+
 use std::{
     collections::HashMap,
     fmt::{Display, Formatter, Result},
@@ -5,10 +9,12 @@ use std::{
     rc::Rc,
 };
 
+use crate::code;
 use crate::parser::ast::{Node, Statement};
-use crate::{code, evaluator::builtin::Builtin};
 
-use super::environment::Env;
+use environment::Env;
+
+use self::builtin::Builtin;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {

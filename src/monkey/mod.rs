@@ -4,9 +4,9 @@ use strum_macros::{Display, EnumString};
 
 use crate::compiler::symbol_table::SymbolTable;
 use crate::compiler::Compiler;
-use crate::evaluator::environment::Environment;
-use crate::evaluator::object::Object;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
+use crate::object::environment::Environment;
+use crate::object::Object;
 use crate::utils;
 use crate::vm::{GLOBAL_SIZE, VM};
 

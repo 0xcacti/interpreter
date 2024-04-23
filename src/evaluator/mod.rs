@@ -1,16 +1,13 @@
-pub mod builtin;
-pub mod environment;
 pub mod error;
-pub mod object;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use self::builtin::Builtin;
-use self::environment::{Env, Environment};
 use self::error::EvaluatorError;
-use self::object::Object;
+use crate::object::builtin::Builtin;
+use crate::object::environment::{Env, Environment};
+use crate::object::Object;
 use crate::parser::ast;
 use crate::{parser::ast::*, token::Token};
 
@@ -187,7 +184,7 @@ fn apply_function(
                 _ => Ok(executed),
             }
         }
-        Object::Builtin(builtin) => builtin.apply(args),
+        Object::Builtin(builtin) => builtin.apply(args).map_err(EvaluatorError::from),
         _ => Err(EvaluatorError::new(format!("not a function: {}", function))),
     }
 }
@@ -552,7 +549,7 @@ mod test {
                 },
                 (_, _) => panic!("unexpected types {:?} and {:?}", object, expected_object),
             },
-            (Err(e), Err(expected_err)) => assert_eq!(e.msg, expected_err.msg),
+            (Err(e), Err(expected_err)) => assert_eq!(e, expected_err),
             (_, _) => panic!(
                 "mismatched Ok and Err types {:?} and {:?}",
                 outcome, expected
@@ -739,7 +736,13 @@ mod test {
 
         for (input, expected) in tests {
             let evaluated = test_eval(input.to_string());
-            test_object_is_expected(&evaluated, &Err(EvaluatorError::new(expected.to_string())));
+            match evaluated {
+                Ok(_) => panic!("expected error but got Ok"),
+                Err(e) => match e {
+                    EvaluatorError::Native(e) => assert_eq!(e, expected),
+                    EvaluatorError::Object(e) => assert_eq!(e.to_string(), expected),
+                },
+            }
         }
     }
 
@@ -1153,7 +1156,6 @@ mod test {
             }
             _ => panic!("expected macro"),
         }
-        //.get("number".to_string());
     }
 
     #[test]

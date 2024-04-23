@@ -1,4 +1,4 @@
-use crate::{code::Instructions, evaluator::object::Object};
+use crate::{code::Instructions, object::Object};
 use std::rc::Rc;
 
 use super::error::VmError;

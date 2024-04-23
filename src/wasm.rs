@@ -1,5 +1,5 @@
-use crate::evaluator::environment::Environment;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
+use crate::object::environment::Environment;
 use wasm_bindgen::prelude::*;
 
 use crate::lexer::Lexer;

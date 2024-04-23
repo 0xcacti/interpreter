@@ -2,13 +2,13 @@ pub mod error;
 pub mod symbol_table;
 use crate::{
     code::{self, Instructions, Opcode},
-    evaluator::object::Object,
+    object::Object,
     parser::ast::{Expression, Literal, Node, Statement},
     token::Token,
 };
 use error::CompileError;
 
-use std::{cell::RefCell, rc::Rc, str::MatchIndices};
+use std::{cell::RefCell, rc::Rc};
 
 use self::symbol_table::{Scope, SymbolTable};
 

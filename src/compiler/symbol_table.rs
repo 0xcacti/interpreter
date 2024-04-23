@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn it_resolves_nested_loc() {
+    fn it_resolves_nested_locals() {
         let global_table = SymbolTable::new();
         global_table.borrow_mut().define("a".to_string());
         global_table.borrow_mut().define("b".to_string());
@@ -284,6 +284,48 @@ mod tests {
         for symbol in expected_second {
             let result = local_local_table.borrow().resolve(&symbol.name).unwrap();
             assert_eq!(*result, symbol);
+        }
+    }
+
+    #[test]
+    fn it_resolves_builtins() {
+        let global_table = SymbolTable::new();
+        global_table.borrow_mut().define("a".to_string());
+        global_table.borrow_mut().define("b".to_string());
+
+        let local_table = SymbolTable::new_enclosed(global_table.clone());
+        local_table.borrow_mut().define("c".to_string());
+        local_table.borrow_mut().define("d".to_string());
+
+        let local_local_table = SymbolTable::new_enclosed(local_table.clone());
+        local_local_table.borrow_mut().define("e".to_string());
+        local_local_table.borrow_mut().define("f".to_string());
+
+        let expected = vec![
+            Symbol {
+                name: "a".to_string(),
+                scope: Scope::Global,
+                index: 0,
+            },
+            Symbol {
+                name: "c".to_string(),
+                scope: Scope::Global,
+                index: 1,
+            },
+            Symbol {
+                name: "e".to_string(),
+                scope: Scope::Local,
+                index: 0,
+            },
+            Symbol {
+                name: "f".to_string(),
+                scope: Scope::Local,
+                index: 1,
+            },
+        ];
+
+        for (i, symbol) in expected.iter().enumerate() {
+            global_table.define_builtin(i, symbol.name.clone());
         }
     }
 }

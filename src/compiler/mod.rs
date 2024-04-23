@@ -2,7 +2,7 @@ pub mod error;
 pub mod symbol_table;
 use crate::{
     code::{self, Instructions, Opcode},
-    object::Object,
+    object::{builtin::Builtin, Object},
     parser::ast::{Expression, Literal, Node, Statement},
     token::Token,
 };
@@ -39,6 +39,14 @@ pub struct CompilationScope {
 
 impl Compiler {
     pub fn new() -> Self {
+        let global_table = SymbolTable::new();
+
+        for (i, builtin) in Builtin::variants().iter().enumerate() {
+            global_table
+                .borrow_mut()
+                .define_builtin(i, builtin.to_string());
+        }
+
         let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
             last_instruction: EmittedInstruction {
@@ -53,7 +61,7 @@ impl Compiler {
 
         Compiler {
             constants: Rc::new(RefCell::new(vec![])),
-            symbol_table: SymbolTable::new(),
+            symbol_table: global_table,
             scopes: vec![main_scope],
             scope_index: 0,
         }
@@ -63,6 +71,14 @@ impl Compiler {
         symbol_table: Rc<RefCell<SymbolTable>>,
         constants: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
+        let global_table = SymbolTable::new();
+
+        for (i, builtin) in Builtin::variants().iter().enumerate() {
+            global_table
+                .borrow_mut()
+                .define_builtin(i, builtin.to_string());
+        }
+
         let main_scope = CompilationScope {
             instructions: Instructions::new(vec![]),
             last_instruction: EmittedInstruction {
@@ -1240,7 +1256,7 @@ mod test {
                 make(Opcode::Array, vec![0]).into(),
                 make(Opcode::Call, vec![1]).into(),
                 make(Opcode::Pop, vec![]).into(),
-                make(Opcode::GetBuiltin, vec![1]).into(),
+                make(Opcode::GetBuiltin, vec![4]).into(),
                 make(Opcode::Array, vec![0]).into(),
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Call, vec![2]).into(),
@@ -1252,7 +1268,7 @@ mod test {
         test_compilation(
             "fn() { len([]) }",
             vec![
-                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::CompiledFunction(

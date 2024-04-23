@@ -16,6 +16,10 @@ pub enum Builtin {
 }
 
 impl Builtin {
+    pub fn variants() -> Vec<&'static str> {
+        vec!["len", "first", "last", "rest", "push", "echo", "echoln"]
+    }
+
     pub fn lookup(name: &str) -> Option<Object> {
         match name {
             "len" => Some(Object::Builtin(Builtin::Len)),

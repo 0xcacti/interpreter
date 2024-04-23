@@ -1223,4 +1223,41 @@ mod test {
             ],
         );
     }
+
+    #[test]
+    fn it_compiles_builtins() {
+        test_compilation(
+            "len([]); push([], 1);",
+            vec![
+                make(Opcode::GetBuiltin, vec![0]).into(),
+                make(Opcode::Array, vec![0]).into(),
+                make(Opcode::Call, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+                make(Opcode::GetBuiltin, vec![1]).into(),
+                make(Opcode::Array, vec![0]).into(),
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Call, vec![2]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::Integer(1))],
+        );
+
+        test_compilation(
+            "fn() { len([]) }",
+            vec![
+                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![Rc::new(Object::CompiledFunction(
+                concatenate_instructions(&vec![
+                    make(Opcode::GetBuiltin, vec![0]).into(),
+                    make(Opcode::Array, vec![0]).into(),
+                    make(Opcode::Call, vec![1]).into(),
+                    make(Opcode::ReturnValue, vec![]).into(),
+                ]),
+                0,
+                0,
+            ))],
+        );
+    }
 }

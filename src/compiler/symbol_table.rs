@@ -7,6 +7,8 @@ pub enum Scope {
     Global,
     #[strum(serialize = "local")]
     Local,
+    #[strum(serialize = "builtin")]
+    Builtin,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

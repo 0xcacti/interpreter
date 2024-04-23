@@ -32,6 +32,7 @@ pub enum Opcode {
     Return,
     GetLocal,
     SetLocal,
+    GetBuiltin,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -62,6 +63,7 @@ impl From<u8> for Opcode {
             23 => Opcode::Return,
             24 => Opcode::GetLocal,
             25 => Opcode::SetLocal,
+            26 => Opcode::GetBuiltin,
             _ => panic!("unknown opcode"),
         }
     }
@@ -164,6 +166,7 @@ impl Opcode {
             Opcode::Return => "OpReturn",
             Opcode::GetLocal => "OpGetLocal",
             Opcode::SetLocal => "OpSetLocal",
+            Opcode::GetBuiltin => "OpGetBuiltin",
         }
     }
 
@@ -195,6 +198,7 @@ impl Opcode {
             Opcode::Return => vec![],
             Opcode::GetLocal => vec![1],
             Opcode::SetLocal => vec![1],
+            Opcode::GetBuiltin => vec![1],
         }
     }
 }
@@ -328,6 +332,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
 
         25 => Some(Definition {
             name: "OpSetLocal",
+            operand_widths: vec![1],
+        }),
+
+        26 => Some(Definition {
+            name: "OpGetBuiltin",
             operand_widths: vec![1],
         }),
 

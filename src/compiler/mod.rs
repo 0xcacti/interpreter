@@ -110,6 +110,10 @@ impl Compiler {
                         Scope::Local => {
                             self.emit(Opcode::SetLocal, vec![symbol.index]);
                         }
+                        Scope::Builtin => {
+                            // TODO: is this right
+                            return Err(CompileError::new("cannot assign to builtin".to_string()));
+                        }
                     }
                 }
 
@@ -272,6 +276,9 @@ impl Compiler {
                             }
                             Scope::Local => {
                                 self.emit(Opcode::GetLocal, vec![symbol.index]);
+                            }
+                            Scope::Builtin => {
+                                self.emit(Opcode::GetBuiltin, vec![symbol.index]);
                             }
                         },
                         None => {

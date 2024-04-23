@@ -58,6 +58,16 @@ impl SymbolTable {
         symbol
     }
 
+    pub fn define_builtin(&mut self, index: usize, name: String) -> Rc<Symbol> {
+        let symbol = Rc::new(Symbol {
+            name: name.clone(),
+            scope: Scope::Builtin,
+            index,
+        });
+        self.symbols.insert(name.clone(), symbol.clone());
+        symbol
+    }
+
     pub fn resolve(&self, name: &str) -> Option<Rc<Symbol>> {
         let object = self.symbols.get(name);
 
@@ -290,42 +300,48 @@ mod tests {
     #[test]
     fn it_resolves_builtins() {
         let global_table = SymbolTable::new();
-        global_table.borrow_mut().define("a".to_string());
-        global_table.borrow_mut().define("b".to_string());
+        global_table.borrow_mut().define_builtin(0, "a".to_string());
+        global_table.borrow_mut().define_builtin(1, "c".to_string());
+        global_table.borrow_mut().define_builtin(2, "e".to_string());
+        global_table.borrow_mut().define_builtin(3, "f".to_string());
 
         let local_table = SymbolTable::new_enclosed(global_table.clone());
-        local_table.borrow_mut().define("c".to_string());
-        local_table.borrow_mut().define("d".to_string());
-
         let local_local_table = SymbolTable::new_enclosed(local_table.clone());
-        local_local_table.borrow_mut().define("e".to_string());
-        local_local_table.borrow_mut().define("f".to_string());
 
         let expected = vec![
             Symbol {
                 name: "a".to_string(),
-                scope: Scope::Global,
+                scope: Scope::Builtin,
                 index: 0,
             },
             Symbol {
                 name: "c".to_string(),
-                scope: Scope::Global,
+                scope: Scope::Builtin,
                 index: 1,
             },
             Symbol {
                 name: "e".to_string(),
-                scope: Scope::Local,
-                index: 0,
+                scope: Scope::Builtin,
+                index: 2,
             },
             Symbol {
                 name: "f".to_string(),
-                scope: Scope::Local,
-                index: 1,
+                scope: Scope::Builtin,
+                index: 3,
             },
         ];
 
         for (i, symbol) in expected.iter().enumerate() {
-            global_table.define_builtin(i, symbol.name.clone());
+            global_table
+                .borrow_mut()
+                .define_builtin(i, symbol.name.clone());
+        }
+
+        for table in [global_table, local_table, local_local_table].iter() {
+            for symbol in expected.clone() {
+                let result = table.borrow().resolve(&symbol.name).unwrap();
+                assert_eq!(*result, symbol);
+            }
         }
     }
 }

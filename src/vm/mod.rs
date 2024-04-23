@@ -257,9 +257,11 @@ impl VM {
                             let result = builtin
                                 .apply(args)
                                 .map_err(|e| VmError::new(e.to_string()))?;
+                            self.sp -= num_args + 1;
                             self.push(result);
                         }
                         _ => {
+                            println!("{:?}", fun);
                             return Err(VmError::new("Calling non-function".to_string()));
                         }
                     }

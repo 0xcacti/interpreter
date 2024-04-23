@@ -5,6 +5,7 @@ use strum_macros::{Display, EnumString};
 use crate::compiler::symbol_table::SymbolTable;
 use crate::compiler::Compiler;
 use crate::evaluator::{define_macros, evaluate, expand_macros};
+use crate::object::builtin::Builtin;
 use crate::object::environment::Environment;
 use crate::object::Object;
 use crate::utils;
@@ -51,6 +52,9 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
 
     let constants = Rc::new(RefCell::new(vec![]));
     let symbol_table = SymbolTable::new();
+    for (i, v) in Builtin::variants().iter().enumerate() {
+        symbol_table.borrow_mut().define_builtin(i, v.to_string());
+    }
     let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
 
     if let Some(path) = path {

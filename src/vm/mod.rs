@@ -1112,6 +1112,18 @@ mod test {
                 input: "let sum = fn(a, b) { a + b; }; sum(1, 2);".to_string(),
                 expected: Object::Integer(3),
             },
+            VmTest {
+                input: "let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2);".to_string(),
+                expected: Object::Integer(3),
+            },
+            VmTest {
+                input: "let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2) + sum(3, 4);".to_string(),
+                expected: Object::Integer(10),
+            },
+            VmTest {
+                input: "let sum = fn(a, b) { let c = a + b; c; }; let outer = fn() { sum(1, 2) + sum(3, 4); }; outer();".to_string(),
+                expected: Object::Integer(10),
+            },
         ];
         run_vm_tests(test);
     }

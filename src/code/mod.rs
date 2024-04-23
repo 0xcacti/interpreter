@@ -432,6 +432,10 @@ pub fn read_u16(instructions: &Instructions, start: usize) -> u16 {
     u16::from_be_bytes([instructions[start], instructions[start + 1]])
 }
 
+pub fn read_u8(instructions: &Instructions, start: usize) -> u8 {
+    instructions[start]
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

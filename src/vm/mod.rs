@@ -27,14 +27,20 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions));
-        let main_frame = Frame::new(main_fn).unwrap();
+        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions, GLOBAL_SIZE));
+        let main_frame = Frame::new(main_fn, 0).unwrap();
 
-        let mut frames =
-            vec![
-                Frame::new(Rc::new(Object::CompiledFunction(Instructions::new(vec![])))).unwrap();
-                MAX_FRAMES
-            ];
+        let mut frames = vec![
+            Frame::new(
+                Rc::new(Object::CompiledFunction(
+                    Instructions::new(vec![]),
+                    GLOBAL_SIZE,
+                )),
+                0
+            )
+            .unwrap();
+            MAX_FRAMES
+        ];
 
         frames[0] = main_frame;
 
@@ -52,14 +58,20 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions));
-        let main_frame = Frame::new(main_fn).unwrap();
+        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions, GLOBAL_SIZE));
+        let main_frame = Frame::new(main_fn, 0).unwrap();
 
-        let mut frames =
-            vec![
-                Frame::new(Rc::new(Object::CompiledFunction(Instructions::new(vec![])))).unwrap();
-                MAX_FRAMES
-            ];
+        let mut frames = vec![
+            Frame::new(
+                Rc::new(Object::CompiledFunction(
+                    Instructions::new(vec![]),
+                    GLOBAL_SIZE
+                )),
+                0
+            )
+            .unwrap();
+            MAX_FRAMES
+        ];
 
         frames[0] = main_frame;
 
@@ -99,7 +111,7 @@ impl VM {
             self.current_frame().ip += 1;
 
             let instructions = self.current_frame().instructions()?;
-            let mut ip: usize = self
+            let ip: usize = self
                 .current_frame()
                 .ip
                 .try_into()
@@ -215,9 +227,11 @@ impl VM {
                 Opcode::Call => {
                     let fun = self.stack[self.sp - 1].clone();
                     match &*fun {
-                        Object::CompiledFunction(_) => {
-                            let frame = Frame::new(fun.clone()).unwrap();
+                        Object::CompiledFunction(_, num_locals) => {
+                            let frame = Frame::new(fun.clone(), self.sp).unwrap();
+                            let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
+                            self.sp += base_pointer + *num_locals;
                         }
                         _ => {
                             return Err(VmError::new("Calling non-function".to_string()));
@@ -227,21 +241,33 @@ impl VM {
 
                 Opcode::ReturnValue => {
                     let return_value = self.pop();
-                    self.pop_frame();
-                    // pop function
-                    self.pop();
+                    let frame = self.pop_frame();
+                    self.sp = frame.base_pointer - 1;
+
                     self.push(return_value);
                 }
 
                 Opcode::Return => {
-                    self.pop_frame();
-                    self.pop();
+                    let frame = self.pop_frame();
+                    self.sp = frame.base_pointer - 1;
                     self.push(Rc::new(Object::Null));
                 }
 
-                Opcode::SetLocal => {}
+                Opcode::SetLocal => {
+                    let local_index = code::read_u8(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 1;
+                    let frame = self.current_frame();
+                    let base_pointer = frame.base_pointer;
+                    self.stack[base_pointer + local_index] = self.pop();
+                }
 
-                Opcode::GetLocal => {}
+                Opcode::GetLocal => {
+                    let local_index = code::read_u8(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 1;
+                    let frame = self.current_frame();
+                    let base_pointer = frame.base_pointer;
+                    self.push(self.stack[base_pointer + local_index].clone());
+                }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
                 }

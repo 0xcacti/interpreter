@@ -27,7 +27,11 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions, GLOBAL_SIZE));
+        let main_fn = Rc::new(Object::CompiledFunction(
+            bytecode.instructions,
+            GLOBAL_SIZE,
+            0,
+        ));
         let main_frame = Frame::new(main_fn, 0).unwrap();
 
         let mut frames = vec![
@@ -35,8 +39,9 @@ impl VM {
                 Rc::new(Object::CompiledFunction(
                     Instructions::new(vec![]),
                     GLOBAL_SIZE,
+                    0,
                 )),
-                0
+                0,
             )
             .unwrap();
             MAX_FRAMES
@@ -58,14 +63,19 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(bytecode.instructions, GLOBAL_SIZE));
+        let main_fn = Rc::new(Object::CompiledFunction(
+            bytecode.instructions,
+            GLOBAL_SIZE,
+            0,
+        ));
         let main_frame = Frame::new(main_fn, 0).unwrap();
 
         let mut frames = vec![
             Frame::new(
                 Rc::new(Object::CompiledFunction(
                     Instructions::new(vec![]),
-                    GLOBAL_SIZE
+                    GLOBAL_SIZE,
+                    0,
                 )),
                 0
             )
@@ -230,8 +240,14 @@ impl VM {
 
                     let fun = self.stack[self.sp - 1 - num_args].clone();
                     match &*fun {
-                        Object::CompiledFunction(_, num_locals) => {
+                        Object::CompiledFunction(_, num_locals, num_params) => {
                             let frame = Frame::new(fun.clone(), self.sp - num_args).unwrap();
+                            if num_args != *num_params {
+                                return Err(VmError::new(format!(
+                                    "Invalid number of arguments: want {}, got {}",
+                                    num_args, num_params
+                                )));
+                            }
                             let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
                             self.sp += base_pointer + *num_locals;
@@ -502,7 +518,7 @@ mod test {
 
     struct VmTest {
         input: String,
-        expected: Object,
+        expected: Result<Object, VmError>,
     }
 
     fn parse(input: &str) -> ast::Node {
@@ -518,11 +534,18 @@ mod test {
             comp.compile(program).unwrap();
 
             let mut vm = VM::new(comp.bytecode());
-            vm.run().unwrap();
+            let ret = vm.run();
+
+            if let Err(ref ret_err) = test.expected {
+                assert_eq!(ret_err.msg, test.expected.clone().unwrap_err().msg);
+                return;
+            }
+
+            assert!(ret.is_ok());
 
             let last = vm.last_popped_stack_elem();
 
-            test_expected_object(test.expected, last.clone().deref().clone());
+            test_expected_object(test.expected.unwrap(), last.clone().deref().clone());
         }
     }
 
@@ -593,7 +616,10 @@ mod test {
             Object::Hash(expected) => validate_hash_object(actual, expected),
             Object::Null => match actual {
                 Object::Null => {}
-                _ => panic!("object not null"),
+                _ => {
+                    println!("{:?}", actual);
+                    panic!("object not null");
+                }
             },
             _ => panic!("unsupported object type"),
         }
@@ -603,7 +629,7 @@ mod test {
     fn it_adds_two_integers() {
         let tests = vec![VmTest {
             input: "1 + 2".to_string(),
-            expected: Object::Integer(3),
+            expected: Ok(Object::Integer(3)),
         }];
         run_vm_tests(tests);
     }
@@ -612,7 +638,7 @@ mod test {
     fn it_subtracts_two_integers() {
         let tests = vec![VmTest {
             input: "2 - 1".to_string(),
-            expected: Object::Integer(1),
+            expected: Ok(Object::Integer(1)),
         }];
         run_vm_tests(tests);
     }
@@ -621,7 +647,7 @@ mod test {
     fn it_multiplies_two_integers() {
         let tests = vec![VmTest {
             input: "2 * 2".to_string(),
-            expected: Object::Integer(4),
+            expected: Ok(Object::Integer(4)),
         }];
         run_vm_tests(tests);
     }
@@ -630,7 +656,7 @@ mod test {
     fn it_divides_two_integers() {
         let tests = vec![VmTest {
             input: "4 / 2".to_string(),
-            expected: Object::Integer(2),
+            expected: Ok(Object::Integer(2)),
         }];
         run_vm_tests(tests);
     }
@@ -640,11 +666,11 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "true".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "false".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
         ];
         run_vm_tests(tests);
@@ -654,67 +680,67 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "1 < 2".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "1 > 2".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "1 < 1".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "1 > 1".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "1 == 1".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "1 != 1".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "1 == 2".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "1 != 2".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "true == true".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "false == false".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "true == false".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "true != false".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "false != true".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "(1 < 2) == true".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "(1 < 2) == false".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "(1 > 2) == true".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
         ];
 
@@ -726,31 +752,31 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "!true".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "!false".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "!!true".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "!!false".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "!5".to_string(),
-                expected: Object::Boolean(false),
+                expected: Ok(Object::Boolean(false)),
             },
             VmTest {
                 input: "!!5".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
             VmTest {
                 input: "!(if (false) { 5;} )".to_string(),
-                expected: Object::Boolean(true),
+                expected: Ok(Object::Boolean(true)),
             },
         ];
 
@@ -762,19 +788,19 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "-5".to_string(),
-                expected: Object::Integer(-5),
+                expected: Ok(Object::Integer(-5)),
             },
             VmTest {
                 input: "-10".to_string(),
-                expected: Object::Integer(-10),
+                expected: Ok(Object::Integer(-10)),
             },
             VmTest {
                 input: "-50 + 100 + -50".to_string(),
-                expected: Object::Integer(0),
+                expected: Ok(Object::Integer(0)),
             },
             VmTest {
                 input: "(5 + 10 * 2 + 15 / 3) * 2 + -10".to_string(),
-                expected: Object::Integer(50),
+                expected: Ok(Object::Integer(50)),
             },
         ];
 
@@ -786,31 +812,31 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "if (true) { 10 }".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "if (true) { 10 } else { 20 }".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "if (false) { 10 } else { 20 }".to_string(),
-                expected: Object::Integer(20),
+                expected: Ok(Object::Integer(20)),
             },
             VmTest {
                 input: "if (1) { 10 }".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "if (1 < 2) { 10 }".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "if (1 < 2) { 10 } else { 20 }".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "if (1 > 2) { 10 } else { 20 }".to_string(),
-                expected: Object::Integer(20),
+                expected: Ok(Object::Integer(20)),
             },
         ];
         run_vm_tests(tests);
@@ -820,11 +846,11 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "if (false) { 10 }".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "if (1 > 2) { 10 }".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
         ];
 
@@ -833,7 +859,7 @@ mod test {
         // test conditionals of conditionals
         let tests = vec![VmTest {
             input: "if ((if (false) { 10 })) { 10 } else { 20 }".to_string(),
-            expected: Object::Integer(20),
+            expected: Ok(Object::Integer(20)),
         }];
 
         run_vm_tests(tests);
@@ -844,15 +870,15 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "let one = 1; one".to_string(),
-                expected: Object::Integer(1),
+                expected: Ok(Object::Integer(1)),
             },
             VmTest {
                 input: "let one = 1; let two = 2; one + two".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: "let one = 1; let two = one + one; one + two".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
         ];
         run_vm_tests(tests);
@@ -863,15 +889,15 @@ mod test {
         let tests = vec![
             VmTest {
                 input: r#""monkey""#.to_string(),
-                expected: Object::String("monkey".to_string()),
+                expected: Ok(Object::String("monkey".to_string())),
             },
             VmTest {
                 input: "\"mon\" + \"key\"".to_string(),
-                expected: Object::String("monkey".to_string()),
+                expected: Ok(Object::String("monkey".to_string())),
             },
             VmTest {
                 input: "\"mon\" + \"key\" + \"banana\"".to_string(),
-                expected: Object::String("monkeybanana".to_string()),
+                expected: Ok(Object::String("monkeybanana".to_string())),
             },
         ];
         run_vm_tests(tests);
@@ -882,34 +908,34 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "[]".to_string(),
-                expected: Object::Array(vec![]),
+                expected: Ok(Object::Array(vec![])),
             },
             VmTest {
                 input: "[1, 2, 3]".to_string(),
-                expected: Object::Array(vec![
+                expected: Ok(Object::Array(vec![
                     Rc::new(Object::Integer(1)),
                     Rc::new(Object::Integer(2)),
                     Rc::new(Object::Integer(3)),
-                ]),
+                ])),
             },
             VmTest {
                 input: "[1 + 2, 3 * 4, 5 + 6]".to_string(),
-                expected: Object::Array(vec![
+                expected: Ok(Object::Array(vec![
                     Rc::new(Object::Integer(3)),
                     Rc::new(Object::Integer(12)),
                     Rc::new(Object::Integer(11)),
-                ]),
+                ])),
             },
             VmTest {
                 input: r#"["a", "b", "c"] + ["e", "f", "g"]"#.to_string(),
-                expected: Object::Array(vec![
+                expected: Ok(Object::Array(vec![
                     Rc::new(Object::String("a".to_string())),
                     Rc::new(Object::String("b".to_string())),
                     Rc::new(Object::String("c".to_string())),
                     Rc::new(Object::String("e".to_string())),
                     Rc::new(Object::String("f".to_string())),
                     Rc::new(Object::String("g".to_string())),
-                ]),
+                ])),
             },
         ];
 
@@ -921,7 +947,7 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "{}".to_string(),
-                expected: Object::Hash(HashMap::new()),
+                expected: Ok(Object::Hash(HashMap::new())),
             },
             VmTest {
                 input: "{1: 2, 2: 3}".to_string(),
@@ -931,7 +957,7 @@ mod test {
                         .insert(Rc::new(Object::Integer(1)), Rc::new(Object::Integer(2)));
                     expected_hashmap
                         .insert(Rc::new(Object::Integer(2)), Rc::new(Object::Integer(3)));
-                    Object::Hash(expected_hashmap)
+                    Ok(Object::Hash(expected_hashmap))
                 },
             },
             VmTest {
@@ -942,7 +968,7 @@ mod test {
                         .insert(Rc::new(Object::Integer(2)), Rc::new(Object::Integer(4)));
                     expected_hashmap
                         .insert(Rc::new(Object::Integer(6)), Rc::new(Object::Integer(16)));
-                    Object::Hash(expected_hashmap)
+                    Ok(Object::Hash(expected_hashmap))
                 },
             },
             VmTest {
@@ -962,7 +988,7 @@ mod test {
                             Rc::new(Object::String("z".to_string())),
                         ])),
                     );
-                    Object::Hash(expected_hashmap)
+                    Ok(Object::Hash(expected_hashmap))
                 },
             },
         ];
@@ -975,43 +1001,43 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "[1, 2, 3][1]".to_string(),
-                expected: Object::Integer(2),
+                expected: Ok(Object::Integer(2)),
             },
             VmTest {
                 input: "[1, 2, 3][0 + 2]".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: "[[1, 2, 3]][0][0]".to_string(),
-                expected: Object::Integer(1),
+                expected: Ok(Object::Integer(1)),
             },
             VmTest {
                 input: "[][0]".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "[1, 2, 3][99]".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "[1, 2, 3][-1]".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "{1: 1, 2: 2}[1]".to_string(),
-                expected: Object::Integer(1),
+                expected: Ok(Object::Integer(1)),
             },
             VmTest {
                 input: "{1: 1, 2: 2}[2]".to_string(),
-                expected: Object::Integer(2),
+                expected: Ok(Object::Integer(2)),
             },
             VmTest {
                 input: "{1: 1}[0]".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "{}[0]".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
         ];
 
@@ -1023,25 +1049,25 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "let fivePlusTen = fn() { 5 + 10; }; fivePlusTen();".to_string(),
-                expected: Object::Integer(15),
+                expected: Ok(Object::Integer(15)),
             },
             VmTest {
                 input: "let one = fn() { 1; }; let two = fn() { 2; }; one() + two();".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: "let a = fn() { 1; }; let b = fn() { a() + 1; }; let c = fn() { b() + 1; }; c();".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
 
             // With explicit return statement
             VmTest {
                 input: "let earlyExit = fn() { return 99; 100; }; earlyExit();".to_string(),
-                expected: Object::Integer(99),
+                expected: Ok(Object::Integer(99)),
             },
             VmTest {
                 input: "let earlyExit = fn() { return 99; return 100; }; earlyExit();".to_string(),
-                expected: Object::Integer(99),
+                expected: Ok(Object::Integer(99)),
             }
         ];
         run_vm_tests(tests);
@@ -1052,11 +1078,11 @@ mod test {
         let tests = vec![
             VmTest{
                 input: "let noReturn = fn() { }; noReturn();".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             },
             VmTest {
                 input: "let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();".to_string(),
-                expected: Object::Null,
+                expected: Ok(Object::Null),
             }
         ];
         run_vm_tests(tests);
@@ -1067,27 +1093,27 @@ mod test {
         let tests = vec![
             VmTest {
                 input: "let one = fn() { let one = 1; one }; one();".to_string(),
-                expected: Object::Integer(1),
+                expected: Ok(Object::Integer(1)),
             },
             VmTest {
                 input:
                     "let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; oneAndTwo();"
                         .to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: r#"let oneAndTwo = fn() { let one = 1; let two = 2; one + two; }; 
                     let threeAndFour = fn() { let three = 3; let four = 4; three + four; }; 
                     oneAndTwo() + threeAndFour();"#
                     .to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: r#"let firstFoobar = fn() { let foobar = 50; foobar; }; 
                     let secondFoobar = fn() { let foobar = 100; foobar; }; 
                     firstFoobar() + secondFoobar();"#
                     .to_string(),
-                expected: Object::Integer(150),
+                expected: Ok(Object::Integer(150)),
             },
             VmTest {
                 input: r#"let globalSeed = 50; 
@@ -1095,7 +1121,7 @@ mod test {
                     let minusTwo = fn() { let num = 2; globalSeed - num; }; 
                     minusOne() + minusTwo();"#
                     .to_string(),
-                expected: Object::Integer(97),
+                expected: Ok(Object::Integer(97)),
             },
         ];
         run_vm_tests(tests);
@@ -1106,25 +1132,62 @@ mod test {
         let test = vec![
             VmTest {
                 input: "let identity = fn(a) { a; }; identity(4);".to_string(),
-                expected: Object::Integer(4),
+                expected: Ok(Object::Integer(4)),
             },
             VmTest {
                 input: "let sum = fn(a, b) { a + b; }; sum(1, 2);".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: "let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2);".to_string(),
-                expected: Object::Integer(3),
+                expected: Ok(Object::Integer(3)),
             },
             VmTest {
                 input: "let sum = fn(a, b) { let c = a + b; c; }; sum(1, 2) + sum(3, 4);".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
             },
             VmTest {
                 input: "let sum = fn(a, b) { let c = a + b; c; }; let outer = fn() { sum(1, 2) + sum(3, 4); }; outer();".to_string(),
-                expected: Object::Integer(10),
+                expected: Ok(Object::Integer(10)),
+            },
+            VmTest {
+                input: r#"let globalNum = 10; 
+                    let sum = fn(a, b) { 
+                        let c = a + b; 
+                        c + globalNum; 
+                    }; 
+                    let outer = fn() { 
+                        sum(1, 2) + sum(3, 4) + globalNum; 
+                    }; 
+                    outer() + globalNum;"#.to_string(),
+                expected: Ok(Object::Integer(50)),
             },
         ];
         run_vm_tests(test);
+    }
+
+    #[test]
+    fn it_executes_calling_functions_with_wrong_arguments() {
+        let tests = vec![
+            VmTest {
+                input: "fn() { 1; }(1);".to_string(),
+                expected: Err(VmError::new(
+                    "Invalid number of arguments: want 0, got 1".to_string(),
+                )),
+            },
+            VmTest {
+                input: "fn(a) { a; }();".to_string(),
+                expected: Err(VmError::new(
+                    "Invalid number of arguments: want 1, got 0".to_string(),
+                )),
+            },
+            VmTest {
+                input: "fn(a, b) { a + b; }(1);".to_string(),
+                expected: Err(VmError::new(
+                    "Invalid number of arguments: want 2, got 1".to_string(),
+                )),
+            },
+        ];
+        run_vm_tests(tests);
     }
 }

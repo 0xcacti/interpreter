@@ -289,6 +289,7 @@ impl Compiler {
                 Expression::Function(parameters, body) => {
                     self.enter_scope();
 
+                    let num_params = parameters.len();
                     for parameter in parameters {
                         self.symbol_table.borrow_mut().define(parameter);
                     }
@@ -310,8 +311,11 @@ impl Compiler {
 
                     let num_locals = self.symbol_table.borrow().num_definitions;
                     let fn_instructions = self.leave_scope();
-                    let compiled_fn =
-                        Rc::new(Object::CompiledFunction(fn_instructions, num_locals));
+                    let compiled_fn = Rc::new(Object::CompiledFunction(
+                        fn_instructions,
+                        num_locals,
+                        num_params,
+                    ));
 
                     let constant_index = self.add_constant(compiled_fn);
 
@@ -481,10 +485,11 @@ mod test {
                     Object::String(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not string"),
                 },
-                Object::CompiledFunction(expected, n) => match &*actual[i] {
-                    Object::CompiledFunction(actual, a) => {
+                Object::CompiledFunction(expected, n, m) => match &*actual[i] {
+                    Object::CompiledFunction(actual, a, b) => {
                         assert_eq!(expected, actual);
                         assert_eq!(n, a);
+                        assert_eq!(m, b);
                     }
                     _ => panic!("constant not a compiled function"),
                 },
@@ -933,6 +938,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
+                    0,
                 )),
             ],
         );
@@ -953,6 +959,7 @@ mod test {
                         make(Opcode::Constant, vec![1]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
+                    0,
                     0,
                 )),
             ],
@@ -975,6 +982,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
+                    0,
                 )),
             ],
         );
@@ -987,6 +995,7 @@ mod test {
             ],
             vec![Rc::new(Object::CompiledFunction(
                 concatenate_instructions(&vec![make(Opcode::Return, vec![]).into()]),
+                0,
                 0,
             ))],
         );
@@ -1009,6 +1018,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
+                    0,
                 )),
             ],
         );
@@ -1030,6 +1040,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
+                    0,
                 )),
             ],
         );
@@ -1050,6 +1061,7 @@ mod test {
                         make(Opcode::GetLocal, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
+                    1,
                     1,
                 )),
                 Rc::new(Object::Integer(24)),
@@ -1078,6 +1090,7 @@ mod test {
                         make(Opcode::GetLocal, vec![2]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
+                    3,
                     3,
                 )),
                 Rc::new(Object::Integer(24)),
@@ -1158,6 +1171,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
+                    0,
                 )),
             ],
         );
@@ -1178,6 +1192,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     1,
+                    0,
                 )),
             ],
         );
@@ -1203,6 +1218,7 @@ mod test {
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     2,
+                    0,
                 )),
             ],
         );

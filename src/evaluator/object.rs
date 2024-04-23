@@ -19,7 +19,7 @@ pub enum Object {
     Hash(HashMap<Rc<Object>, Rc<Object>>),
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
-    CompiledFunction(code::Instructions, usize),
+    CompiledFunction(code::Instructions, usize, usize), // instructions, num_locals, num_parameters
     Builtin(Builtin),
     Macro(Vec<String>, Vec<Statement>, Env),
     Quote(Node),
@@ -68,7 +68,7 @@ impl Display for Object {
                 let params = parameters.join(", ");
                 write!(f, "macro({}) {{...}}", params)
             }
-            Object::CompiledFunction(instructions, _) => {
+            Object::CompiledFunction(instructions, _, _) => {
                 write!(f, "{}", instructions)
             }
         }

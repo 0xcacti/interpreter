@@ -4,7 +4,7 @@ pub mod frame;
 use crate::{
     code::{self, Instructions, Opcode},
     compiler,
-    object::Object,
+    object::{builtin::Builtin, Object},
 };
 use error::VmError;
 
@@ -252,6 +252,13 @@ impl VM {
                             self.push_frame(frame);
                             self.sp += base_pointer + *num_locals;
                         }
+                        Object::Builtin(builtin) => {
+                            let args = &self.stack[self.sp - num_args..self.sp].to_vec();
+                            let result = builtin
+                                .apply(args)
+                                .map_err(|e| VmError::new(e.to_string()))?;
+                            self.push(result);
+                        }
                         _ => {
                             return Err(VmError::new("Calling non-function".to_string()));
                         }
@@ -286,6 +293,12 @@ impl VM {
                     let frame = self.current_frame();
                     let base_pointer = frame.base_pointer;
                     self.push(self.stack[base_pointer + local_index].clone());
+                }
+
+                Opcode::GetBuiltin => {
+                    let builtin_index = code::read_u8(&instructions, ip + 1);
+                    self.current_frame().ip += 1;
+                    self.push(Rc::new(Object::Builtin(builtin_index.into())));
                 }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
@@ -1189,5 +1202,100 @@ mod test {
             },
         ];
         run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_builtins() {
+        let tests = vec![
+            VmTest {
+                input: r#"len("")"#.to_string(),
+                expected: Ok(Object::Integer(0)),
+            },
+            VmTest {
+                input: r#"len("four")"#.to_string(),
+                expected: Ok(Object::Integer(4)),
+            },
+            VmTest {
+                input: r#"len("hello world")"#.to_string(),
+                expected: Ok(Object::Integer(11)),
+            },
+            VmTest {
+                input: r#"len(1)"#.to_string(),
+                expected: Err(VmError::new(
+                    "Argument to `len` not supported, got Integer".to_string(),
+                )),
+            },
+            VmTest {
+                input: r#"len("one", "two")"#.to_string(),
+                expected: Err(VmError::new(
+                    "Wrong number of arguments. got=2, want=1".to_string(),
+                )),
+            },
+            VmTest {
+                input: r#"len([1, 2, 3])"#.to_string(),
+                expected: Ok(Object::Integer(3)),
+            },
+            VmTest {
+                input: r#"len([])"#.to_string(),
+                expected: Ok(Object::Integer(0)),
+            },
+            VmTest {
+                input: r#"echo("hello", "world")"#.to_string(),
+                expected: Ok(Object::Null),
+            },
+            VmTest {
+                input: r#"echoln("hello", "world")"#.to_string(),
+                expected: Ok(Object::Null),
+            },
+            VmTest {
+                input: r#"first([1, 2, 3])"#.to_string(),
+                expected: Ok(Object::Integer(1)),
+            },
+            VmTest {
+                input: r#"first([])"#.to_string(),
+                expected: Ok(Object::Null),
+            },
+            VmTest {
+                input: r#"last([1, 2, 3])"#.to_string(),
+                expected: Ok(Object::Integer(3)),
+            },
+            VmTest {
+                input: r#"last([])"#.to_string(),
+                expected: Ok(Object::Null),
+            },
+            VmTest {
+                input: r#"last(1)"#.to_string(),
+                expected: Err(VmError::new(
+                    "Argument to `last` must be ARRAY, got Integer".to_string(),
+                )),
+            },
+            VmTest {
+                input: r#"rest([1, 2, 3])"#.to_string(),
+                expected: Ok(Object::Array(vec![
+                    Rc::new(Object::Integer(2)),
+                    Rc::new(Object::Integer(3)),
+                ])),
+            },
+            VmTest {
+                input: r#"rest([])"#.to_string(),
+                expected: Ok(Object::Null),
+            },
+            VmTest {
+                input: r#"push([1, 2, 3], 4)"#.to_string(),
+                expected: Ok(Object::Array(vec![
+                    Rc::new(Object::Integer(1)),
+                    Rc::new(Object::Integer(2)),
+                    Rc::new(Object::Integer(3)),
+                    Rc::new(Object::Integer(4)),
+                ])),
+            },
+            VmTest {
+                input: r#"push(1, 2)"#.to_string(),
+                expected: Err(VmError::new(
+                    "Argument to `push` must be ARRAY, got Integer".to_string(),
+                )),
+            },
+        ];
+        run_vm_tests(tests)
     }
 }

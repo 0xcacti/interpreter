@@ -5,6 +5,7 @@ use super::error::ObjectError;
 use super::Object;
 
 #[derive(Debug, PartialEq, Clone)]
+#[repr(u8)]
 pub enum Builtin {
     Len,
     First,
@@ -13,6 +14,21 @@ pub enum Builtin {
     Push,
     Echo,
     Echoln,
+}
+
+impl From<u8> for Builtin {
+    fn from(op: u8) -> Builtin {
+        match op {
+            0 => Builtin::Len,
+            1 => Builtin::First,
+            2 => Builtin::Last,
+            3 => Builtin::Rest,
+            4 => Builtin::Push,
+            5 => Builtin::Echo,
+            6 => Builtin::Echoln,
+            _ => panic!("unknown builtin index"),
+        }
+    }
 }
 
 impl Builtin {

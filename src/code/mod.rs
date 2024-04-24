@@ -33,6 +33,7 @@ pub enum Opcode {
     GetLocal,
     SetLocal,
     GetBuiltin,
+    Closure,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -64,6 +65,7 @@ impl From<u8> for Opcode {
             24 => Opcode::GetLocal,
             25 => Opcode::SetLocal,
             26 => Opcode::GetBuiltin,
+            27 => Opcode::Closure,
             _ => panic!("unknown opcode"),
         }
     }
@@ -167,6 +169,7 @@ impl Opcode {
             Opcode::GetLocal => "OpGetLocal",
             Opcode::SetLocal => "OpSetLocal",
             Opcode::GetBuiltin => "OpGetBuiltin",
+            Opcode::Closure => "OpClosure",
         }
     }
 
@@ -199,6 +202,7 @@ impl Opcode {
             Opcode::GetLocal => vec![1],
             Opcode::SetLocal => vec![1],
             Opcode::GetBuiltin => vec![1],
+            Opcode::Closure => vec![2, 1],
         }
     }
 }
@@ -340,6 +344,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
             operand_widths: vec![1],
         }),
 
+        27 => Some(Definition {
+            name: "OpClosure",
+            operand_widths: vec![2, 1],
+        }),
+
         _ => None,
     }
 }
@@ -357,6 +366,7 @@ pub fn format_instruction(def: &Definition, operands: &Vec<usize>) -> String {
     match operand_count {
         0 => return def.name.to_string(),
         1 => return format!("{} {}", def.name, operands[0]).to_string(),
+        2 => return format!("{} {} {}", def.name, operands[0], operands[1]).to_string(),
         _ => return format!("ERROR: unhandled operand_count for {}\n", def.name),
     }
 }
@@ -403,7 +413,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
     let mut instructions = vec![0; length];
     instructions[0] = op as u8;
 
-    let offset = 1;
+    let mut offset = 1;
     for (i, &o) in operands.iter().enumerate() {
         let width = op.operand_widths()[i];
         match width {
@@ -415,6 +425,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Vec<u8> {
             }
             _ => panic!("invalid operand width"),
         }
+        offset += width;
     }
     instructions
 }
@@ -468,6 +479,11 @@ mod test {
                 vec![255],
                 vec![Opcode::GetLocal as u8, 255],
             ),
+            (
+                Opcode::Closure,
+                vec![65534, 255],
+                vec![Opcode::Closure as u8, 255, 254, 255],
+            ),
         ];
         for (opcode, operands, expected) in tests {
             check(opcode, operands, expected);
@@ -492,6 +508,11 @@ mod test {
                 operands: vec![255],
                 bytes_read: 1,
             },
+            OperandTest {
+                opcode: Opcode::Closure,
+                operands: vec![65535, 255],
+                bytes_read: 3,
+            },
         ];
 
         for test in tests {
@@ -514,13 +535,17 @@ mod test {
     fn it_prints_correctly() {
         let instructions = vec![
             make(Opcode::Add, vec![]),
+            make(Opcode::GetLocal, vec![1]),
             make(Opcode::Constant, vec![2]),
-            make(Opcode::Constant, vec![65534]),
+            make(Opcode::Constant, vec![65535]),
+            make(Opcode::Closure, vec![65535, 255]),
         ];
 
         let expected = r#"0000 OpAdd
-0001 OpConstant 2
-0004 OpConstant 65534
+0001 OpGetLocal 1
+0003 OpConstant 2
+0006 OpConstant 65535
+0009 OpClosure 65535 255
 "#;
 
         let concattenated = instructions.into_iter().flatten().collect::<Instructions>();

@@ -116,6 +116,9 @@ pub fn interpret_chunk(mode: ExecMode, contents: String) -> Result<()> {
 
     let constants = Rc::new(RefCell::new(vec![]));
     let symbol_table = SymbolTable::new();
+    for (i, v) in Builtin::variants().iter().enumerate() {
+        symbol_table.borrow_mut().define_builtin(i, v.to_string());
+    }
     let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
 
     let result = match mode {

@@ -4,7 +4,7 @@ pub mod frame;
 use crate::{
     code::{self, Instructions, Opcode},
     compiler,
-    object::{builtin::Builtin, Object},
+    object::{CompiledFunction, Object},
 };
 use error::VmError;
 
@@ -27,20 +27,20 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(
+        let main_fn = Rc::new(Object::CompiledFunction(CompiledFunction::new(
             bytecode.instructions,
             GLOBAL_SIZE,
             0,
-        ));
+        )));
         let main_frame = Frame::new(main_fn, 0).unwrap();
 
         let mut frames = vec![
             Frame::new(
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     Instructions::new(vec![]),
                     GLOBAL_SIZE,
                     0,
-                )),
+                ))),
                 0,
             )
             .unwrap();
@@ -63,20 +63,20 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(
+        let main_fn = Rc::new(Object::CompiledFunction(CompiledFunction::new(
             bytecode.instructions,
             GLOBAL_SIZE,
             0,
-        ));
+        )));
         let main_frame = Frame::new(main_fn, 0).unwrap();
 
         let mut frames = vec![
             Frame::new(
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     Instructions::new(vec![]),
                     GLOBAL_SIZE,
                     0,
-                )),
+                ))),
                 0
             )
             .unwrap();
@@ -240,17 +240,18 @@ impl VM {
 
                     let fun = self.stack[self.sp - 1 - num_args].clone();
                     match &*fun {
-                        Object::CompiledFunction(_, num_locals, num_params) => {
+                        Object::CompiledFunction(compiled_function) => {
                             let frame = Frame::new(fun.clone(), self.sp - num_args).unwrap();
-                            if num_args != *num_params {
+                            if num_args != compiled_function.num_parameters() {
                                 return Err(VmError::new(format!(
                                     "Invalid number of arguments: want {}, got {}",
-                                    num_args, num_params
+                                    num_args,
+                                    compiled_function.num_parameters()
                                 )));
                             }
                             let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
-                            self.sp += base_pointer + *num_locals;
+                            self.sp += base_pointer + compiled_function.num_locals();
                         }
                         Object::Builtin(builtin) => {
                             let args = &self.stack[self.sp - num_args..self.sp].to_vec();
@@ -261,7 +262,6 @@ impl VM {
                             self.push(result);
                         }
                         _ => {
-                            println!("{:?}", fun);
                             return Err(VmError::new("Calling non-function".to_string()));
                         }
                     }

@@ -2,7 +2,7 @@ pub mod error;
 pub mod symbol_table;
 use crate::{
     code::{self, Instructions, Opcode},
-    object::{builtin::Builtin, Object},
+    object::{builtin::Builtin, CompiledFunction, Object},
     parser::ast::{Expression, Literal, Node, Statement},
     token::Token,
 };
@@ -334,11 +334,11 @@ impl Compiler {
 
                     let num_locals = self.symbol_table.borrow().num_definitions;
                     let fn_instructions = self.leave_scope();
-                    let compiled_fn = Rc::new(Object::CompiledFunction(
+                    let compiled_fn = Rc::new(Object::CompiledFunction(CompiledFunction::new(
                         fn_instructions,
                         num_locals,
                         num_params,
-                    ));
+                    )));
 
                     let constant_index = self.add_constant(compiled_fn);
 
@@ -508,11 +508,9 @@ mod test {
                     Object::String(actual) => assert_eq!(expected, actual),
                     _ => panic!("constant not string"),
                 },
-                Object::CompiledFunction(expected, n, m) => match &*actual[i] {
-                    Object::CompiledFunction(actual, a, b) => {
-                        assert_eq!(expected, actual);
-                        assert_eq!(n, a);
-                        assert_eq!(m, b);
+                Object::CompiledFunction(compiled_function) => match &*actual[i] {
+                    Object::CompiledFunction(actual_compiled_function) => {
+                        assert_eq!(compiled_function, actual_compiled_function)
                     }
                     _ => panic!("constant not a compiled function"),
                 },
@@ -953,7 +951,7 @@ mod test {
             vec![
                 Rc::new(Object::Integer(5)),
                 Rc::new(Object::Integer(10)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::Constant, vec![1]).into(),
@@ -962,7 +960,7 @@ mod test {
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -975,7 +973,7 @@ mod test {
             vec![
                 Rc::new(Object::Integer(1)),
                 Rc::new(Object::Integer(2)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::Pop, vec![]).into(),
@@ -984,7 +982,7 @@ mod test {
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -997,7 +995,7 @@ mod test {
             vec![
                 Rc::new(Object::Integer(5)),
                 Rc::new(Object::Integer(10)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::Constant, vec![1]).into(),
@@ -1006,7 +1004,7 @@ mod test {
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -1016,11 +1014,11 @@ mod test {
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![Rc::new(Object::CompiledFunction(
+            vec![Rc::new(Object::CompiledFunction(CompiledFunction::new(
                 concatenate_instructions(&vec![make(Opcode::Return, vec![]).into()]),
                 0,
                 0,
-            ))],
+            )))],
         );
     }
 
@@ -1035,14 +1033,14 @@ mod test {
             ],
             vec![
                 Rc::new(Object::Integer(24)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -1057,14 +1055,14 @@ mod test {
             ],
             vec![
                 Rc::new(Object::Integer(24)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -1079,14 +1077,14 @@ mod test {
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::GetLocal, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     1,
                     1,
-                )),
+                ))),
                 Rc::new(Object::Integer(24)),
             ],
         );
@@ -1104,7 +1102,7 @@ mod test {
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::GetLocal, vec![0]).into(),
                         make(Opcode::Pop, vec![]).into(),
@@ -1115,7 +1113,7 @@ mod test {
                     ]),
                     3,
                     3,
-                )),
+                ))),
                 Rc::new(Object::Integer(24)),
                 Rc::new(Object::Integer(25)),
                 Rc::new(Object::Integer(26)),
@@ -1188,14 +1186,14 @@ mod test {
             ],
             vec![
                 Rc::new(Object::Integer(55)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::GetGlobal, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
                     0,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -1207,7 +1205,7 @@ mod test {
             ],
             vec![
                 Rc::new(Object::Integer(55)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::SetLocal, vec![0]).into(),
@@ -1216,7 +1214,7 @@ mod test {
                     ]),
                     1,
                     0,
-                )),
+                ))),
             ],
         );
 
@@ -1229,7 +1227,7 @@ mod test {
             vec![
                 Rc::new(Object::Integer(55)),
                 Rc::new(Object::Integer(77)),
-                Rc::new(Object::CompiledFunction(
+                Rc::new(Object::CompiledFunction(CompiledFunction::new(
                     concatenate_instructions(&vec![
                         make(Opcode::Constant, vec![0]).into(),
                         make(Opcode::SetLocal, vec![0]).into(),
@@ -1242,7 +1240,7 @@ mod test {
                     ]),
                     2,
                     0,
-                )),
+                ))),
             ],
         );
     }
@@ -1271,7 +1269,7 @@ mod test {
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
-            vec![Rc::new(Object::CompiledFunction(
+            vec![Rc::new(Object::CompiledFunction(CompiledFunction::new(
                 concatenate_instructions(&vec![
                     make(Opcode::GetBuiltin, vec![0]).into(),
                     make(Opcode::Array, vec![0]).into(),
@@ -1280,7 +1278,7 @@ mod test {
                 ]),
                 0,
                 0,
-            ))],
+            )))],
         );
     }
 }

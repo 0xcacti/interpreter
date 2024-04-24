@@ -16,6 +16,35 @@ use environment::Env;
 
 use self::builtin::Builtin;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompiledFunction {
+    pub instructions: code::Instructions,
+    pub num_locals: usize,
+    pub num_parameters: usize,
+}
+
+impl CompiledFunction {
+    pub fn new(instructions: code::Instructions, num_locals: usize, num_parameters: usize) -> Self {
+        CompiledFunction {
+            instructions,
+            num_locals,
+            num_parameters,
+        }
+    }
+
+    pub fn instructions(&self) -> &code::Instructions {
+        &self.instructions
+    }
+
+    pub fn num_locals(&self) -> usize {
+        self.num_locals
+    }
+
+    pub fn num_parameters(&self) -> usize {
+        self.num_parameters
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {
     Integer(i64),
@@ -25,11 +54,12 @@ pub enum Object {
     Hash(HashMap<Rc<Object>, Rc<Object>>),
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
-    CompiledFunction(code::Instructions, usize, usize), // instructions, num_locals, num_parameters
+    CompiledFunction(CompiledFunction), // instructions, num_locals, num_parameters
     Builtin(Builtin),
     Macro(Vec<String>, Vec<Statement>, Env),
     Quote(Node),
     Null,
+    Closure(Rc<Object>, Vec<Rc<Object>>),
 }
 
 impl Eq for Object {}
@@ -74,9 +104,10 @@ impl Display for Object {
                 let params = parameters.join(", ");
                 write!(f, "macro({}) {{...}}", params)
             }
-            Object::CompiledFunction(instructions, _, _) => {
-                write!(f, "{}", instructions)
+            Object::CompiledFunction(compiled_function) => {
+                write!(f, "{}", compiled_function.instructions)
             }
+            Object::Closure(_, _) => write!(f, "closure | |"),
         }
     }
 }

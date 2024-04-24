@@ -13,7 +13,7 @@ pub struct Frame {
 impl Frame {
     pub fn new(function: Rc<Object>, base_pointer: usize) -> Result<Frame, VmError> {
         match &*function {
-            Object::CompiledFunction(_, _, _) => Ok(Frame {
+            Object::CompiledFunction(_) => Ok(Frame {
                 function,
                 ip: -1,
                 base_pointer,
@@ -27,7 +27,9 @@ impl Frame {
 
     pub fn instructions(&self) -> Result<Instructions, VmError> {
         match &*self.function {
-            Object::CompiledFunction(function, _, _) => Ok(function.clone()),
+            Object::CompiledFunction(compiled_function) => {
+                Ok(compiled_function.instructions().clone())
+            }
             _ => Err(VmError::new(format!(
                 "Expected CompiledFunction, got {:?}",
                 self.function

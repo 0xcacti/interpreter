@@ -80,7 +80,7 @@ pub struct Definition {
     operand_widths: Vec<usize>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Instructions(pub Vec<u8>);
 
 impl Index<usize> for Instructions {

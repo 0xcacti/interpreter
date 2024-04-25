@@ -19,16 +19,16 @@ use self::builtin::Builtin;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompiledFunction {
     pub instructions: code::Instructions,
-    pub num_locals: usize,
     pub num_parameters: usize,
+    pub num_locals: usize,
 }
 
 impl CompiledFunction {
-    pub fn new(instructions: code::Instructions, num_locals: usize, num_parameters: usize) -> Self {
+    pub fn new(instructions: code::Instructions, num_parameters: usize, num_locals: usize) -> Self {
         CompiledFunction {
             instructions,
-            num_locals,
             num_parameters,
+            num_locals,
         }
     }
 

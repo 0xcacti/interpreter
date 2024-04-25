@@ -353,6 +353,11 @@ pub fn lookup(op: u8) -> Option<Definition> {
             operand_widths: vec![2, 1],
         }),
 
+        28 => Some(Definition {
+            name: "OpGetFree",
+            operand_widths: vec![1],
+        }),
+
         _ => None,
     }
 }

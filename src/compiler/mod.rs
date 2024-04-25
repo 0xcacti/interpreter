@@ -1248,8 +1248,8 @@ mod test {
                         make(Opcode::GetLocal, vec![0]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
-                    1,
                     0,
+                    1,
                 )))),
             ],
         );
@@ -1274,8 +1274,8 @@ mod test {
                         make(Opcode::Add, vec![]).into(),
                         make(Opcode::ReturnValue, vec![]).into(),
                     ]),
-                    2,
                     0,
+                    2,
                 )))),
             ],
         );

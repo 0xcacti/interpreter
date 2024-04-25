@@ -127,8 +127,10 @@ impl Compiler {
                             self.emit(Opcode::SetLocal, vec![symbol.index]);
                         }
                         Scope::Builtin => {
-                            // TODO: is this right
                             return Err(CompileError::new("cannot assign to builtin".to_string()));
+                        }
+                        Scope::Free => {
+                            return Err(CompileError::new("cannot assign to free".to_string()));
                         }
                     }
                 }
@@ -296,6 +298,9 @@ impl Compiler {
                             Scope::Builtin => {
                                 self.emit(Opcode::GetBuiltin, vec![symbol.index]);
                             }
+                            Scope::Free => {
+                                self.emit(Opcode::GetFree, vec![symbol.index]);
+                            }
                         },
                         None => {
                             return Err(CompileError::new(format!("undefined variable: {}", name)));
@@ -312,7 +317,6 @@ impl Compiler {
                 Expression::Function(parameters, body) => {
                     self.enter_scope();
 
-                    let num_params = parameters.len();
                     for parameter in parameters {
                         self.symbol_table.borrow_mut().define(parameter);
                     }
@@ -332,15 +336,34 @@ impl Compiler {
                         self.emit(Opcode::Return, vec![]);
                     }
 
+                    let free_symbols = self.symbol_table.borrow().free_symbols.clone();
                     let num_locals = self.symbol_table.borrow().num_definitions;
                     let fn_instructions = self.leave_scope();
+
+                    for symbol in free_symbols.iter() {
+                        match symbol.scope {
+                            Scope::Global => {
+                                self.emit(Opcode::GetGlobal, vec![symbol.index]);
+                            }
+                            Scope::Local => {
+                                self.emit(Opcode::GetLocal, vec![symbol.index]);
+                            }
+                            Scope::Builtin => {
+                                self.emit(Opcode::GetBuiltin, vec![symbol.index]);
+                            }
+                            Scope::Free => {
+                                self.emit(Opcode::GetFree, vec![symbol.index]);
+                            }
+                        }
+                    }
+
                     let compiled_fn = Rc::new(Object::CompiledFunction(Rc::new(
-                        CompiledFunction::new(fn_instructions, num_locals, num_params),
+                        CompiledFunction::new(fn_instructions, num_locals, free_symbols.len())
                     )));
 
                     let constant_index = self.add_constant(compiled_fn);
 
-                    self.emit(Opcode::Closure, vec![constant_index, 0]);
+                    self.emit(Opcode::Closure, vec![constant_index, free_symbols.len()]);
                 }
 
                 Expression::FunctionCall(function, arguments) => {
@@ -1282,5 +1305,136 @@ mod test {
                 ),
             )))],
         );
+    }
+
+    #[test]
+    fn it_compiles_closures() {
+        test_compilation(
+            "fn(a) { fn(b) { a + b } }",
+            vec![
+                make(Opcode::Closure, vec![1, 0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetFree, vec![0]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    1,
+                )))),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Closure, vec![0, 1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    0,
+                )))),
+            ],
+        );
+
+        test_compilation(
+            "fn(a) { fn(b) { fn(c) { a + b + c } } }",
+            vec![
+                make(Opcode::Closure, vec![2, 0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetFree, vec![0]).into(),
+                        make(Opcode::GetFree, vec![1]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    2,
+                )))),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetFree, vec![0]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Closure, vec![0, 2]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    1,
+                )))),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Closure, vec![1, 1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    0,
+                )))),
+            ],
+        );
+
+        test_compilation(
+            "let global = 55; fn() { let a = 66; fn() { let b = 77; fn() { let c = 88; global + a + b + }; } } }",
+            vec![ 
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::Closure, vec![6, 0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(55)),
+                Rc::new(Object::Integer(66)),
+                Rc::new(Object::Integer(77)),
+                Rc::new(Object::Integer(88)),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::Constant, vec![3]).into(),
+                        make(Opcode::SetLocal, vec![0]).into(),
+                        make(Opcode::GetGlobal, vec![0]).into(),
+                        make(Opcode::GetFree, vec![0]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::GetFree, vec![1]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Add, vec![]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    0,
+                    3,
+                )))),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::Constant, vec![2]).into(),
+                        make(Opcode::SetLocal, vec![0]).into(),
+                        make(Opcode::GetFree, vec![0]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Closure, vec![4, 2]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    0,
+                    3,
+                )))),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::Constant, vec![1]).into(),
+                        make(Opcode::SetLocal, vec![0]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Closure, vec![5, 1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    0,
+                    3,
+                )))),
+
+
+
+            ]
+            );
     }
 }

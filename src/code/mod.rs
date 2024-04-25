@@ -34,6 +34,7 @@ pub enum Opcode {
     SetLocal,
     GetBuiltin,
     Closure,
+    GetFree,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -66,6 +67,7 @@ impl From<u8> for Opcode {
             25 => Opcode::SetLocal,
             26 => Opcode::GetBuiltin,
             27 => Opcode::Closure,
+            28 => Opcode::GetFree,
             _ => panic!("unknown opcode"),
         }
     }
@@ -170,6 +172,7 @@ impl Opcode {
             Opcode::SetLocal => "OpSetLocal",
             Opcode::GetBuiltin => "OpGetBuiltin",
             Opcode::Closure => "OpClosure",
+            Opcode::GetFree => "OpGetFree",
         }
     }
 
@@ -203,6 +206,7 @@ impl Opcode {
             Opcode::SetLocal => vec![1],
             Opcode::GetBuiltin => vec![1],
             Opcode::Closure => vec![2, 1],
+            Opcode::GetFree => vec![1],
         }
     }
 }

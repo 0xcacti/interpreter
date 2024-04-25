@@ -117,8 +117,8 @@ impl Compiler {
                 }
 
                 Statement::Let(name, expression) => {
-                    self.compile(Node::Expression(expression))?;
                     let symbol = self.symbol_table.borrow_mut().define(name);
+                    self.compile(Node::Expression(expression))?;
                     match symbol.scope {
                         Scope::Global => {
                             self.emit(Opcode::SetGlobal, vec![symbol.index]);

@@ -1434,4 +1434,23 @@ mod test {
 
         run_vm_tests(tests);
     }
+
+    #[test]
+    fn it_executes_recursive_closures() {
+        let tests = vec![VmTest {
+            input: r#"
+                let countDown = fn(x) {
+                    if (x == 0) {
+                        return 0;
+                    } else {
+                        countDown(x - 1);
+                    }
+                };
+                countDown(1);
+                "#
+            .to_string(),
+            expected: Ok(Object::Integer(0)),
+        }];
+        run_vm_tests(tests);
+    }
 }

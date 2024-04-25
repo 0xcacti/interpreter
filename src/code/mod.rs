@@ -35,6 +35,7 @@ pub enum Opcode {
     GetBuiltin,
     Closure,
     GetFree,
+    CurrentClosure,
 }
 impl From<u8> for Opcode {
     fn from(op: u8) -> Opcode {
@@ -68,6 +69,7 @@ impl From<u8> for Opcode {
             26 => Opcode::GetBuiltin,
             27 => Opcode::Closure,
             28 => Opcode::GetFree,
+            29 => Opcode::CurrentClosure,
             _ => panic!("unknown opcode"),
         }
     }
@@ -173,6 +175,7 @@ impl Opcode {
             Opcode::GetBuiltin => "OpGetBuiltin",
             Opcode::Closure => "OpClosure",
             Opcode::GetFree => "OpGetFree",
+            Opcode::CurrentClosure => "OpCurrentClosure",
         }
     }
 
@@ -207,6 +210,7 @@ impl Opcode {
             Opcode::GetBuiltin => vec![1],
             Opcode::Closure => vec![2, 1],
             Opcode::GetFree => vec![1],
+            Opcode::CurrentClosure => vec![],
         }
     }
 }

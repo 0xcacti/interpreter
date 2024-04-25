@@ -1461,4 +1461,83 @@ mod test {
             ],
         );
     }
+
+    #[test]
+    fn it_compiles_recursive_functions() {
+        test_compilation(
+            r#"
+            let countDown = n(x) { countDown(x - 1) };
+            countDown(1);
+            "#,
+            vec![
+                make(Opcode::Closure, vec![1, 0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Call, vec![1]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::CurrentClosure, vec![]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Constant, vec![0]).into(),
+                        make(Opcode::Sub, vec![]).into(),
+                        make(Opcode::Call, vec![1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    1,
+                )))),
+                Rc::new(Object::Integer(1)),
+            ],
+        );
+
+        test_compilation(
+            r#"
+            let wrapper = fn() {
+                let countDown = fn(x) { countDown(x - 1); };
+                countDown(1);
+            };
+            wrapper();
+            "#,
+            vec![
+                make(Opcode::Closure, vec![3, 0]).into(),
+                make(Opcode::SetGlobal, vec![0]).into(),
+                make(Opcode::GetGlobal, vec![0]).into(),
+                make(Opcode::Call, vec![0]).into(),
+                make(Opcode::Pop, vec![]).into(),
+            ],
+            vec![
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::CurrentClosure, vec![]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Constant, vec![0]).into(),
+                        make(Opcode::Sub, vec![]).into(),
+                        make(Opcode::Call, vec![1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    1,
+                    1,
+                )))),
+                Rc::new(Object::Integer(1)),
+                Rc::new(Object::CompiledFunction(Rc::new(CompiledFunction::new(
+                    concatenate_instructions(&vec![
+                        make(Opcode::Closure, vec![1, 0]).into(),
+                        make(Opcode::SetLocal, vec![0]).into(),
+                        make(Opcode::GetLocal, vec![0]).into(),
+                        make(Opcode::Constant, vec![2]).into(),
+                        make(Opcode::Call, vec![1]).into(),
+                        make(Opcode::ReturnValue, vec![]).into(),
+                    ]),
+                    0,
+                    1,
+                )))),
+            ],
+        );
+    }
 }

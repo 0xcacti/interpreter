@@ -1437,8 +1437,9 @@ mod test {
 
     #[test]
     fn it_executes_recursive_closures() {
-        let tests = vec![VmTest {
-            input: r#"
+        let tests = vec![
+            VmTest {
+                input: r#"
                 let countDown = fn(x) {
                     if (x == 0) {
                         return 0;
@@ -1448,9 +1449,44 @@ mod test {
                 };
                 countDown(1);
                 "#
-            .to_string(),
-            expected: Ok(Object::Integer(0)),
-        }];
+                .to_string(),
+                expected: Ok(Object::Integer(0)),
+            },
+            VmTest {
+                input: r#"
+                let countDown = fn(x) {
+                    if (x == 0) {
+                        return 0;
+                    } else {
+                        countDown(x - 1);
+                    }
+                };
+                let wrapper = fn() {
+                    countDown(1);
+                };
+                wrapper();
+                "#
+                .to_string(),
+                expected: Ok(Object::Integer(0)),
+            },
+            VmTest {
+                input: r#"
+                let wrapper = fn() {
+                    let countDown = fn(x) {
+                        if (x == 0) {
+                            return 0;
+                        } else {
+                            countDown(x - 1);
+                        }
+                    };
+                    countDown(1);
+                };
+                wrapper();
+                "#
+                .to_string(),
+                expected: Ok(Object::Integer(0)),
+            },
+        ];
         run_vm_tests(tests);
     }
 }

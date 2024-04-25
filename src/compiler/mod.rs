@@ -342,7 +342,7 @@ impl Compiler {
 
                     let constant_index = self.add_constant(compiled_fn);
 
-                    self.emit(Opcode::Constant, vec![constant_index]);
+                    self.emit(Opcode::Closure, vec![constant_index, 0]);
                 }
 
                 Expression::FunctionCall(function, arguments) => {
@@ -945,7 +945,7 @@ mod test {
         test_compilation(
             "fn() { return 5 + 10 }",
             vec![
-                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Closure, vec![2, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -967,7 +967,7 @@ mod test {
         test_compilation(
             "fn() { 1; 2 }",
             vec![
-                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Closure, vec![2, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -989,7 +989,7 @@ mod test {
         test_compilation(
             "fn() { 5 + 10 }",
             vec![
-                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Closure, vec![2, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1011,7 +1011,7 @@ mod test {
         test_compilation(
             "fn() { }",
             vec![
-                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Closure, vec![0, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::CompiledFunction(CompiledFunction::new(
@@ -1027,7 +1027,7 @@ mod test {
         test_compilation(
             "fn() { 24 }();",
             vec![
-                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Closure, vec![1, 0]).into(),
                 make(Opcode::Call, vec![0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
@@ -1047,7 +1047,7 @@ mod test {
         test_compilation(
             "let noArg = fn() { 24 }; noArg();",
             vec![
-                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Closure, vec![1, 0]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
                 make(Opcode::GetGlobal, vec![0]).into(),
                 make(Opcode::Call, vec![0]).into(),
@@ -1069,7 +1069,7 @@ mod test {
         test_compilation(
             "let oneArg = fn(a) { a }; oneArg(24);",
             vec![
-                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Closure, vec![0, 0]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
                 make(Opcode::GetGlobal, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
@@ -1092,7 +1092,7 @@ mod test {
         test_compilation(
             "let manyArg = fn(a, b, c) { a; b; c }; manyArg(24, 25, 26);",
             vec![
-                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Closure, vec![0, 0]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
                 make(Opcode::GetGlobal, vec![0]).into(),
                 make(Opcode::Constant, vec![1]).into(),
@@ -1181,7 +1181,7 @@ mod test {
             vec![
                 make(Opcode::Constant, vec![0]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
-                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Closure, vec![1, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1200,7 +1200,7 @@ mod test {
         test_compilation(
             "fn() { let num = 55; num }",
             vec![
-                make(Opcode::Constant, vec![1]).into(),
+                make(Opcode::Closure, vec![1, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1221,7 +1221,7 @@ mod test {
         test_compilation(
             "fn() { let a = 55; let b = 77; a + b }",
             vec![
-                make(Opcode::Constant, vec![2]).into(),
+                make(Opcode::Closure, vec![2, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![
@@ -1266,7 +1266,7 @@ mod test {
         test_compilation(
             "fn() { len([]) }",
             vec![
-                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Closure, vec![0, 0]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],
             vec![Rc::new(Object::CompiledFunction(CompiledFunction::new(

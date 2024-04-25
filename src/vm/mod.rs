@@ -27,12 +27,9 @@ pub struct VM {
 
 impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(CompiledFunction::new(
-            bytecode.instructions,
-            GLOBAL_SIZE,
-            0,
-        )));
-        let main_frame = Frame::new(main_fn, 0).unwrap();
+        let main_fn = Rc::new(CompiledFunction::new(bytecode.instructions, GLOBAL_SIZE, 0));
+        let main_closure = Object::Closure(main_fn, vec![]);
+        let main_frame = Frame::new(main_closure, 0).unwrap();
 
         let mut frames = vec![
             Frame::new(

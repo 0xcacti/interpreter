@@ -13,8 +13,8 @@ pub struct Frame {
 impl Frame {
     pub fn new(function: Rc<Object>, base_pointer: usize) -> Result<Frame, VmError> {
         match &*function {
-            Object::CompiledFunction(_) => Ok(Frame {
-                function,
+            Object::Closure(compiled_function, _) => Ok(Frame {
+                function: Rc::new(Object::CompiledFunction(compiled_function.clone())),
                 ip: -1,
                 base_pointer,
             }),

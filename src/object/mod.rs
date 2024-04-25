@@ -54,7 +54,7 @@ pub enum Object {
     Hash(HashMap<Rc<Object>, Rc<Object>>),
     ReturnValue(Rc<Object>),
     Function(Vec<String>, Vec<Statement>, Env),
-    CompiledFunction(CompiledFunction), // TODO: should this be Rc<CompiledFunction>?
+    CompiledFunction(Rc<CompiledFunction>),
     Builtin(Builtin),
     Macro(Vec<String>, Vec<Statement>, Env),
     Quote(Node),

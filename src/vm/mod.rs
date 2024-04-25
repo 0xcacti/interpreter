@@ -29,15 +29,18 @@ impl VM {
     pub fn new(bytecode: compiler::Bytecode) -> Self {
         let main_fn = Rc::new(CompiledFunction::new(bytecode.instructions, GLOBAL_SIZE, 0));
         let main_closure = Object::Closure(main_fn, vec![]);
-        let main_frame = Frame::new(main_closure, 0).unwrap();
+        let main_frame = Frame::new(Rc::new(main_closure), 0).unwrap();
 
         let mut frames = vec![
             Frame::new(
-                Rc::new(Object::CompiledFunction(CompiledFunction::new(
-                    Instructions::new(vec![]),
-                    GLOBAL_SIZE,
-                    0,
-                ))),
+                Rc::new(Object::Closure(
+                    Rc::new(CompiledFunction::new(
+                        Instructions::new(vec![]),
+                        GLOBAL_SIZE,
+                        0,
+                    )),
+                    vec![],
+                )),
                 0,
             )
             .unwrap();
@@ -60,20 +63,22 @@ impl VM {
         bytecode: compiler::Bytecode,
         globals: Rc<RefCell<Vec<Rc<Object>>>>,
     ) -> Self {
-        let main_fn = Rc::new(Object::CompiledFunction(CompiledFunction::new(
-            bytecode.instructions,
-            GLOBAL_SIZE,
-            0,
-        )));
+        let main_fn = Rc::new(Object::Closure(
+            Rc::new(CompiledFunction::new(bytecode.instructions, GLOBAL_SIZE, 0)),
+            vec![],
+        ));
         let main_frame = Frame::new(main_fn, 0).unwrap();
 
         let mut frames = vec![
             Frame::new(
-                Rc::new(Object::CompiledFunction(CompiledFunction::new(
-                    Instructions::new(vec![]),
-                    GLOBAL_SIZE,
-                    0,
-                ))),
+                Rc::new(Object::Closure(
+                    Rc::new(CompiledFunction::new(
+                        Instructions::new(vec![]),
+                        GLOBAL_SIZE,
+                        0,
+                    )),
+                    vec![]
+                )),
                 0
             )
             .unwrap();
@@ -237,7 +242,7 @@ impl VM {
 
                     let fun = self.stack[self.sp - 1 - num_args].clone();
                     match &*fun {
-                        Object::CompiledFunction(compiled_function) => {
+                        Object::Closure(compiled_function, num_vars) => {
                             let frame = Frame::new(fun.clone(), self.sp - num_args).unwrap();
                             if num_args != compiled_function.num_parameters() {
                                 return Err(VmError::new(format!(
@@ -298,6 +303,13 @@ impl VM {
                     let builtin_index = code::read_u8(&instructions, ip + 1);
                     self.current_frame().ip += 1;
                     self.push(Rc::new(Object::Builtin(builtin_index.into())));
+                }
+
+                Opcode::Closure => {
+                    let const_index = code::read_u16(&instructions, ip + 1) as usize;
+                    code::read_u8(&instructions, ip + 3) as usize;
+                    self.current_frame().ip += 3;
+                    self.push_closure(const_index)?;
                 }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
@@ -514,6 +526,18 @@ impl VM {
             i += 2;
         }
         Object::Hash(pairs)
+    }
+
+    fn push_closure(&mut self, const_index: usize) -> Result<(), VmError> {
+        let constant = self.constants.borrow()[const_index].clone();
+        match &*constant {
+            Object::CompiledFunction(compiled_function) => {
+                let closure = Rc::new(Object::Closure(compiled_function.clone(), vec![]));
+                self.push(closure);
+            }
+            _ => return Err(VmError::new("Object not closure".to_string())),
+        }
+        Ok(())
     }
 }
 

@@ -242,8 +242,7 @@ impl VM {
 
                     let fun = self.stack[self.sp - 1 - num_args].clone();
                     match &*fun {
-                        Object::Closure(compiled_function, num_vars) => {
-                            let frame = Frame::new(fun.clone(), self.sp - num_args).unwrap();
+                        Object::Closure(compiled_function, num_free) => {
                             if num_args != compiled_function.num_parameters() {
                                 return Err(VmError::new(format!(
                                     "Invalid number of arguments: want {}, got {}",
@@ -251,6 +250,7 @@ impl VM {
                                     compiled_function.num_parameters()
                                 )));
                             }
+                            let frame = Frame::new(fun.clone(), self.sp - num_args)?;
                             let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
                             self.sp += base_pointer + compiled_function.num_locals();
@@ -307,9 +307,28 @@ impl VM {
 
                 Opcode::Closure => {
                     let const_index = code::read_u16(&instructions, ip + 1) as usize;
-                    code::read_u8(&instructions, ip + 3) as usize;
+                    let num_free = code::read_u8(&instructions, ip + 3) as usize;
                     self.current_frame().ip += 3;
-                    self.push_closure(const_index)?;
+                    self.push_closure(const_index, num_free)?;
+                }
+
+                Opcode::GetFree => {
+                    let free_index = code::read_u8(&instructions, ip + 1) as usize;
+                    self.current_frame().ip += 1;
+
+                    let current_closure = self.current_frame().function.clone();
+                    println!("we are here");
+                    println!("{:?}", current_closure);
+                    match &*current_closure {
+                        Object::Closure(_, free_vars) => {
+                            self.push(free_vars[free_index].clone());
+                        }
+                        _ => {
+                            return Err(VmError::new(
+                                "tried to find free variables on non-closure".to_string(),
+                            ));
+                        }
+                    }
                 }
                 _ => {
                     return Err(VmError::new("Invalid opcode".to_string()));
@@ -528,14 +547,21 @@ impl VM {
         Object::Hash(pairs)
     }
 
-    fn push_closure(&mut self, const_index: usize) -> Result<(), VmError> {
+    fn push_closure(&mut self, const_index: usize, num_free: usize) -> Result<(), VmError> {
         let constant = self.constants.borrow()[const_index].clone();
         match &*constant {
             Object::CompiledFunction(compiled_function) => {
-                let closure = Rc::new(Object::Closure(compiled_function.clone(), vec![]));
+                let mut free = vec![Rc::new(Object::Null); num_free];
+                for i in 0..num_free {
+                    free[i] = self.stack[self.sp - num_free + i].clone();
+                }
+                self.sp -= num_free;
+                let closure = Rc::new(Object::Closure(compiled_function.clone(), free));
                 self.push(closure);
             }
-            _ => return Err(VmError::new("Object not closure".to_string())),
+            _ => {
+                return Err(VmError::new("Object not compiled function".to_string()));
+            }
         }
         Ok(())
     }
@@ -577,6 +603,7 @@ mod test {
                 return;
             }
 
+            println!("{:?}", ret);
             assert!(ret.is_ok());
 
             let last = vm.last_popped_stack_elem();
@@ -1320,5 +1347,22 @@ mod test {
             },
         ];
         run_vm_tests(tests)
+    }
+
+    #[test]
+    fn it_executes_closures() {
+        let tests = vec![VmTest {
+            input: r#"
+                let newClosure = fn(a) { 
+                    fn() { a; }; 
+                }; 
+                let closure = newClosure(99); 
+                closure();
+                "#
+            .to_string(),
+            expected: Ok(Object::Integer(99)),
+        }];
+
+        run_vm_tests(tests);
     }
 }

@@ -13,13 +13,16 @@ pub struct Frame {
 impl Frame {
     pub fn new(function: Rc<Object>, base_pointer: usize) -> Result<Frame, VmError> {
         match &*function {
-            Object::Closure(compiled_function, _) => Ok(Frame {
-                function: Rc::new(Object::CompiledFunction(compiled_function.clone())),
+            Object::Closure(compiled_function, num_free) => Ok(Frame {
+                function: Rc::new(Object::Closure(
+                    compiled_function.clone(),
+                    num_free.to_vec(),
+                )),
                 ip: -1,
                 base_pointer,
             }),
             _ => Err(VmError::new(format!(
-                "Expected CompiledFunction, got {:?}",
+                "Expected Closure, got {:?}",
                 function
             ))),
         }
@@ -27,11 +30,9 @@ impl Frame {
 
     pub fn instructions(&self) -> Result<Instructions, VmError> {
         match &*self.function {
-            Object::CompiledFunction(compiled_function) => {
-                Ok(compiled_function.instructions().clone())
-            }
+            Object::Closure(compiled_function, _) => Ok(compiled_function.instructions().clone()),
             _ => Err(VmError::new(format!(
-                "Expected CompiledFunction, got {:?}",
+                "Expected Closure, got {:?}",
                 self.function
             ))),
         }

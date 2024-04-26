@@ -12,7 +12,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use self::frame::Frame;
 
-pub const STACK_SIZE: usize = 2048;
+pub const STACK_SIZE: usize = 8192;
 pub const MAX_FRAMES: usize = 1024;
 pub const GLOBAL_SIZE: usize = 65536;
 
@@ -1488,6 +1488,29 @@ mod test {
                 expected: Ok(Object::Integer(0)),
             },
         ];
+        run_vm_tests(tests);
+    }
+
+    #[test]
+    fn it_executes_recursive_fibonacci() {
+        let tests = vec![VmTest {
+            input: r#"
+                let fibonacci = fn(x) {
+                    if (x == 0) {
+                        return 0;
+                    } else {
+                        if (x == 1) {
+                            return 1;
+                        } else {
+                            fibonacci(x - 1) + fibonacci(x - 2);
+                        }
+                    }
+                };
+                fibonacci(15);
+                "#
+            .to_string(),
+            expected: Ok(Object::Integer(610)),
+        }];
         run_vm_tests(tests);
     }
 }

@@ -133,7 +133,7 @@ impl Compiler {
                             return Err(CompileError::new("cannot assign to free".to_string()));
                         }
                         Scope::Function => {
-                            panic!("not implemented");
+                            return Err(CompileError::new("cannot assign to function".to_string()));
                         }
                     }
                 }
@@ -302,7 +302,7 @@ impl Compiler {
                                 self.emit(Opcode::GetFree, vec![symbol.index]);
                             }
                             Scope::Function => {
-                                panic!("not implemented");
+                                self.emit(Opcode::CurrentClosure, vec![]);
                             }
                         },
                         None => {
@@ -317,8 +317,12 @@ impl Compiler {
                     self.emit(Opcode::Index, vec![]);
                 }
 
-                Expression::Function(_, parameters, body) => {
+                Expression::Function(name, parameters, body) => {
                     self.enter_scope();
+
+                    if let Some(name) = name {
+                        self.symbol_table.borrow_mut().define_function_name(name);
+                    }
 
                     let num_params = parameters.len();
                     for parameter in parameters {
@@ -359,7 +363,7 @@ impl Compiler {
                                 self.emit(Opcode::GetFree, vec![symbol.index]);
                             }
                             Scope::Function => {
-                                panic!("not implemented");
+                                self.emit(Opcode::CurrentClosure, vec![]);
                             }
                         }
                     }
@@ -1472,14 +1476,14 @@ mod test {
     fn it_compiles_recursive_functions() {
         test_compilation(
             r#"
-            let countDown = n(x) { countDown(x - 1) };
+            let countDown = fn(x) { countDown(x - 1); };
             countDown(1);
             "#,
             vec![
                 make(Opcode::Closure, vec![1, 0]).into(),
                 make(Opcode::SetGlobal, vec![0]).into(),
                 make(Opcode::GetGlobal, vec![0]).into(),
-                make(Opcode::Constant, vec![0]).into(),
+                make(Opcode::Constant, vec![2]).into(),
                 make(Opcode::Call, vec![1]).into(),
                 make(Opcode::Pop, vec![]).into(),
             ],

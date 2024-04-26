@@ -11,6 +11,8 @@ pub enum Scope {
     Builtin,
     #[strum(serialize = "free")]
     Free,
+    #[strum(serialize = "function")]
+    Function,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,6 +84,17 @@ impl SymbolTable {
             index,
         });
         self.symbols.insert(name.clone(), symbol.clone());
+        symbol
+    }
+
+    pub fn define_function_name(&mut self, name: String) -> Rc<Symbol> {
+        let symbol = Rc::new(Symbol {
+            name: name.clone(),
+            scope: Scope::Function,
+            index: 0,
+        });
+        self.symbols.insert(name, symbol.clone());
+
         symbol
     }
 
@@ -544,5 +557,43 @@ mod tests {
             let result = local_local_table.borrow_mut().resolve(name);
             assert_eq!(result, None);
         }
+    }
+
+    #[test]
+    fn it_defines_and_resolves_function_names() {
+        let global_table = SymbolTable::new();
+        global_table
+            .borrow_mut()
+            .define_function_name("a".to_string());
+
+        let expected = Symbol {
+            name: "a".to_string(),
+            scope: Scope::Function,
+            index: 0,
+        };
+
+        let result = global_table.borrow_mut().resolve("a").unwrap();
+
+        assert_eq!(*result, expected);
+    }
+
+    #[test]
+    fn it_correctly_shadows_function_names() {
+        let global_table = SymbolTable::new();
+        global_table
+            .borrow_mut()
+            .define_function_name("a".to_string());
+
+        global_table.borrow_mut().define("a".to_string());
+
+        let expected = Symbol {
+            name: "a".to_string(),
+            scope: Scope::Global,
+            index: 0,
+        };
+
+        let result = global_table.borrow_mut().resolve("a").unwrap();
+
+        assert_eq!(*result, expected);
     }
 }

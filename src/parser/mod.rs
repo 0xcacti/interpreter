@@ -77,7 +77,14 @@ impl Parser {
         self.expect_peek_token(&Token::Assign)?;
         self.next_token();
 
-        let exp = self.parse_expression(Precedence::Lowest)?;
+        let mut exp = self.parse_expression(Precedence::Lowest)?;
+
+        match exp {
+            Expression::Function(ref mut name, _, _) => {
+                *name = Some(ident.clone());
+            }
+            _ => {}
+        }
 
         if self.peek_token_is(&Token::Semicolon) {
             self.next_token()
@@ -208,7 +215,7 @@ impl Parser {
         let parameters = self.parse_function_parameters()?;
         self.expect_peek_token(&Token::Lbrace)?;
         let body = self.parse_block_statement()?;
-        Ok(Expression::Function(parameters, body))
+        Ok(Expression::Function(None, parameters, body))
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
@@ -720,6 +727,7 @@ mod test {
         check_expression_statement(
             &program[0],
             &Expression::Function(
+                None,
                 vec!["x".into(), "y".into()],
                 vec![Statement::Expression(Expression::Infix(
                     Box::new(Expression::Identifier("x".into())),
@@ -741,11 +749,14 @@ mod test {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 3);
-        check_expression_statement(&program[0], &Expression::Function(vec![], vec![]));
-        check_expression_statement(&program[1], &Expression::Function(vec!["x".into()], vec![]));
+        check_expression_statement(&program[0], &Expression::Function(None, vec![], vec![]));
+        check_expression_statement(
+            &program[1],
+            &Expression::Function(None, vec!["x".into()], vec![]),
+        );
         check_expression_statement(
             &program[2],
-            &Expression::Function(vec!["x".into(), "y".into(), "z".into()], vec![]),
+            &Expression::Function(None, vec!["x".into(), "y".into(), "z".into()], vec![]),
         );
     }
 
@@ -1070,8 +1081,8 @@ mod test {
                 }
             }
             (
-                Expression::Function(params, body),
-                Expression::Function(expected_params, expected_body),
+                Expression::Function(None, params, body),
+                Expression::Function(None, expected_params, expected_body),
             ) => {
                 assert_eq!(params, expected_params);
                 for (statement, expected_statement) in body.iter().zip(expected_body.iter()) {
@@ -1107,6 +1118,27 @@ mod test {
             }
             // ... other expression variants can be added as necessary ...
             _ => panic!("Expression type mismatch"),
+        }
+    }
+
+    #[test]
+    fn it_pareses_function_literal_with_name() {
+        let input = r#"
+        let myFunction = fn() { 5 + 5; };
+        "#;
+        let lexer = Lexer::new(input.into());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 1);
+        match &program[0] {
+            Statement::Let(name, exp) => {
+                assert_eq!(name, "myFunction");
+                match exp {
+                    Expression::Function(Some(name), _, _) => assert_eq!(name, "myFunction"),
+                    _ => panic!("expected function expression"),
+                }
+            }
+            _ => panic!("expected let statement"),
         }
     }
 

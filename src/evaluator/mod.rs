@@ -84,7 +84,7 @@ fn evaluate_expression(expression: &Expression, env: Env) -> Result<Rc<Object>, 
                 Ok(Rc::new(Object::Null))
             }
         }
-        Expression::Function(parameters, body) => Ok(Rc::new(Object::Function(
+        Expression::Function(_, parameters, body) => Ok(Rc::new(Object::Function(
             parameters.clone(),
             body.clone(),
             Rc::clone(&env),

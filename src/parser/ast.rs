@@ -49,7 +49,7 @@ pub enum Expression {
     Prefix(Token, Box<Expression>),
     Infix(Box<Expression>, Token, Box<Expression>),
     If(Box<Expression>, Vec<Statement>, Option<Vec<Statement>>),
-    Function(Vec<String>, Vec<Statement>),
+    Function(Option<String>, Vec<String>, Vec<Statement>), // name, parameters, body
     Macro(Vec<String>, Vec<Statement>),
     FunctionCall(Box<Expression>, Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
@@ -77,7 +77,7 @@ impl Display for Expression {
                 }
                 Ok(())
             }
-            Expression::Function(parameters, body) => {
+            Expression::Function(_, parameters, body) => {
                 write!(f, "fn(")?;
                 for (i, parameter) in parameters.iter().enumerate() {
                     if i > 0 {
@@ -229,7 +229,7 @@ where
                 ))
             }
 
-            Expression::Function(arguments, body) => {
+            Expression::Function(name, arguments, body) => {
                 let modified_arguments: Vec<String> = arguments
                     .iter()
                     .map(|argument| {
@@ -248,7 +248,11 @@ where
 
                 let modified_body: Vec<Statement> =
                     unwrap_node_to_statements(modify(Node::Program(body), modifier.clone()));
-                Node::Expression(Expression::Function(modified_arguments, modified_body))
+                Node::Expression(Expression::Function(
+                    None,
+                    modified_arguments,
+                    modified_body,
+                ))
             }
 
             Expression::Literal(literal) => {
@@ -512,10 +516,12 @@ mod test {
         let (one, two, turn_one_into_two) = get_closures();
         let tests = vec![(
             Node::Expression(Expression::Function(
+                None,
                 vec!["a".to_string()],
                 vec![Statement::Expression(unwrap_node_to_expression(one()))],
             )),
             Node::Expression(Expression::Function(
+                None,
                 vec!["a".to_string()],
                 vec![Statement::Expression(unwrap_node_to_expression(two()))],
             )),

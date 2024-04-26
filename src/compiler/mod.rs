@@ -132,6 +132,9 @@ impl Compiler {
                         Scope::Free => {
                             return Err(CompileError::new("cannot assign to free".to_string()));
                         }
+                        Scope::Function => {
+                            panic!("not implemented");
+                        }
                     }
                 }
 
@@ -246,9 +249,6 @@ impl Compiler {
 
                         self.emit(Opcode::Hash, vec![pairs.len() * 2]);
                     }
-                    _ => {
-                        panic!("not implemented")
-                    }
                 },
 
                 Expression::If(condition, consequence, alternative) => {
@@ -301,6 +301,9 @@ impl Compiler {
                             Scope::Free => {
                                 self.emit(Opcode::GetFree, vec![symbol.index]);
                             }
+                            Scope::Function => {
+                                panic!("not implemented");
+                            }
                         },
                         None => {
                             return Err(CompileError::new(format!("undefined variable: {}", name)));
@@ -314,7 +317,7 @@ impl Compiler {
                     self.emit(Opcode::Index, vec![]);
                 }
 
-                Expression::Function(parameters, body) => {
+                Expression::Function(_, parameters, body) => {
                     self.enter_scope();
 
                     let num_params = parameters.len();
@@ -354,6 +357,9 @@ impl Compiler {
                             }
                             Scope::Free => {
                                 self.emit(Opcode::GetFree, vec![symbol.index]);
+                            }
+                            Scope::Function => {
+                                panic!("not implemented");
                             }
                         }
                     }

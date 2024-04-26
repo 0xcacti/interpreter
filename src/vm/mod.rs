@@ -12,9 +12,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use self::frame::Frame;
 
-pub const STACK_SIZE: usize = 8192;
-pub const MAX_FRAMES: usize = 1024;
+pub const STACK_SIZE: usize = 2048;
 pub const GLOBAL_SIZE: usize = 65536;
+pub const MAX_FRAMES: usize = 1024;
 
 pub struct VM {
     pub constants: Rc<RefCell<Vec<Rc<Object>>>>,
@@ -253,7 +253,7 @@ impl VM {
                             let frame = Frame::new(fun.clone(), self.sp - num_args)?;
                             let base_pointer = frame.base_pointer;
                             self.push_frame(frame);
-                            self.sp += base_pointer + compiled_function.num_locals();
+                            self.sp = base_pointer + compiled_function.num_locals();
                         }
                         Object::Builtin(builtin) => {
                             let args = &self.stack[self.sp - num_args..self.sp].to_vec();
@@ -317,8 +317,6 @@ impl VM {
                     self.current_frame().ip += 1;
 
                     let current_closure = self.current_frame().function.clone();
-                    println!("we are here");
-                    println!("{:?}", current_closure);
                     match &*current_closure {
                         Object::Closure(_, free_vars) => {
                             self.push(free_vars[free_index].clone());
@@ -360,8 +358,8 @@ impl VM {
         if self.sp == 0 {
             panic!("stack underflow");
         }
-        let obj = self.stack[self.sp - 1].clone();
         self.sp -= 1;
+        let obj = self.stack[self.sp].clone();
         obj
     }
 
@@ -552,11 +550,12 @@ impl VM {
         let constant = self.constants.borrow()[const_index].clone();
         match &*constant {
             Object::CompiledFunction(compiled_function) => {
-                let mut free = vec![Rc::new(Object::Null); num_free];
-                for i in 0..num_free {
-                    free[i] = self.stack[self.sp - num_free + i].clone();
+                let mut free = Vec::with_capacity(num_free);
+                for _ in 0..num_free {
+                    free.push(self.pop());
                 }
-                self.sp -= num_free;
+                free.reverse();
+
                 let closure = Rc::new(Object::Closure(compiled_function.clone(), free));
                 self.push(closure);
             }

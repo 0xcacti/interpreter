@@ -7,7 +7,7 @@ use monkey::vm::GLOBAL_SIZE;
 
 use std::{cell::RefCell, rc::Rc};
 
-use std::time::Instant; // Adjust import paths based on your module structure
+use std::time::Instant;
 
 fn main() -> anyhow::Result<()> {
     let contents_direct = r#"
@@ -33,6 +33,7 @@ fn main() -> anyhow::Result<()> {
     let macro_env = Rc::new(RefCell::new(Environment::new()));
 
     // Time the execution for direct interpretation
+    println!("Starting direct execution...");
     let start = Instant::now();
     interpret_direct(
         contents_direct,
@@ -51,6 +52,7 @@ fn main() -> anyhow::Result<()> {
     }
     let globals = Rc::new(RefCell::new(vec![Rc::new(Object::Null); GLOBAL_SIZE]));
     // Time the execution for VM
+    println!("Starting VM execution...");
     let start = Instant::now();
     interpret_vm(
         contents_vm,

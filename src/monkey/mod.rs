@@ -66,7 +66,6 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
             }
             ExecMode::VM => interpret_vm(
                 contents,
-                Some(Rc::clone(&env)),
                 Some(Rc::clone(&macro_env)),
                 symbol_table.clone(),
                 constants.clone(),
@@ -96,7 +95,6 @@ pub fn repl(path: Option<String>, mode: ExecMode) -> Result<()> {
             }
             ExecMode::VM => interpret_vm(
                 line,
-                Some(Rc::clone(&env)),
                 Some(Rc::clone(&macro_env)),
                 symbol_table.clone(),
                 constants.clone(),
@@ -127,7 +125,6 @@ pub fn interpret_chunk(mode: ExecMode, contents: String) -> Result<()> {
         }
         ExecMode::VM => interpret_vm(
             contents,
-            Some(Rc::clone(&env)),
             Some(Rc::clone(&macro_env)),
             symbol_table.clone(),
             constants.clone(),
@@ -170,7 +167,6 @@ pub fn interpret_direct(
 
 pub fn interpret_vm(
     contents: String,
-    _env: Option<Rc<RefCell<Environment>>>,
     macro_env: Option<Rc<RefCell<Environment>>>,
     symbol_table: Rc<RefCell<SymbolTable>>,
     constants: Rc<RefCell<Vec<Rc<Object>>>>,

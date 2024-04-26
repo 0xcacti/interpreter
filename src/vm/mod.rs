@@ -330,8 +330,9 @@ impl VM {
                         }
                     }
                 }
-                _ => {
-                    return Err(VmError::new("Invalid opcode".to_string()));
+                Opcode::CurrentClosure => {
+                    let current_closure = self.current_frame().function.clone();
+                    self.push(current_closure);
                 }
             }
         }

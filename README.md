@@ -42,9 +42,22 @@ monkey --mode vm ./main.monkey
 
 ```
 
+### Todo 
+
+I probably won't come back to this project as I got most of what I wanted out of it.  
+However, monkey is supposed to be faster in vm mode than direct, so that means I 
+absolutely botched the vm impl with clones and other bad practices.  I probably should fix that. 
+
+- [ ] Extend wasm to support the compiler
+- [ ] Extend the compiler to support macros
+- [ ] Optimize the vm implementation
+- [ ] Move benchmark to be part of the cli because that's freaking annoying that it changes the way you run the binary
+
+
+### Acknowledgements
+
 Some of the code here was influenced by [ ThePrimeagen's ](https://github.com/ThePrimeagen) version which he abandoned 
 two chapters into the book.  Much of the code is influenced by [monkey-wasm](https://github.com/shioyama18/monkey-wasm/tree/master).
 Additionally, for the compiler implementation, I occasionally referenced [cymbal](https://github.com/shuhei/cymbal)
 
 
-Add call frames 

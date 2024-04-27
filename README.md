@@ -36,7 +36,7 @@ Finally, you can run any of the above commands using the more performant,
 bytecode-interpreted (rather than sourcecode interpreted) and vm executed version of monkey, by supplying the --mode vm
 
 ``` 
-monkey --move vm
+monkey --mode vm
 monkey --mode vm -i ./lib.monkey
 monkey --mode vm ./main.monkey 
 
@@ -47,11 +47,13 @@ monkey --mode vm ./main.monkey
 I probably won't come back to this project as I got most of what I wanted out of it.  
 However, monkey is supposed to be faster in vm mode than direct, so that means I 
 absolutely botched the vm impl with clones and other bad practices.  I probably should fix that. 
+I could also extend the wasm to support compiled mode, but tbh I don't really care about that.
+Finally, I could extend the compiler to support macros, I actually looked at doing this, but 
+it seems very tricky.  I'm going to pass for now. 
 
-- [ ] Extend wasm to support the compiler
-- [ ] Extend the compiler to support macros
 - [ ] Optimize the vm implementation
-- [ ] Move benchmark to be part of the cli because that's freaking annoying that it changes the way you run the binary
+- [ ] Extend wasm to support the compiler
+- [ ] Extend the compiler to support macros 
 
 
 ### Acknowledgements

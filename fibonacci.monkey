@@ -11,4 +11,4 @@ let fibonacci = fn(x) {
     }
 };
 
-echoln(fibonacci(15));
+echoln(fibonacci(35));

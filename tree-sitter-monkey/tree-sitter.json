@@ -1,0 +1,33 @@
+{
+  "grammars": [
+    {
+      "name": "monkey",
+      "camelcase": "Monkey",
+      "scope": "source.monkey",
+      "path": ".",
+      "file-types": null,
+      "injection-regex": "^monkey$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "T ree-sitter parser for the Monkey programming language from Thorsten Bal",
+    "authors": [
+      {
+        "name": "0xcacti"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/0xcacti/interpreter"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

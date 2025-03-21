@@ -154,7 +154,10 @@ pub fn interpret_direct(
         define_macros(&mut program, Rc::clone(&macro_env));
         let expanded =
             expand_macros(Node::Program(program.clone()), Rc::clone(&macro_env)).unwrap();
-        evaluate(expanded, Rc::clone(&env))?;
+        let result = evaluate(expanded, Rc::clone(&env));
+        if let Ok(result) = result {
+            println!("{}", result);
+        }
     } else if let Err(err) = &program {
         println!("Woops! We ran into some monkey business here!");
         println!("parser errors:");

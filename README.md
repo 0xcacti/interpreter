@@ -10,6 +10,12 @@ in the browser using wasm.
 I used this project to learn rust, and I imagine it isn't the most idiomatic rust code.
 Please feel free to rip my implementation to shreds.
 
+
+### Wait, there's more 
+
+I decided I wanted to learn how tree-sitter worked, so I created a parser for monkey.  
+You can add the parser to neovim to get syntax highlighting.
+
 ### Instructions
 
 I designed the interpreter binary to work much like the lua binary.  

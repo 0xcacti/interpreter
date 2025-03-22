@@ -5,14 +5,15 @@
       "camelcase": "Monkey",
       "scope": "source.monkey",
       "path": ".",
-      "file-types": null,
-      "injection-regex": "^monkey$"
+      "file-types": ["monkey"],
+      "injection-regex": "^monkey$",
+      "highlights": "queries/highlights.scm"
     }
   ],
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "T ree-sitter parser for the Monkey programming language from Thorsten Bal",
+    "description": "Tree-sitter parser for the Monkey programming language from Thorsten Bal",
     "authors": [
       {
         "name": "0xcacti"

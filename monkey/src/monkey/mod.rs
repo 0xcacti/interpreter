@@ -183,9 +183,9 @@ pub fn interpret_vm(
     let program = parser.parse_program();
 
     match program {
-        Ok(program) => {
+        Ok(mut program) => {
             // expand macros
-            define_macros(&mut program.clone(), Rc::clone(&macro_env));
+            define_macros(&mut program, Rc::clone(&macro_env));
             let expanded = expand_macros(Node::Program(program), Rc::clone(&macro_env)).unwrap();
 
             // compile

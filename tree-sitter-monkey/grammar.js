@@ -24,24 +24,20 @@ module.exports = grammar({
       optional(';')
     ),
 
-
     let_statement: $ => seq(
       'let',
       field('name', $.identifier), 
       '=',
       field('value', $._expression),
-      ';'
     ),
 
     return_statement: $ => seq(
       'return',
       field('value', $._expression),
-      ';'
     ),
 
     expression_statement: $ => seq(
       $._expression,
-      ';'
     ),
 
     _expression: $ => choice(
@@ -50,6 +46,10 @@ module.exports = grammar({
       $.prefix_expression,
       $.infix_expression,
       $.if_expression,
+      $.function_expression, 
+      $.macro_expression,
+      $.call_expression,
+      $.index_expression,
     ),
 
     literal: $ => choice(
@@ -63,7 +63,8 @@ module.exports = grammar({
     identifier: () => /[a-zA-Z_][a-zA-Z0-9_]*/,
     integer: () => /[0-9]+/,
     boolean: () => choice('true', 'false'),
-    string: $ => /"([^"\\]|\\.)*"/,
+    string: () => /"([^"\\]|\\.)*"/,
+    null: () => 'null',
     array: $ => seq('[', repeat($._expression), ']'),
     hash: $ => seq('{', repeat(seq($._expression, ':', $._expression)), '}'),
 
@@ -72,7 +73,6 @@ module.exports = grammar({
       field('operator', $.prefix_operator),
       field('right', $._expression),
     )),
-
 
     infix_expression: $ => choice(
       prec.left(1, seq(field('left', $._expression), field('operator', choice('==', '!=')), field('right', $._expression))),
@@ -97,6 +97,48 @@ module.exports = grammar({
       ))
     ),
 
+    function_expression: $ => prec(6, seq(
+      'fn',
+      '(', 
+      optional(seq(
+          $.identifier, 
+          repeat(seq(',', $.identifier)), 
+          optional(','), 
+        )),
+      ')',
+      field('body', $._block),
+    )),
+
+    macro_expression: $ => prec(6, seq(
+      'macro',
+      '(',
+      optional(seq(
+          $.identifier, 
+          repeat(seq(',', $.identifier)), 
+          optional(','), 
+        )),
+      ')',
+      field('body', $._block),
+    )),
+
+    call_expression: $ => prec(7, seq(
+      field('function', $.identifier), 
+      '(',
+        optional(seq(
+          $._expression, 
+          repeat(seq(',', $._expression)),
+          optional(','),
+        )),
+      ')',
+    )),
+
+    index_expression: $ => prec(8, seq(
+      field('indexable', $._expression),
+      '[',
+      field('index', $._expression),
+      ']',
+    )),
+
     _block: $ => seq('{', repeat($._statement), '}'),
 
     comment: () => token(
@@ -105,6 +147,5 @@ module.exports = grammar({
         seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
       )
     ),
-
   }
 });

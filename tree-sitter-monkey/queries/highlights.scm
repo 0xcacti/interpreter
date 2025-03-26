@@ -1,47 +1,21 @@
+((let_statement "let") @keyword)
+((return_statement "return") @keyword)
+((if_expression "if") @keyword)
+((if_expression "else" @keyword)? @keyword)
+
 (identifier) @variable
 
-[
-  (true)
-  (false)
-] @constant.builtin
+(prefix_expression
+  operator: (_) @operator)
 
-[
-  (integer)
-] @number
+(infix_expression
+  operator: (_) @operator)
 
+(integer) @number
+(boolean) @boolean
 (string) @string
 
-((call
-  function: (identifier) @function.builtin)
-  (#match? @function.builtin "^puts|len|first|last|rest|push$"))
+["(" ")" "{" "}" "[" "]" "," ";"] @punctuation.delimiter
+[":" "="] @punctuation.special
 
-(call function: (identifier) @function.call)
-
-
-[
-  "="
-  "=="
-  "!="
-  ">="
-  "<="
-  ">"
-  "<"
-  "*"
-  "/"
-  "+"
-  "-"
-  "!"
-] @operator
-
-[
-  "let"
-  "fn"
-  "return"
-  "if"
-  "else"
-] @keyword
-
-["(" ")" "[" "]" "{" "}"] @punctuation.bracket
-["," ":" ";"] @punctuation.delimiter
-
-(comment) @comment @spell
+(comment) @comment

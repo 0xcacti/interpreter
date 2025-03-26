@@ -9,13 +9,19 @@
 module.exports = grammar({
   name: "monkey",
 
+  extras: $ => [$.comment, /\s/],
+  word: $ => $.identifier,
+
   rules: {
     source_file: $ => repeat($._statement),
 
-    _statement: $ => choice(
-      $.let_statement,
-      $.return_statement,
-      $.expression_statement,
+    _statement: $ => seq(
+      choice(
+        $.let_statement,
+        $.return_statement,
+        $.expression_statement,
+      ),
+      optional(';')
     ),
 
 
@@ -40,12 +46,65 @@ module.exports = grammar({
 
     _expression: $ => choice(
       $.identifier, 
-      $.integer
+      $.literal,
+      $.prefix_expression,
+      $.infix_expression,
+      $.if_expression,
     ),
 
-    identifier: $ => /[a-zA-Z_][a-zA-Z0-9_]*/,
-    integer: $ => /[0-9]+/
+    literal: $ => choice(
+      $.integer,
+      $.boolean,
+      $.string,
+      $.array,
+      $.hash
+    ),
 
+    identifier: () => /[a-zA-Z_][a-zA-Z0-9_]*/,
+    integer: () => /[0-9]+/,
+    boolean: () => choice('true', 'false'),
+    string: $ => /"([^"\\]|\\.)*"/,
+    array: $ => seq('[', repeat($._expression), ']'),
+    hash: $ => seq('{', repeat(seq($._expression, ':', $._expression)), '}'),
+
+    prefix_operator: () => choice('!', '-'),
+    prefix_expression: $ => prec.right(5, seq(
+      field('operator', $.prefix_operator),
+      field('right', $._expression),
+    )),
+
+
+    infix_expression: $ => choice(
+      prec.left(1, seq(field('left', $._expression), field('operator', choice('==', '!=')), field('right', $._expression))),
+      prec.left(2, seq(field('left', $._expression), field('operator', choice('>', '<')), field('right', $._expression))),
+      prec.left(3, seq(field('left', $._expression), field('operator', choice('+', '-')), field('right', $._expression))),
+      prec.left(4, seq(field('left', $._expression), field('operator', choice('*', '/')), field('right', $._expression))),
+    ),
+
+    if_expression: $ => seq(
+      'if', 
+      '(',
+      field('condition', $._expression),
+      ')',
+      '{',
+      field('consequence', $._block),
+      '}',
+      optional(seq(
+        'else',
+        '{',
+        field('alternative', $._block),
+        '}'
+      ))
+    ),
+
+    _block: $ => seq('{', repeat($._statement), '}'),
+
+    comment: () => token(
+      choice(
+        seq('//', '/.*/'),
+        seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
+      )
+    ),
 
   }
 });

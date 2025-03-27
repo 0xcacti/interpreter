@@ -57,7 +57,8 @@ module.exports = grammar({
       $.boolean,
       $.string,
       $.array,
-      $.hash
+      $.hash,
+      $.null,
     ),
 
     identifier: () => /[a-zA-Z_][a-zA-Z0-9_]*/,
@@ -87,12 +88,12 @@ module.exports = grammar({
       field('condition', $._expression),
       ')',
       '{',
-      field('consequence', $._block),
+      field('consequence', $.block),
       '}',
       optional(seq(
         'else',
         '{',
-        field('alternative', $._block),
+        field('alternative', $.block),
         '}'
       ))
     ),
@@ -106,7 +107,7 @@ module.exports = grammar({
           optional(','), 
         )),
       ')',
-      field('body', $._block),
+      field('body', $.block),
     )),
 
     macro_expression: $ => prec(6, seq(
@@ -118,7 +119,7 @@ module.exports = grammar({
           optional(','), 
         )),
       ')',
-      field('body', $._block),
+      field('body', $.block),
     )),
 
     call_expression: $ => prec(7, seq(
@@ -139,7 +140,7 @@ module.exports = grammar({
       ']',
     )),
 
-    _block: $ => seq('{', repeat($._statement), '}'),
+    block: $ => seq('{', repeat($._statement), '}'),
 
     comment: () => token(
       choice(

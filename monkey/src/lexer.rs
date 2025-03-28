@@ -21,6 +21,19 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
+        if self.ch == b'/' {
+            match self.peek() {
+                b'/' => {
+                    self.skip_line_comment();
+                    return self.next_token();
+                }
+                b'*' => {
+                    self.skip_block_comment();
+                    return self.next_token();
+                }
+                _ => {}
+            }
+        }
 
         let tok = match self.ch {
             b'=' => self.single_or_double(b'=', Token::Assign, Token::Eq),
@@ -63,6 +76,36 @@ impl Lexer {
 
         self.read_char();
         return tok;
+    }
+
+    fn skip_line_comment(&mut self) {
+        self.read_char();
+        self.read_char();
+        while self.ch != b'\n' && self.ch != 0 {
+            self.read_char();
+        }
+        if self.ch != 0 {
+            self.read_char();
+        }
+    }
+
+    fn skip_block_comment(&mut self) {
+        self.read_char();
+        self.read_char();
+        let mut nesting = 1;
+        while nesting > 0 && self.ch != 0 {
+            if self.ch == b'/' && self.peek() == b'*' {
+                self.read_char();
+                self.read_char();
+                nesting += 1;
+            } else if self.ch == b'*' && self.peek() == b'/' {
+                self.read_char();
+                self.read_char();
+                nesting -= 1;
+            } else {
+                self.read_char();
+            }
+        }
     }
 
     fn read_string(&mut self) -> String {
@@ -171,7 +214,7 @@ mod test {
                 x + y;
             };
             let result = add(five, ten);
-        !-/*5;
+        !-/ *5;
         5 < 10 > 5;
         if (5 < 10) {
             return true;
@@ -180,8 +223,11 @@ mod test {
         }
 
         10 == 10;
-        10 != 9;
+        10 != 9; // test comment
         "foobar"
+        /* 
+         *
+         */
         "foo bar" 
         [1, 2];
         {"foo": "bar"}

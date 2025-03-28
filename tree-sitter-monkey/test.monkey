@@ -37,6 +37,7 @@ let result = if (x > 0) {
 // Function call
 let total = add(4, 5);  // Call expression
 
+
 // Index expression
 let first_idx = arr[0];     // Array indexing
 

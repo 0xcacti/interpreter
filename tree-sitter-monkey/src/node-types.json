@@ -75,6 +75,11 @@
     "fields": {}
   },
   {
+    "type": "builtin",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "call_expression",
     "named": true,
     "fields": {
@@ -83,7 +88,15 @@
         "required": true,
         "types": [
           {
+            "type": "builtin",
+            "named": true
+          },
+          {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "quote_unquote",
             "named": true
           }
         ]
@@ -725,6 +738,11 @@
     "fields": {}
   },
   {
+    "type": "quote_unquote",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "return_statement",
     "named": true,
     "fields": {
@@ -866,7 +884,16 @@
   },
   {
     "type": "comment",
-    "named": true
+    "named": true,
+    "extra": true
+  },
+  {
+    "type": "echo",
+    "named": false
+  },
+  {
+    "type": "echoln",
+    "named": false
   },
   {
     "type": "else",
@@ -874,6 +901,10 @@
   },
   {
     "type": "false",
+    "named": false
+  },
+  {
+    "type": "first",
     "named": false
   },
   {
@@ -893,6 +924,14 @@
     "named": true
   },
   {
+    "type": "last",
+    "named": false
+  },
+  {
+    "type": "len",
+    "named": false
+  },
+  {
     "type": "let",
     "named": false
   },
@@ -905,6 +944,18 @@
     "named": true
   },
   {
+    "type": "push",
+    "named": false
+  },
+  {
+    "type": "quote",
+    "named": false
+  },
+  {
+    "type": "rest",
+    "named": false
+  },
+  {
     "type": "return",
     "named": false
   },
@@ -914,6 +965,10 @@
   },
   {
     "type": "true",
+    "named": false
+  },
+  {
+    "type": "unquote",
     "named": false
   },
   {

@@ -38,11 +38,11 @@ let result = if (x > 0) {
 let total = add(4, 5);  // Call expression
 
 // Index expression
-let first = arr[0];     // Array indexing
+let first_idx = arr[0];     // Array indexing
 
 // Nested expressions
 let complex = if (total != null) {
-    echoln(first);
+    echoln(first_idx);
     let temp = {"key": first + sum};  // Nested hash and infix
     temp["key"];                     // Index expression in block
 } else {

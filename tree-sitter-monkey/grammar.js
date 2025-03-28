@@ -59,6 +59,8 @@ module.exports = grammar({
       $.null,
     ),
 
+    builtin: () => choice('len', 'first', 'last', 'rest', 'push', 'echo', 'echoln'),
+    quote_unquote: () => choice('quote', 'unquote'),
     identifier: () => /[a-zA-Z_][a-zA-Z0-9_]*/,
     integer: () => /[0-9]+/,
     boolean: () => choice('true', 'false'),
@@ -122,7 +124,7 @@ module.exports = grammar({
     )),
 
     call_expression: $ => prec(7, seq(
-      field('function', $.identifier), 
+      field('function', choice($.identifier, $.builtin, $.quote_unquote)), 
       '(',
         optional(seq(
           $._expression, 

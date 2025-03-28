@@ -164,6 +164,52 @@
         }
       ]
     },
+    "builtin": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "len"
+        },
+        {
+          "type": "STRING",
+          "value": "first"
+        },
+        {
+          "type": "STRING",
+          "value": "last"
+        },
+        {
+          "type": "STRING",
+          "value": "rest"
+        },
+        {
+          "type": "STRING",
+          "value": "push"
+        },
+        {
+          "type": "STRING",
+          "value": "echo"
+        },
+        {
+          "type": "STRING",
+          "value": "echoln"
+        }
+      ]
+    },
+    "quote_unquote": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "quote"
+        },
+        {
+          "type": "STRING",
+          "value": "unquote"
+        }
+      ]
+    },
     "identifier": {
       "type": "PATTERN",
       "value": "[a-zA-Z_][a-zA-Z0-9_]*"
@@ -689,8 +735,21 @@
             "type": "FIELD",
             "name": "function",
             "content": {
-              "type": "SYMBOL",
-              "name": "identifier"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "builtin"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "quote_unquote"
+                }
+              ]
             }
           },
           {
@@ -846,5 +905,6 @@
   "precedences": [],
   "externals": [],
   "inline": [],
-  "supertypes": []
+  "supertypes": [],
+  "reserved": {}
 }

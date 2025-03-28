@@ -18,7 +18,9 @@
 ((macro_expression (identifier)) @variable.parameter) 
 ((macro_expression body: (block)) @function) 
 
-((call_expression function: (identifier)) @function)
+((call_expression function: (identifier)) @function.call)
+((call_expression function: (builtin)) @function.builtin)
+((call_expression function: (quote_unquote)) @function.builtin)
 
 
 (prefix_expression

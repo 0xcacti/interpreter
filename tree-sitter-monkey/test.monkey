@@ -43,6 +43,7 @@ let first_idx = arr[0];     // Array indexing
 // Nested expressions
 let complex = if (total != null) {
     echoln(first_idx);
+    first(arr);
     let temp = {"key": first + sum};  // Nested hash and infix
     temp["key"];                     // Index expression in block
 } else {

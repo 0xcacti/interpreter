@@ -7,7 +7,8 @@
       "path": ".",
       "file-types": ["monkey"],
       "injection-regex": "^monkey$",
-      "highlights": "queries/highlights.scm"
+      "highlights": "queries/highlights.scm",
+      "locals": "queries/locals.scm",
     }
   ],
   "metadata": {

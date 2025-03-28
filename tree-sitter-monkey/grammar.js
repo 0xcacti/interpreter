@@ -36,9 +36,7 @@ module.exports = grammar({
       field('value', $._expression),
     ),
 
-    expression_statement: $ => seq(
-      $._expression,
-    ),
+    expression_statement: $ => $._expression,
 
     _expression: $ => choice(
       $.identifier, 
@@ -75,11 +73,16 @@ module.exports = grammar({
       field('right', $._expression),
     )),
 
+    eq_neq_infix_operator: () => choice('==', '!='),
+    gt_lt_infix_operator: () => choice('>', '<'),
+    plus_minus_infix_operator: () => choice('+', '-'),
+    mul_div_infix_operator: () => choice('*', '/'),
+
     infix_expression: $ => choice(
-      prec.left(1, seq(field('left', $._expression), field('operator', choice('==', '!=')), field('right', $._expression))),
-      prec.left(2, seq(field('left', $._expression), field('operator', choice('>', '<')), field('right', $._expression))),
-      prec.left(3, seq(field('left', $._expression), field('operator', choice('+', '-')), field('right', $._expression))),
-      prec.left(4, seq(field('left', $._expression), field('operator', choice('*', '/')), field('right', $._expression))),
+      prec.left(1, seq(field('left', $._expression), field('operator', $.eq_neq_infix_operator), field('right', $._expression))),
+      prec.left(2, seq(field('left', $._expression), field('operator', $.gt_lt_infix_operator), field('right', $._expression))),
+      prec.left(3, seq(field('left', $._expression), field('operator', $.plus_minus_infix_operator), field('right', $._expression))),
+      prec.left(4, seq(field('left', $._expression), field('operator', $.mul_div_infix_operator), field('right', $._expression))),
     ),
 
     if_expression: $ => seq(
@@ -87,14 +90,10 @@ module.exports = grammar({
       '(',
       field('condition', $._expression),
       ')',
-      '{',
       field('consequence', $.block),
-      '}',
       optional(seq(
         'else',
-        '{',
         field('alternative', $.block),
-        '}'
       ))
     ),
 
@@ -144,7 +143,7 @@ module.exports = grammar({
 
     comment: () => token(
       choice(
-        seq('//', '/.*/'),
+        /\/\/.*/,
         seq('/*', /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
       )
     ),

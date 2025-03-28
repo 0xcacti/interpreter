@@ -1,6 +1,6 @@
 [package]
 name = "tree-sitter-monkey"
-description = "T ree-sitter parser for the Monkey programming language from Thorsten Bal"
+description = "Tree-sitter parser for the Monkey programming language from Thorsten Bal"
 version = "0.1.0"
 authors = ["0xcacti"]
 license = "MIT"

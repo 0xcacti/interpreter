@@ -1,4 +1,5 @@
 // Single-line comment
+
 /* Multi-line
    comment */
 
@@ -41,8 +42,10 @@ let first = arr[0];     // Array indexing
 
 // Nested expressions
 let complex = if (total != null) {
+    echoln(first);
     let temp = {"key": first + sum};  // Nested hash and infix
     temp["key"];                     // Index expression in block
 } else {
     0
 };
+

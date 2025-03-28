@@ -133,6 +133,11 @@
     }
   },
   {
+    "type": "eq_neq_infix_operator",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "expression_statement",
     "named": true,
     "fields": {},
@@ -204,6 +209,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "gt_lt_infix_operator",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "hash",
@@ -461,36 +471,20 @@
         "required": true,
         "types": [
           {
-            "type": "!=",
-            "named": false
+            "type": "eq_neq_infix_operator",
+            "named": true
           },
           {
-            "type": "*",
-            "named": false
+            "type": "gt_lt_infix_operator",
+            "named": true
           },
           {
-            "type": "+",
-            "named": false
+            "type": "mul_div_infix_operator",
+            "named": true
           },
           {
-            "type": "-",
-            "named": false
-          },
-          {
-            "type": "/",
-            "named": false
-          },
-          {
-            "type": "<",
-            "named": false
-          },
-          {
-            "type": "==",
-            "named": false
-          },
-          {
-            "type": ">",
-            "named": false
+            "type": "plus_minus_infix_operator",
+            "named": true
           }
         ]
       },
@@ -656,6 +650,16 @@
         }
       ]
     }
+  },
+  {
+    "type": "mul_div_infix_operator",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "plus_minus_infix_operator",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "prefix_expression",

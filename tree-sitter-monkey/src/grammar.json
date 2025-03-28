@@ -91,13 +91,8 @@
       ]
     },
     "expression_statement": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_expression"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "_expression"
     },
     "_expression": {
       "type": "CHOICE",
@@ -289,6 +284,58 @@
         ]
       }
     },
+    "eq_neq_infix_operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "=="
+        },
+        {
+          "type": "STRING",
+          "value": "!="
+        }
+      ]
+    },
+    "gt_lt_infix_operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ">"
+        },
+        {
+          "type": "STRING",
+          "value": "<"
+        }
+      ]
+    },
+    "plus_minus_infix_operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "+"
+        },
+        {
+          "type": "STRING",
+          "value": "-"
+        }
+      ]
+    },
+    "mul_div_infix_operator": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "*"
+        },
+        {
+          "type": "STRING",
+          "value": "/"
+        }
+      ]
+    },
     "infix_expression": {
       "type": "CHOICE",
       "members": [
@@ -310,17 +357,8 @@
                 "type": "FIELD",
                 "name": "operator",
                 "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "=="
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "!="
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "eq_neq_infix_operator"
                 }
               },
               {
@@ -352,17 +390,8 @@
                 "type": "FIELD",
                 "name": "operator",
                 "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": ">"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "<"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "gt_lt_infix_operator"
                 }
               },
               {
@@ -394,17 +423,8 @@
                 "type": "FIELD",
                 "name": "operator",
                 "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "+"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "-"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "plus_minus_infix_operator"
                 }
               },
               {
@@ -436,17 +456,8 @@
                 "type": "FIELD",
                 "name": "operator",
                 "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "STRING",
-                      "value": "*"
-                    },
-                    {
-                      "type": "STRING",
-                      "value": "/"
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "mul_div_infix_operator"
                 }
               },
               {
@@ -486,20 +497,12 @@
           "value": ")"
         },
         {
-          "type": "STRING",
-          "value": "{"
-        },
-        {
           "type": "FIELD",
           "name": "consequence",
           "content": {
             "type": "SYMBOL",
             "name": "block"
           }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
         },
         {
           "type": "CHOICE",
@@ -512,20 +515,12 @@
                   "value": "else"
                 },
                 {
-                  "type": "STRING",
-                  "value": "{"
-                },
-                {
                   "type": "FIELD",
                   "name": "alternative",
                   "content": {
                     "type": "SYMBOL",
                     "name": "block"
                   }
-                },
-                {
-                  "type": "STRING",
-                  "value": "}"
                 }
               ]
             },
@@ -813,17 +808,8 @@
         "type": "CHOICE",
         "members": [
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "//"
-              },
-              {
-                "type": "STRING",
-                "value": "/.*/"
-              }
-            ]
+            "type": "PATTERN",
+            "value": "\\/\\/.*"
           },
           {
             "type": "SEQ",

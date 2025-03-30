@@ -1,7 +1,8 @@
+use anyhow::{Context, Result};
 use jsonrpc_core::{IoHandler, Value};
 use std::io::{BufRead, BufReader, Read, Write};
 
-fn main() {
+fn main() -> Result<()> {
     let mut io = IoHandler::new();
     io.add_sync_method("say_hello", |_params| Ok(Value::String("hello".to_owned())));
 
@@ -14,10 +15,12 @@ fn main() {
         let mut content_length: Option<usize> = None;
         loop {
             buffer.clear();
-            let bytes_read = reader.read_line(&mut buffer).unwrap();
+            let bytes_read = reader
+                .read_line(&mut buffer)
+                .context("Failed to read line")?;
 
             if bytes_read == 0 {
-                return; // TODO what to do here
+                return Ok(());
             }
 
             let length_prefix = "Content-Length: ";
@@ -44,25 +47,24 @@ fn main() {
 
         if let Some(length) = content_length {
             let mut content = vec![0; length];
-            match reader.read_exact(&mut content) {
-                Ok(_) => {
-                    let request_str = String::from_utf8(content).unwrap();
-                    eprintln!("Request: {}", request_str);
+            reader
+                .read_exact(&mut content)
+                .context("Failed to read request content")?;
+            let request_str =
+                String::from_utf8(content).context("Failed to parse request to utf8 string")?;
+            eprintln!("Request: {}", request_str);
 
-                    let response = io.handle_request_sync(&request_str);
+            let response = io.handle_request_sync(&request_str);
 
-                    if let Some(response_str) = response {
-                        let response_bytes = response_str.as_bytes();
-                        write!(stdout, "Content-Length: {}\r\n\r\n", response_bytes.len()).unwrap();
-                        stdout.write_all(response_bytes).unwrap();
-                        stdout.flush().unwrap();
-                        eprintln!("\nSent response");
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to read request content: {}", e);
-                    return;
-                }
+            if let Some(response_str) = response {
+                let response_bytes = response_str.as_bytes();
+                write!(stdout, "Content-Length: {}\r\n\r\n", response_bytes.len())
+                    .context("Failed to write response length to stdout")?;
+                stdout
+                    .write_all(response_bytes)
+                    .context("Failed to write response to stdout")?;
+                stdout.flush().context("Failed to flush stdout")?;
+                eprintln!("\nSent response");
             }
         } else {
             eprintln!("No Content-Length header found, skipping")

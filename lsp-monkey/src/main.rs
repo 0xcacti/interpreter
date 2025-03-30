@@ -40,9 +40,20 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            // if line.starts_with("Content-Type: ") {
-            //     let content_mime_type = buffer[length_prefix.len()..].trim_end();
-            // }
+            if line.starts_with("Content-Type: ")
+                && !line.contains("charset=utf-8")
+                && !line.contains("utf8")
+            {
+                let error_response = r#"{"jsonrpc":"2.0","error":{"code":-32701,"message":"Unsupported encoding, only utf-8 is supported"},"id":null}"#;
+                let response_bytes = error_response.as_bytes();
+                write!(stdout, "Content-Length: {}\r\n\r\n", response_bytes.len())
+                    .context("Failed to write response length to stdout")?;
+                stdout
+                    .write_all(response_bytes)
+                    .context("Failed to write response to stdout")?;
+                stdout.flush().context("Failed to flush stdout")?;
+                continue;
+            }
         }
 
         if let Some(length) = content_length {

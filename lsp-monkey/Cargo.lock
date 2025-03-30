@@ -213,6 +213,8 @@ version = "0.1.0"
 dependencies = [
  "jsonrpc-core",
  "jsonrpc-stdio-server",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

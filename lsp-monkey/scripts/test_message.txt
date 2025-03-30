@@ -1,1 +1,1 @@
-Content-Length: 55\r\n\r\n{"jsonrpc":"2.0","id":1,"method":"say_hello","params":[]}
+{"jsonrpc":"2.0","id":1,"method":"say_hello","params":[]}

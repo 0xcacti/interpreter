@@ -83,3 +83,28 @@ pub struct NotificationMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<LSPAny>,
 }
+
+/// A unique token to identify progress operations
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(untagged)]
+pub enum ProgressToken {
+    Integer(Integer),
+    String(String),
+}
+
+/// Parameters for the cancel request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CancelParams {
+    /// The request id to cancel.
+    pub id: RequestId,
+}
+
+/// Parameters for progress notifications
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProgressParams<T> {
+    /// The progress token provided by the client or server.
+    pub token: ProgressToken,
+
+    /// The progress data.
+    pub value: T,
+}

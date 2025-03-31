@@ -49,20 +49,6 @@ monkey --mode vm ./main.monkey
 
 ```
 
-### Todo 
-
-I probably won't come back to this project as I got most of what I wanted out of it.  
-However, monkey is supposed to be faster in vm mode than direct, so that means I 
-absolutely botched the vm impl with clones and other bad practices.  I probably should fix that. 
-I could also extend the wasm to support compiled mode, but tbh I don't really care about that.
-Finally, I could extend the compiler to support macros, I actually looked at doing this, but 
-it seems very tricky.  I'm going to pass for now. 
-
-- [ ] Optimize the vm implementation
-- [ ] Extend wasm to support the compiler
-- [x] Extend the compiler to support macros 
-
-
 ### Acknowledgements
 
 Some of the code here was influenced by [ ThePrimeagen's ](https://github.com/ThePrimeagen) version which he abandoned 

@@ -10,11 +10,12 @@ in the browser using wasm.
 I used this project to learn rust, and I imagine it isn't the most idiomatic rust code.
 Please feel free to rip my implementation to shreds.
 
+// Sidebar 
 
-### Wait, there's more 
-
-I decided I wanted to learn how tree-sitter worked, so I created a parser for monkey.  
-You can add the parser to neovim to get syntax highlighting.
+This is much later, oh and I'm still bad at rust, but I wanted to learn more 
+about syntax highlighting and lsps, so I went ahead and implemented a tree-sitter 
+grammar for monkey.  I'm currently in the process of adding an lsp for monkey, but 
+I'm trying to implement the LSP from "scratch" so it's taking a bit.  
 
 ### Instructions
 
@@ -59,7 +60,7 @@ it seems very tricky.  I'm going to pass for now.
 
 - [ ] Optimize the vm implementation
 - [ ] Extend wasm to support the compiler
-- [ ] Extend the compiler to support macros 
+- [x] Extend the compiler to support macros 
 
 
 ### Acknowledgements

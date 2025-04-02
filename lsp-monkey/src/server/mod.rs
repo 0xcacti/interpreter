@@ -24,16 +24,18 @@ where
     W: Write,
 {
     pub fn new(reader: R, writer: W) -> Self {
-        let mut io = IoHandler::new();
-        io.add_sync_method("say_hello", |_params| Ok(Value::String("hello".to_owned())));
-
         LspServer {
             reader: BufReader::new(reader),
             writer: BufWriter::new(writer),
             request_cancellations: HashMap::new(),
-            io,
+            io: IoHandler::new(),
             initialized: false,
         }
+    }
+
+    pub fn setup_handlers(&mut self) {
+        let io = &mut self.io;
+        io.add_sync_method("say_hello", |_params| Ok(Value::String("hello".to_owned())));
     }
 
     pub fn run(&mut self) -> Result<(), LspError> {

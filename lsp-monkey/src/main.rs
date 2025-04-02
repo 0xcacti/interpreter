@@ -5,5 +5,6 @@ fn main() -> Result<()> {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
     let mut server = LspServer::new(stdin.lock(), stdout.lock());
+    server.setup_handlers();
     server.run().context("LSP server failed to run")
 }

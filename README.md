@@ -17,7 +17,10 @@ about syntax highlighting and lsps, so I went ahead and implemented a tree-sitte
 grammar for monkey.  I'm currently in the process of adding an lsp for monkey, but 
 I'm trying to implement the LSP from "scratch" so it's taking a bit.  
 
-### Instructions
+Okay, building the underlying language server protocol is going to take a 
+while.  However, I'm learning a lot.
+
+### Usage
 
 I designed the interpreter binary to work much like the lua binary.  
 You can run the interpreter (in naive-interactive mode) by simply using the binary name.

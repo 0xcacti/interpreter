@@ -38,6 +38,8 @@ where
         io.add_sync_method("say_hello", |_params| Ok(Value::String("hello".to_owned())));
     }
 
+    pub fn initialize(&mut self, params: )
+
     pub fn run(&mut self) -> Result<(), LspError> {
         let mut buffer = String::new();
         loop {

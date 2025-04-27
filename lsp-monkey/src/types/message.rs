@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// The Language Server Protocol always uses "2.0" as the jsonrpc version.
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Message {
+    /// The JSON-RPC protocol version, always "2.0".
     pub jsonrpc: String,
 }
 
@@ -84,19 +85,19 @@ pub struct NotificationMessage {
     pub params: Option<LSPAny>,
 }
 
+/// Parameters for the cancel request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CancelParams {
+    /// The request id to cancel.
+    pub id: RequestId,
+}
+
 /// A unique token to identify progress operations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(untagged)]
 pub enum ProgressToken {
     Integer(Integer),
     String(String),
-}
-
-/// Parameters for the cancel request
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CancelParams {
-    /// The request id to cancel.
-    pub id: RequestId,
 }
 
 /// Parameters for progress notifications

@@ -9,3 +9,7 @@ I do so for monkey.
 
 - [x] Go through all types, using #[serder(rename="")] where needed
 - [x] Go through all types, using #[serde(default, skip_serializing_if)] as needed
+- [ ] Implement InitializeParams
+    - [ ] Implement ClientCapabilities
+    - [ ] Implement TraceValues
+    - [ ] Implement WorkspaceFolders

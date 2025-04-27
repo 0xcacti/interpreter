@@ -1,6 +1,6 @@
 mod error;
 
-use crate::types::RequestId;
+use crate::types::{InitializeParams, RequestId};
 use error::LspError;
 use jsonrpc_core::{IoHandler, Value};
 use std::collections::HashMap;
@@ -38,7 +38,9 @@ where
         io.add_sync_method("say_hello", |_params| Ok(Value::String("hello".to_owned())));
     }
 
-    pub fn initialize(&mut self, params: )
+    pub fn initialize(&mut self, params: InitializeParams) -> Result<(), LspError> {
+        Ok(())
+    }
 
     pub fn run(&mut self) -> Result<(), LspError> {
         let mut buffer = String::new();

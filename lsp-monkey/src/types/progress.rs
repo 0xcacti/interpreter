@@ -2,23 +2,6 @@ use crate::types::base::UInteger;
 use crate::types::message::ProgressToken;
 use serde::{Deserialize, Serialize};
 
-/// Payload type to start a progress report
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct WorkDoneProgressBegin {
-    pub title: String,
-
-    pub cancellable: Option<bool>,
-
-    pub message: Option<String>,
-
-    pub percentage: Option<UInteger>,
-}
-
-/// Payload type to report progress
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct WorkDoneProgressReport {
-}
-
 /// A work‐done progress payload, tagged by `"kind"`.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "kind")]
@@ -31,7 +14,6 @@ pub enum WorkDoneProgress {
         ///
         /// Examples: "Indexing" or "Linking dependencies".
         pub title: String,
-
 
         /// Controls if a cancel button should show to allow the user to cancel the
         /// long running operation. Clients that don't support cancellation are
@@ -58,11 +40,11 @@ pub enum WorkDoneProgress {
     #[serde(rename = "report")]
     Report {
         /// Updated cancel-button state.
-        /// 
-	
+        ///
+
         /// Controls enablement state of a cancel button. This property is only valid
         /// if a cancel button got requested in the `WorkDoneProgressBegin` payload.
-        /// 
+        ///
         /// Clients that don't support cancellation or don't support control the
         /// button's enablement state are allowed to ignore the setting.
         pub cancellable: Option<bool>,
@@ -92,7 +74,6 @@ pub enum WorkDoneProgress {
     },
 }
 
-
 /// Mixin you embed in *request* parameter structs when the client wants
 /// to receive progress updates for that request.
 ///
@@ -100,8 +81,8 @@ pub enum WorkDoneProgress {
 /// “Here’s a token—feel free to send `$\/progress` notifications
 /// tagged with this value while you work on my request.”
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProgressParams {
-	/// An optional token that a server can use to report work done progress.
+pub struct WorkDoneProgressParams {
+    /// An optional token that a server can use to report work done progress.
     #[serde(rename = "workDoneToken")]
     token: Option<ProgressToken>,
 }
@@ -119,9 +100,6 @@ pub struct WorkDoneProgressOptions {
     #[serde(rename = "workDoneProgress")]
     pub work_done_progress: Option<bool>,
 }
-
-use serde::{Deserialize, Serialize};
-use crate::types::base::ProgressToken;
 
 /// Parameters for the `window/workDoneProgress/create` request.
 ///
@@ -141,9 +119,8 @@ pub struct WorkDoneProgressCreateParams {
 /// the final result array.
 #[derive(Debug, Clone, Deserialize)]
 pub struct PartialResultParams {
-	/// An optional token that a server can use to report partial results (e.g.
-	/// streaming) to the client.
+    /// An optional token that a server can use to report partial results (e.g.
+    /// streaming) to the client.
     #[serde(rename = "partialResultToken")]
     pub partial_result_token: Option<ProgressToken>,
 }
-

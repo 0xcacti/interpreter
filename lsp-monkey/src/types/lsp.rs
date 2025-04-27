@@ -15,6 +15,7 @@ pub struct Position {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HoverParams {
     /// The text documenst URI in string form
+    #[serde(rename = "textDocument")]
     pub text_document: String,
 
     /// The position in the text document
@@ -23,5 +24,6 @@ pub struct HoverParams {
 
 /// Result of a hover request
 pub struct HoverResult {
+    /// the string to be displayed
     pub value: String,
 }

@@ -13,19 +13,21 @@ pub enum WorkDoneProgress {
         /// operation being performed.
         ///
         /// Examples: "Indexing" or "Linking dependencies".
-        pub title: String,
+        title: String,
 
         /// Controls if a cancel button should show to allow the user to cancel the
         /// long running operation. Clients that don't support cancellation are
         /// allowed to ignore the setting.
-        pub cancellable: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cancellable: Option<bool>,
 
         /// Optional, more detailed associated progress message. Contains
         /// complementary information to the `title`.
         ///
         /// Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
         /// If unset, the previous progress message (if any) is still valid.
-        pub message: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
 
         /// Optional progress percentage to display (value 100 is considered 100%).
         /// If not provided infinite progress is assumed and clients are allowed
@@ -33,7 +35,8 @@ pub enum WorkDoneProgress {
         ///
         /// The value should be steadily rising. Clients are free to ignore values
         /// that are not following this rule. The value range is [0, 100].
-        pub percentage: Option<UInteger>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        percentage: Option<UInteger>,
     },
 
     /// Payload type to report intermediate progress.
@@ -47,14 +50,16 @@ pub enum WorkDoneProgress {
         ///
         /// Clients that don't support cancellation or don't support control the
         /// button's enablement state are allowed to ignore the setting.
-        pub cancellable: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cancellable: Option<bool>,
 
         /// Optional, more detailed associated progress message. Contains
         /// complementary information to the `title`.
         ///
         /// Examples: "3/25 files", "project/src/module2", "node_modules/some_dep".
         /// If unset, the previous progress message (if any) is still valid.
-        pub message: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
 
         /// Optional progress percentage to display (value 100 is considered 100%).
         /// If not provided infinite progress is assumed and clients are allowed
@@ -62,7 +67,8 @@ pub enum WorkDoneProgress {
         ///
         /// The value should be steadily rising. Clients are free to ignore values
         /// that are not following this rule. The value range is [0, 100].
-        pub percentage: Option<UInteger>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        percentage: Option<UInteger>,
     },
 
     /// Payload type to end a progress report.
@@ -70,7 +76,8 @@ pub enum WorkDoneProgress {
     End {
         /// Optional, a final message indicating to for example indicate the outcome
         /// of the operation.
-        pub message: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
     },
 }
 
@@ -83,7 +90,11 @@ pub enum WorkDoneProgress {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkDoneProgressParams {
     /// An optional token that a server can use to report work done progress.
-    #[serde(rename = "workDoneToken")]
+    #[serde(
+        rename = "workDoneToken",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     token: Option<ProgressToken>,
 }
 
@@ -97,7 +108,11 @@ pub struct WorkDoneProgressParams {
 pub struct WorkDoneProgressOptions {
     /// If `true`, the server will send `$\/progress` notifications
     /// for client-initiated tokens on this feature.
-    #[serde(rename = "workDoneProgress")]
+    #[serde(
+        rename = "workDoneProgress",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub work_done_progress: Option<bool>,
 }
 
@@ -121,6 +136,10 @@ pub struct WorkDoneProgressCreateParams {
 pub struct PartialResultParams {
     /// An optional token that a server can use to report partial results (e.g.
     /// streaming) to the client.
-    #[serde(rename = "partialResultToken")]
+    #[serde(
+        rename = "partialResultToken",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub partial_result_token: Option<ProgressToken>,
 }

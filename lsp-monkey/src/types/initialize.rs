@@ -1,4 +1,4 @@
-use crate::types::{base::LSPAny, progress::WorkDoneProgressParams};
+use crate::types::{base::LSPAny, progress::WorkDoneProgressParams, uri::DocumentUri};
 use serde::{Deserialize, Serialize};
 
 /// Payload for the very first request sent from the client to the server

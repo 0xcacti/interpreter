@@ -115,6 +115,110 @@ fn percent_decode(input: &str) -> Result<String, UriError> {
         .map_err(|_| UriError::new("percent-decoded data is not valid UTF-8".into()))
 }
 
+impl UriExt for Uri {
+    fn parse(s: &str, strict: bool) -> Result<Self, UriError> {
+        let components = UriComponents::parse(s, strict)?;
+        Ok(Uri(components))
+    }
+
+    fn file(path: &Path) -> Result<Self, UriError> {
+        let components = UriComponents::file(path)?;
+        Ok(Uri(components))
+    }
+
+    fn fs_path(&self) -> Result<PathBuf, UriError> {
+        self.0.fs_path()
+    }
+
+    fn scheme(&self) -> &str {
+        self.0.scheme()
+    }
+
+    fn authority(&self) -> &str {
+        self.0.authority()
+    }
+
+    fn path(&self) -> &str {
+        self.0.path()
+    }
+
+    fn query(&self) -> &str {
+        self.0.query()
+    }
+
+    fn fragment(&self) -> &str {
+        self.0.fragment()
+    }
+
+    fn with(&self, components: UriComponents) -> Self {
+        Uri(components)
+    }
+
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+
+    fn to_json(&self) -> UriComponents {
+        self.0.to_json()
+    }
+
+    fn normalize(&self) -> String {
+        self.0.normalize()
+    }
+}
+
+impl UriExt for DocumentUri {
+    fn parse(s: &str, strict: bool) -> Result<Self, UriError> {
+        let components = UriComponents::parse(s, strict)?;
+        Ok(DocumentUri(components))
+    }
+
+    fn file(path: &Path) -> Result<Self, UriError> {
+        let components = UriComponents::file(path)?;
+        Ok(DocumentUri(components))
+    }
+
+    fn fs_path(&self) -> Result<PathBuf, UriError> {
+        self.0.fs_path()
+    }
+
+    fn scheme(&self) -> &str {
+        self.0.scheme()
+    }
+
+    fn authority(&self) -> &str {
+        self.0.authority()
+    }
+
+    fn path(&self) -> &str {
+        self.0.path()
+    }
+
+    fn query(&self) -> &str {
+        self.0.query()
+    }
+
+    fn fragment(&self) -> &str {
+        self.0.fragment()
+    }
+
+    fn with(&self, components: UriComponents) -> Self {
+        DocumentUri(components)
+    }
+
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+
+    fn to_json(&self) -> UriComponents {
+        self.0.to_json()
+    }
+
+    fn normalize(&self) -> String {
+        self.0.normalize()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Uri(UriComponents);
@@ -365,11 +469,11 @@ impl UriExt for UriComponents {
     }
 
     fn to_json(&self) -> UriComponents {
-        todo!("Implement URI to JSON conversion logic");
+        return self.clone();
     }
 
     fn normalize(&self) -> String {
-        todo!("Implement URI normalization logic");
+        self.to_string()
     }
 }
 
@@ -662,5 +766,26 @@ mod tests {
             fragment: String::new(),
         };
         assert_eq!(uri.to_string(), "file://server/share/folder");
+    }
+
+    #[test]
+    fn test_to_json_roundtrip() {
+        let before =
+            UriComponents::parse("https://Example.COM:8080/a%20b?x=1#frag", false).unwrap();
+
+        let json = before.to_json();
+        assert_eq!(json, before);
+    }
+
+    #[test]
+    fn test_normalize_matches_to_string() {
+        let uri = UriComponents::parse("HTTPS://Example.COM:8080/foo/Bar?Q=2#FrAg", false).unwrap();
+        assert_eq!(uri.normalize(), uri.to_string());
+    }
+
+    #[test]
+    fn test_normalize_canonicalizes() {
+        let uri = UriComponents::parse("example.com/foo", false).unwrap();
+        assert_eq!(uri.normalize(), "file:///example.com/foo");
     }
 }

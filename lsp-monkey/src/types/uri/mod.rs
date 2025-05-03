@@ -58,6 +58,36 @@ fn percent_encode(input: &str) -> String {
     out
 }
 
+fn percent_encode_strict(input: &str) -> String {
+    let mut out = String::new();
+    for &b in input.as_bytes() {
+        let c = b as char;
+        if is_unreserved(c) || is_sub_delim(c) {
+            out.push(c);
+        } else {
+            out.push('%');
+            out.push_str(&format!("{:02X}", b));
+        }
+    }
+    out
+}
+
+fn reference_resolution(scheme: &str, mut path: String) -> String {
+    match scheme {
+        "file" | "http" | "https" => {
+            if path.is_empty() {
+                "/".into()
+            } else if !path.starts_with('/') {
+                path.insert(0, '/');
+                path
+            } else {
+                path
+            }
+        }
+        _ => path,
+    }
+}
+
 fn percent_decode(input: &str) -> Result<String, UriError> {
     let bytes = {
         let mut v = Vec::with_capacity(input.len());
@@ -150,16 +180,8 @@ impl UriExt for UriComponents {
         let mut path = percent_decode(&raw_path)?;
         let query = percent_decode(&raw_query)?;
         let fragment = percent_decode(&raw_fragment)?;
-        match scheme.as_str() {
-            "file" | "http" | "https" => {
-                if path.is_empty() {
-                    path = "/".into();
-                } else if !path.starts_with('/') {
-                    path.insert(0, '/');
-                }
-            }
-            _ => {}
-        }
+
+        path = reference_resolution(&scheme, path);
 
         if strict {
             if !authority.is_empty() {
@@ -187,74 +209,159 @@ impl UriExt for UriComponents {
     }
 
     fn file(path: &Path) -> Result<Self, UriError> {
-        // let mut path_str = if is_windows() {
-        //     let mut s = path.to_string_lossy().replace('\\', "/");
-        //     if s.len() >= 2 && s.as_bytes()[1] == b':' {
-        //         s = format!("/{}", s);
-        //     }
-        //     s
-        // } else {
-        //     path.to_string_lossy().to_string()
-        // };
+        let mut path_str = if is_windows() {
+            path.to_string_lossy().replace('\\', "/")
+        } else {
+            path.to_string_lossy().to_string()
+        };
 
-        // let mut authority = String::new();
+        let mut authority = String::new();
 
-        // if path_str.len() >= 2 && path_str.starts_with("//") {
-        //     let idx = path_str[2..].find('/').map(|i| i + 2);
-        //     match idx {
-        //         Some(idx) => {
-        //             authority = path_str[2..idx].to_string();
-        //             path_str = path_str[idx..].to_string();
-        //             if path_str.is_empty() {
-        //                 path_str = "/".to_string();
-        //             }
-        //         }
-        //         None => {
-        //             authority = path_str[2..].to_string();
-        //             path_str = "/".to_string();
-        //         }
-        //     }
-        // }
+        if path_str.starts_with("//") {
+            let idx = path_str[2..].find('/').map(|i| i + 2);
+            match idx {
+                Some(idx) => {
+                    authority = path_str[2..idx].to_string();
+                    path_str = path_str[idx..].to_string();
+                    if path_str.is_empty() {
+                        path_str = "/".to_string();
+                    }
+                }
+                None => {
+                    authority = path_str[2..].to_string();
+                    path_str = "/".to_string();
+                }
+            }
+        }
 
-        // let uri_string = if !authority.is_empty() {
-        //     format!("file://{}{}", authority, path_str)
-        // } else {
-        //     format!("file://{}", path_str)
-        // };
+        path_str = reference_resolution("file", path_str);
 
-        // Ok(Uri(uri_string))
-        todo!("Implement file URI construction logic");
+        Ok(UriComponents {
+            scheme: "file".to_string(),
+            authority,
+            path: path_str,
+            query: String::new(),
+            fragment: String::new(),
+        })
     }
 
     fn fs_path(&self) -> Result<PathBuf, UriError> {
-        todo!("Implement file system path extraction logic");
+        let mut value =
+            if !self.authority.is_empty() && self.path.len() > 1 && self.scheme == "file" {
+                format!("//{}{}", self.authority, self.path)
+            } else if self.path.as_bytes()[0] == b'/'
+                && (self.path.as_bytes()[1] >= b'A' && self.path.as_bytes()[1] <= b'Z'
+                    || self.path.as_bytes()[1] >= b'a' && self.path.as_bytes()[1] <= b'z')
+                && self.path.as_bytes()[2] == b':'
+            {
+                self.path[1..].to_string()
+            } else {
+                self.path.clone()
+            };
+
+        if cfg!(windows) {
+            value = value.replace('/', "\\");
+        }
+
+        Ok(PathBuf::from(value))
     }
+
     fn scheme(&self) -> &str {
-        todo!("Implement scheme extraction logic");
+        &self.scheme
     }
 
     fn authority(&self) -> &str {
-        todo!("Implement authority extraction logic");
+        &self.authority
     }
 
     fn path(&self) -> &str {
-        todo!("Implement path extraction logic");
+        &self.path
     }
 
     fn query(&self) -> &str {
-        todo!("Implement query extraction logic");
+        &self.query
     }
 
     fn fragment(&self) -> &str {
-        todo!("Implement fragment extraction logic");
+        &self.fragment
     }
 
     fn with(&self, components: UriComponents) -> Self {
-        todo!("Implement URI construction logic");
+        UriComponents {
+            scheme: components.scheme,
+            authority: components.authority,
+            path: components.path,
+            query: components.query,
+            fragment: components.fragment,
+        }
     }
 
     fn to_string(&self) -> String {
-        todo!("Implement URI to string conversion logic");
+        let mut out = String::new();
+        if !self.scheme.is_empty() {
+            out.push_str(&self.scheme);
+            out.push(':');
+        }
+
+        if !self.authority.is_empty() || self.scheme == "file" {
+            out.push_str("//");
+        }
+
+        if !self.authority.is_empty() {
+            let mut auth = self.authority.clone();
+            if let Some(at) = auth.find('@') {
+                let userinfo = &auth[..at];
+                let hostport = &auth[at + 1..];
+                if let Some(colon) = userinfo.rfind(':') {
+                    out.push_str(&percent_encode(&userinfo[..colon]));
+                    out.push(':');
+                    out.push_str(&percent_encode(&userinfo[colon + 1..]));
+                } else {
+                    out.push_str(&percent_encode(userinfo));
+                }
+                out.push('@');
+                auth = hostport.to_string();
+            }
+
+            let auth_lower = auth.to_ascii_lowercase();
+            if let Some(colon_idx) = auth_lower.find(':') {
+                out.push_str(&percent_encode(&auth_lower[..colon_idx]));
+                out.push_str(&auth_lower[colon_idx..]);
+            } else {
+                out.push_str(&percent_encode(&auth_lower));
+            }
+        }
+
+        if !self.path.is_empty() {
+            let mut path = self.path.clone();
+            if path.len() >= 3
+                && path.as_bytes()[0] == b'/'
+                && path.as_bytes()[2] == b':'
+                && (path.as_bytes()[1] as char).is_ascii_uppercase()
+            {
+                let lc = (path.as_bytes()[1] as char).to_ascii_lowercase();
+                path.replace_range(1..2, &lc.to_string());
+            } else if path.len() >= 2
+                && path.as_bytes()[1] == b':'
+                && (path.as_bytes()[0] as char).is_ascii_uppercase()
+            {
+                let lc = (path.as_bytes()[0] as char).to_ascii_lowercase();
+                path.replace_range(0..1, &lc.to_string());
+            }
+            out.push_str(&percent_encode(&path));
+        }
+
+        if !self.query.is_empty() {
+            out.push('?');
+            out.push_str(&percent_encode_strict(&self.query));
+        }
+
+        if !self.fragment.is_empty() {
+            out.push('#');
+            out.push_str(&percent_encode_strict(&self.fragment));
+        }
+
+        out
     }
 
     fn to_json(&self) -> UriComponents {
@@ -269,6 +376,83 @@ impl UriExt for UriComponents {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_percent_encode_unreserved() {
+        let input = "AZaz09-._~";
+        assert_eq!(percent_encode(input), input);
+    }
+
+    #[test]
+    fn test_percent_encode_sub_delims() {
+        let input = "!$&'()*+,;=";
+        assert_eq!(percent_encode(input), input);
+    }
+
+    #[test]
+    fn test_percent_encode_gen_delims() {
+        let input = ":/?#[]@";
+        assert_eq!(percent_encode(input), input);
+    }
+
+    #[test]
+    fn test_percent_encode_space_and_unicode() {
+        assert_eq!(percent_encode(" "), "%20");
+        assert_eq!(percent_encode("©"), "%C2%A9");
+    }
+
+    #[test]
+    fn test_strict_parse_empty_http_path() {
+        let uri =
+            UriComponents::parse("https://example.com", true).expect("should parse in strict mode");
+        assert_eq!(uri.scheme, "https");
+        assert_eq!(uri.authority, "example.com");
+        assert_eq!(uri.path, "/");
+    }
+
+    #[test]
+    fn test_non_strict_double_slash_allowed() {
+        let uri =
+            UriComponents::parse("//some/thing", false).expect("non-strict should allow //foo/bar");
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "some");
+        assert_eq!(uri.path, "/thing");
+    }
+
+    #[test]
+    fn test_to_string_file_unc_lowercases_authority() {
+        let uri = UriComponents {
+            scheme: "file".into(),
+            authority: "SERVER".into(),
+            path: "/share/folder".into(),
+            query: "".into(),
+            fragment: "".into(),
+        };
+        assert_eq!(uri.to_string(), "file://server/share/folder",);
+    }
+
+    #[test]
+    fn test_reference_resolution_empty() {
+        assert_eq!(reference_resolution("file", "".into()), "/");
+        assert_eq!(reference_resolution("http", "".into()), "/");
+        assert_eq!(reference_resolution("https", "".into()), "/");
+    }
+
+    #[test]
+    fn test_reference_resolution_prepend_slash() {
+        assert_eq!(reference_resolution("file", "foo/bar".into()), "/foo/bar");
+        assert_eq!(reference_resolution("https", "baz".into()), "/baz");
+    }
+
+    #[test]
+    fn test_reference_resolution_already_slash() {
+        assert_eq!(reference_resolution("file", "/foo".into()), "/foo");
+    }
+
+    #[test]
+    fn test_reference_resolution_other_scheme() {
+        assert_eq!(reference_resolution("ftp", "foo".into()), "foo");
+    }
 
     #[test]
     fn test_http_uri() {
@@ -295,13 +479,11 @@ mod tests {
 
     #[test]
     fn test_strict_invalid_no_scheme() {
-        // no scheme + strict ⇒ error
         assert!(UriComponents::parse("foo/bar", true).is_err());
     }
 
     #[test]
     fn test_default_file_scheme_non_strict() {
-        // no scheme + non-strict ⇒ file:// fallback
         let uri = UriComponents::parse("foo/bar", false).unwrap();
         assert_eq!(uri.scheme, "file");
         assert_eq!(uri.authority, "");
@@ -312,7 +494,6 @@ mod tests {
 
     #[test]
     fn test_https_no_path() {
-        // http(s) with empty path ⇒ "/" by reference‐resolution
         let uri = UriComponents::parse("https://example.com", false).unwrap();
         assert_eq!(uri.scheme, "https");
         assert_eq!(uri.authority, "example.com");
@@ -321,7 +502,6 @@ mod tests {
 
     #[test]
     fn test_percent_decode_in_path() {
-        // percent‐encoded path segment
         let uri = UriComponents::parse("http://example.com/a%20b", false).unwrap();
         assert_eq!(uri.path, "/a b");
     }
@@ -344,7 +524,6 @@ mod tests {
 
     #[test]
     fn test_invalid_percent_encoding() {
-        // malformed % escape
         assert!(matches!(
             UriComponents::parse("http://example.com/%ZZ", false),
             Err(_)
@@ -353,13 +532,135 @@ mod tests {
 
     #[test]
     fn test_invalid_scheme_characters() {
-        // scheme must match /^\w[\w\d+.-]*$/
         assert!(UriComponents::parse("ht!tp://example.com", false).is_err());
     }
 
     #[test]
     fn test_strict_double_slash_no_authority() {
-        // no authority, but path starts with "//"
         assert!(UriComponents::parse("//foo/bar", true).is_err());
+    }
+
+    #[test]
+    fn test_file_unix_absolute() {
+        let uri = UriComponents::file(Path::new("/foo/bar")).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/foo/bar");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[test]
+    fn test_file_unix_root() {
+        let uri = UriComponents::file(Path::new("/")).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[test]
+    fn test_file_relative_path() {
+        let uri = UriComponents::file(Path::new("foo/bar")).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/foo/bar");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_file_windows_drive() {
+        let uri = UriComponents::file(Path::new("C:\\Windows\\System32")).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/C:/Windows/System32");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_file_windows_unc() {
+        let uri = UriComponents::file(Path::new(r"\\SERVER\share\folder")).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "SERVER");
+        assert_eq!(uri.path, "/share/folder");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[test]
+    fn test_to_string_basic_http() {
+        let uri = UriComponents::parse("http://Example.COM/foo/bar", false).unwrap();
+        // authority should be lower-cased
+        assert_eq!(uri.to_string(), "http://example.com/foo/bar");
+    }
+
+    #[test]
+    fn test_to_string_with_port() {
+        let uri = UriComponents {
+            scheme: "http".into(),
+            authority: "Example.COM:8080".into(),
+            path: "/".into(),
+            query: String::new(),
+            fragment: String::new(),
+        };
+        assert_eq!(uri.to_string(), "http://example.com:8080/");
+    }
+
+    #[test]
+    fn test_to_string_with_userinfo() {
+        let uri = UriComponents {
+            scheme: "http".into(),
+            authority: "User:Pass@Example.COM".into(),
+            path: "/p".into(),
+            query: String::new(),
+            fragment: String::new(),
+        };
+        // userinfo must be percent-encoded (but letters and ":" in password are allowed)
+        assert_eq!(uri.to_string(), "http://User:Pass@example.com/p");
+    }
+
+    #[test]
+    fn test_to_string_percent_encoding() {
+        let uri = UriComponents {
+            scheme: "https".into(),
+            authority: "example.com".into(),
+            path: "/a b/©".into(),
+            query: "q r".into(),
+            fragment: "f#g".into(),
+        };
+        let out = uri.to_string();
+        // spaces → %20, © → percent-encoded, '#' in fragment → %23 only in path/query
+        assert!(out.starts_with("https://example.com/a%20b/%C2%A9"));
+        assert!(out.contains("?q%20r"));
+        assert!(out.contains("#f%23g"));
+    }
+
+    #[test]
+    fn test_to_string_file_drive_letter() {
+        let uri = UriComponents {
+            scheme: "file".into(),
+            authority: "".into(),
+            path: "/C:/Foo Bar".into(),
+            query: String::new(),
+            fragment: String::new(),
+        };
+        assert_eq!(uri.to_string(), "file:///c:/Foo%20Bar");
+    }
+
+    #[test]
+    fn test_to_string_file_unc() {
+        let uri = UriComponents {
+            scheme: "file".into(),
+            authority: "SERVER".into(),
+            path: "/share/folder".into(),
+            query: String::new(),
+            fragment: String::new(),
+        };
+        assert_eq!(uri.to_string(), "file://server/share/folder");
     }
 }

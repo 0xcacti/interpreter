@@ -132,8 +132,11 @@ impl UriExt for UriComponents {
                 return Err(UriError::new(
                     "URI scheme is required in strict mode".into(),
                 ));
-            } else {
+            }
+            if raw_path.contains('/') {
                 "file".to_string()
+            } else {
+                return Err(UriError::new("Invalid URI: no scheme and no path".into()));
             }
         } else {
             raw_scheme.to_string()
@@ -184,42 +187,43 @@ impl UriExt for UriComponents {
     }
 
     fn file(path: &Path) -> Result<Self, UriError> {
-        let mut path_str = if is_windows() {
-            let mut s = path.to_string_lossy().replace('\\', "/");
-            if s.len() >= 2 && s.as_bytes()[1] == b':' {
-                s = format!("/{}", s);
-            }
-            s
-        } else {
-            path.to_string_lossy().to_string()
-        };
+        // let mut path_str = if is_windows() {
+        //     let mut s = path.to_string_lossy().replace('\\', "/");
+        //     if s.len() >= 2 && s.as_bytes()[1] == b':' {
+        //         s = format!("/{}", s);
+        //     }
+        //     s
+        // } else {
+        //     path.to_string_lossy().to_string()
+        // };
 
-        let mut authority = String::new();
+        // let mut authority = String::new();
 
-        if path_str.len() >= 2 && path_str.starts_with("//") {
-            let idx = path_str[2..].find('/').map(|i| i + 2);
-            match idx {
-                Some(idx) => {
-                    authority = path_str[2..idx].to_string();
-                    path_str = path_str[idx..].to_string();
-                    if path_str.is_empty() {
-                        path_str = "/".to_string();
-                    }
-                }
-                None => {
-                    authority = path_str[2..].to_string();
-                    path_str = "/".to_string();
-                }
-            }
-        }
+        // if path_str.len() >= 2 && path_str.starts_with("//") {
+        //     let idx = path_str[2..].find('/').map(|i| i + 2);
+        //     match idx {
+        //         Some(idx) => {
+        //             authority = path_str[2..idx].to_string();
+        //             path_str = path_str[idx..].to_string();
+        //             if path_str.is_empty() {
+        //                 path_str = "/".to_string();
+        //             }
+        //         }
+        //         None => {
+        //             authority = path_str[2..].to_string();
+        //             path_str = "/".to_string();
+        //         }
+        //     }
+        // }
 
-        let uri_string = if !authority.is_empty() {
-            format!("file://{}{}", authority, path_str)
-        } else {
-            format!("file://{}", path_str)
-        };
+        // let uri_string = if !authority.is_empty() {
+        //     format!("file://{}{}", authority, path_str)
+        // } else {
+        //     format!("file://{}", path_str)
+        // };
 
-        Ok(Uri(uri_string))
+        // Ok(Uri(uri_string))
+        todo!("Implement file URI construction logic");
     }
 
     fn fs_path(&self) -> Result<PathBuf, UriError> {

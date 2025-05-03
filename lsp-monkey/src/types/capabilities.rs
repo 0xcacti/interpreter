@@ -20,5 +20,5 @@ pub enum TraceValue {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientCapabilities {
     /// workspace specific client capabilities
-    workspace: Option<WorkspaceClientCapabilities>,
+    workspace: Option<u64>, // TODO: WorkspaceClientCapabilities
 }

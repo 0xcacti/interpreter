@@ -66,7 +66,7 @@ pub struct InitializeParams {
 
     /// The initial trace setting. If omitted trace is disabled ('off').
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub trace: TraceValue,
+    pub trace: Option<TraceValue>,
 
     /// The workspace folders configured in the client when the server starts.
     /// This property is only available if the client supports workspace folders.

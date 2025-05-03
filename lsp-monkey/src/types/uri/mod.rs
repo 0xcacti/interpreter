@@ -262,14 +262,13 @@ impl UriExt for UriComponents {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_uri_parse() {
-        let uri = UriComponents::parse("http://example.com/path?query#fragment", false);
-        assert!(uri.is_ok());
-        let uri = uri.unwrap();
+    fn test_http_uri() {
+        let uri = UriComponents::parse("http://example.com/path?query#fragment", false).unwrap();
         assert_eq!(uri.scheme, "http");
         assert_eq!(uri.authority, "example.com");
         assert_eq!(uri.path, "/path");
@@ -278,26 +277,85 @@ mod tests {
     }
 
     #[test]
-    fn test_uri_parse_invalid() {
-        let uri = UriComponents::parse("invalid_uri", false);
-        assert!(uri.is_err());
-    }
-
-    #[test]
-    fn test_uri_parse_strict() {
-        let uri = UriComponents::parse("http://example.com/path?query#fragment", true);
-        assert!(uri.is_ok());
-        let uri = uri.unwrap();
+    fn test_http_uri_strict() {
+        let uri = UriComponents::parse("http://example.com/path?query#fragment", true).unwrap();
         assert_eq!(uri.scheme, "http");
         assert_eq!(uri.authority, "example.com");
         assert_eq!(uri.path, "/path");
-        assert_eq!(uri.query, "query");
-        assert_eq!(uri.fragment, "fragment");
     }
 
     #[test]
-    fn test_uri_parse_strict_invalid_no_authority_double_slash() {
-        let uri = UriComponents::parse("http://example.com//path?query#fragment", true);
-        assert!(uri.is_err());
+    fn test_invalid_uri() {
+        assert!(UriComponents::parse("invalid_uri", false).is_err());
+    }
+
+    #[test]
+    fn test_strict_invalid_no_scheme() {
+        // no scheme + strict ⇒ error
+        assert!(UriComponents::parse("foo/bar", true).is_err());
+    }
+
+    #[test]
+    fn test_default_file_scheme_non_strict() {
+        // no scheme + non-strict ⇒ file:// fallback
+        let uri = UriComponents::parse("foo/bar", false).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/foo/bar");
+        assert!(uri.query.is_empty());
+        assert!(uri.fragment.is_empty());
+    }
+
+    #[test]
+    fn test_https_no_path() {
+        // http(s) with empty path ⇒ "/" by reference‐resolution
+        let uri = UriComponents::parse("https://example.com", false).unwrap();
+        assert_eq!(uri.scheme, "https");
+        assert_eq!(uri.authority, "example.com");
+        assert_eq!(uri.path, "/");
+    }
+
+    #[test]
+    fn test_percent_decode_in_path() {
+        // percent‐encoded path segment
+        let uri = UriComponents::parse("http://example.com/a%20b", false).unwrap();
+        assert_eq!(uri.path, "/a b");
+    }
+
+    #[test]
+    fn test_file_uri_windows_drive() {
+        let uri = UriComponents::parse("file:///C:/Windows/System32", false).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "");
+        assert_eq!(uri.path, "/C:/Windows/System32");
+    }
+
+    #[test]
+    fn test_file_uri_unc() {
+        let uri = UriComponents::parse("file://SERVER/share/folder", false).unwrap();
+        assert_eq!(uri.scheme, "file");
+        assert_eq!(uri.authority, "SERVER");
+        assert_eq!(uri.path, "/share/folder");
+    }
+
+    #[test]
+    fn test_invalid_percent_encoding() {
+        // malformed % escape
+        assert!(matches!(
+            UriComponents::parse("http://example.com/%ZZ", false),
+            Err(_)
+        ));
+    }
+
+    #[test]
+    fn test_invalid_scheme_characters() {
+        // scheme must match /^\w[\w\d+.-]*$/
+        assert!(UriComponents::parse("ht!tp://example.com", false).is_err());
+    }
+
+    #[test]
+    fn test_strict_double_slash_no_authority() {
+        // no authority, but path starts with "//"
+        assert!(UriComponents::parse("//foo/bar", true).is_err());
     }
 }

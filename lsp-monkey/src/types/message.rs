@@ -31,7 +31,7 @@ pub struct RequestMessage {
     pub method: String,
 
     /// The method's params.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<LSPAny>,
 }
 
@@ -45,7 +45,7 @@ pub struct ResponseError {
     pub message: String,
 
     /// A Primitive or Structured value that contains additional information about the error.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<LSPAny>,
 }
 
@@ -62,11 +62,11 @@ pub struct ResponseMessage {
 
     /// The result of a request. This member is REQUIRED on success.
     /// This member MUST NOT exist if there was an error invoking the method.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<LSPAny>,
 
     /// The error object in case a request fails.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<ResponseError>,
 }
 
@@ -81,7 +81,7 @@ pub struct NotificationMessage {
     pub method: String,
 
     /// The notification's params.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<LSPAny>,
 }
 

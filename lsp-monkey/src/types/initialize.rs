@@ -1,5 +1,5 @@
 use crate::types::{
-    base::LSPAny,
+    base::{Integer, LSPAny},
     capabilities::{ClientCapabilities, TraceValue},
     progress::WorkDoneProgressParams,
     uri::DocumentUri,
@@ -19,14 +19,10 @@ pub struct InitializeParams {
     /// process is not alive then the server should exit (see exit notification)
     /// its process.
     #[serde(rename = "processId")]
-    pub process_id: Option<u32>,
+    pub process_id: Option<Integer>,
 
     /// Information about the client
-    #[serde(
-        rename = "clientInfo",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "clientInfo", skip_serializing_if = "Option::is_none")]
     pub client_info: Option<ClientInfo>,
 
     /// The locale the client is currently showing the user interface
@@ -37,11 +33,11 @@ pub struct InitializeParams {
     /// (See https://en.wikipedia.org/wiki/IETF_language_tag)
     ///
     /// @since 3.16.0
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<String>,
 
     /// @deprecated in favour of `rootUri`
-    #[serde(rename = "rootPath", default, skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "rootPath", skip_serializing_if = "Option::is_none")]
     pub root_path: Option<String>,
 
     /// The rootUri of the workspace. Is null if no
@@ -53,19 +49,18 @@ pub struct InitializeParams {
     #[deprecated(note = "Use `workspace_folders` instead")]
     pub root_uri: Option<DocumentUri>,
 
+    /// The capabilities provided by the client (editor or tool)
+    pub capabilities: ClientCapabilities,
+
     /// User provided initialization options
     #[serde(
         rename = "initializationOptions",
-        default,
         skip_serializing_if = "Option::is_none"
     )]
     pub initialization_options: Option<LSPAny>,
 
-    /// The capabilities provided by the client (editor or tool)
-    pub capabilities: ClientCapabilities,
-
     /// The initial trace setting. If omitted trace is disabled ('off').
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub trace: Option<TraceValue>,
 
     /// The workspace folders configured in the client when the server starts.
@@ -74,11 +69,7 @@ pub struct InitializeParams {
     /// configured.
     ///
     /// @since 3.6.0
-    #[serde(
-        rename = "workspaceFolders",
-        default,
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(rename = "workspaceFolders", skip_serializing_if = "Option::is_none")]
     pub workspace_folders: Option<WorkspaceFolders>,
 }
 
@@ -89,6 +80,6 @@ pub struct ClientInfo {
     pub name: String,
 
     /// The client's version as defined by the client
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 }

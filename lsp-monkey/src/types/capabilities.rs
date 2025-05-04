@@ -1,4 +1,5 @@
-use crate::types::workspace::WorkspaceClientCapabilities;
+use crate::types::{base::LSPAny, workspace::WorkspaceClientCapabilities};
+
 use serde::{Deserialize, Serialize};
 
 /// Represents the level of verbosity with which the server systematically
@@ -19,7 +20,12 @@ pub enum TraceValue {
 /// ClientCapabilities define capabilities for dynamic registration,
 /// workspace and text document features the client supports.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClientCapabilities {
-    /// workspace specific client capabilities
-    workspace: Option<WorkspaceClientCapabilities>, // TODO: WorkspaceClientCapabilities
+    /// workspace specific client capabilities TODO: WorkspaceClientCapabilities
+    workspace: Option<WorkspaceClientCapabilities>,
+
+    /// Text document specific client capabilities TODO: TextDocumentClientCapabilities
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_document: Option<TextDocumentClientCapabilities>,
 }

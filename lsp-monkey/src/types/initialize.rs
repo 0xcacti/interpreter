@@ -49,15 +49,15 @@ pub struct InitializeParams {
     #[deprecated(note = "Use `workspace_folders` instead")]
     pub root_uri: Option<DocumentUri>,
 
-    /// The capabilities provided by the client (editor or tool)
-    pub capabilities: ClientCapabilities,
-
     /// User provided initialization options
     #[serde(
         rename = "initializationOptions",
         skip_serializing_if = "Option::is_none"
     )]
     pub initialization_options: Option<LSPAny>,
+
+    /// The capabilities provided by the client (editor or tool)
+    pub capabilities: ClientCapabilities,
 
     /// The initial trace setting. If omitted trace is disabled ('off').
     #[serde(skip_serializing_if = "Option::is_none")]

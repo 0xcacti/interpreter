@@ -5,9 +5,12 @@ use crate::types::{
     kinds::{FailureHandlingKind, ResourceOperationKind},
     progress::{PartialResultParams, WorkDoneProgressParams},
     results::PreviousResultId,
+    symbols::{ResolveSupport, SymbolKindCapabilities, TagSupport},
     uri::DocumentUri,
 };
 use serde::{Deserialize, Serialize};
+
+use super::TagSupport;
 
 /// A workspace folder as returned in the initialize request
 /// or workspace/didChangeWorkspaceFolders notification.  
@@ -151,4 +154,28 @@ pub struct WorkspaceDiagnosticParams {
 
     /// The currently known diagnostic reports with their prevous result ids
     prevous_result_ids: Vec<PreviousResultId>,
+}
+
+/// Parameters of the workspace symbols request
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceSymbolClientCapabilities {
+    /// Symbol request supports dynamic registration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_registration: Option<bool>,
+
+    /// Specific capabilities for the `SymbolKind` in the `workspace/symbol` request
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol_kind: Option<SymbolKindCapabilities>,
+
+    /// The client supports tags on `SymbolInformation` and `WorkspaceSymbol`.
+    /// Clients supporting tags have to handle unknown tags gracefully.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag_support: Option<TagSupport>,
+
+    /// The client support partial workspace symbols. The client will send the
+    /// request `workspaceSymbol/resolve` to the server to resolve additional
+    /// properties.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolve_support: Option<ResolveSupport>,
 }

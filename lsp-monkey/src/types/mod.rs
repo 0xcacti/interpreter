@@ -9,6 +9,7 @@ mod lsp;
 mod message;
 mod progress;
 mod results;
+mod symbols;
 mod workspace;
 
 pub mod uri;
@@ -24,5 +25,6 @@ pub use lsp::*;
 pub use message::*;
 pub use progress::*;
 pub use results::*;
+pub use symbols::*;
 pub use uri::*;
 pub use workspace::*;

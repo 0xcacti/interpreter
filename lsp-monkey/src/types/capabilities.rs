@@ -29,3 +29,17 @@ pub struct ClientCapabilities {
     #[serde(skip_serializing_if = "Option::is_none")]
     text_document: Option<TextDocumentClientCapabilities>,
 }
+
+/// The client has support for file requests/notifications.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileOperationsClientCapabilities {
+    /// Whether the client supports dynamic registration for file
+    /// requests/notifications.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub watchers: Option<FileSystemWatcherClientCapabilities>,
+
+    /// Capabilities specific to the `FileOperationRegistrationOptions`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rename: Option<FileOperationRegistrationOptions>,
+}

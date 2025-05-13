@@ -10,8 +10,6 @@ use crate::types::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::TagSupport;
-
 /// A workspace folder as returned in the initialize request
 /// or workspace/didChangeWorkspaceFolders notification.  
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -178,4 +176,43 @@ pub struct WorkspaceSymbolClientCapabilities {
     /// properties.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resolve_support: Option<ResolveSupport>,
+}
+
+/// Capabilities specific to the `workspace/executeCommand` request.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteCommandClientCapabilities {
+    /// Execute command supports dynamic registration
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_registration: Option<bool>,
+}
+
+/// Capabilities specific to the semantic token requests scoped to the workspace
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticTokensWorkspaceClientCapabilities {
+    /// Whether the client implementation supports a refresh request sent from
+    /// the server to the client.
+    ///
+    /// Note that this event is global and will force the client to refresh all
+    /// semantic tokens currently shown. It should be used with absolute care
+    /// and is useful for situation where a server for example detect a project
+    /// wide change that requires such a calculation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_support: Option<bool>,
+}
+
+/// Capabilities specific to the code lens requests scoped to the workspace.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeLensWorkspaceClientCapabilities {
+    /// Whether the client implementation supports a refresh request sent from
+    /// the server to the client.
+    ///
+    /// Note that this event is global and will force the client to refresh all
+    /// code lenses currently shown. It should be used with absolute care and is
+    /// useful for situation where a server for example detect a project wide
+    /// change that requires such a calculation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_support: Option<bool>,
 }

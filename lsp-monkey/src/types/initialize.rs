@@ -28,11 +28,6 @@ pub struct InitializeParams {
     /// The locale the client is currently showing the user interface
     /// in. This must not necessarily be the locale of the operating
     /// system.
-    ///
-    /// Uses IETF language tags as the value's syntax
-    /// (See https://en.wikipedia.org/wiki/IETF_language_tag)
-    ///
-    /// @since 3.16.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<String>,
 
@@ -67,8 +62,6 @@ pub struct InitializeParams {
     /// This property is only available if the client supports workspace folders.
     /// It can be `null` if the client supports workspace folders but none are
     /// configured.
-    ///
-    /// @since 3.6.0
     #[serde(rename = "workspaceFolders", skip_serializing_if = "Option::is_none")]
     pub workspace_folders: Option<WorkspaceFolders>,
 }

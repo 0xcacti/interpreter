@@ -26,6 +26,8 @@ implemented.  It's all just writing types, so it's super painful, but
 once I get to the actual writing of the lsp, I think it will be more fun 
 and educational.  
 
+That said, I'm going to evenutally finish this but I may have to return to it in a bit.
+
 ### Usage
 
 I designed the interpreter binary to work much like the lua binary.  

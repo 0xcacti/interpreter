@@ -20,6 +20,12 @@ I'm trying to implement the LSP from "scratch" so it's taking a bit.
 Okay, building the underlying language server protocol is going to take a 
 while.  However, I'm learning a lot.
 
+Actually, I don't know if I'm learning anything.  It's all just types. 
+I'm going to do a wild rush towards getting just the initialize command 
+implemented.  It's all just writing types, so it's super painful, but 
+once I get to the actual writing of the lsp, I think it will be more fun 
+and educational.  
+
 ### Usage
 
 I designed the interpreter binary to work much like the lua binary.  

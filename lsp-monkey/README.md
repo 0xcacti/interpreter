@@ -13,3 +13,7 @@ I do so for monkey.
     - [ ] Implement ClientCapabilities
     - [ ] Implement TraceValues
     - [ ] Implement WorkspaceFolders
+
+On pause until HTTP1.1 is implemented.  I have too many side projects and this 
+one is way too big.
+

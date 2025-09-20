@@ -7,3 +7,4 @@ This all stemmed out of my desire to learn Rust and to learn how
 programming languages work.  Then it snowballed as I got more and more into languages 
 and wanting to know how their tooling works.  
 
+# LSP IMPLEMENTATION ON HOLD 

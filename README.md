@@ -8,3 +8,6 @@ programming languages work.  Then it snowballed as I got more and more into lang
 and wanting to know how their tooling works.  
 
 # LSP IMPLEMENTATION ON HOLD 
+
+I'm currently working on a few other projects, as per my rules, if I must make a commit
+each day.  I didn't today so I made a couple readme commits.
